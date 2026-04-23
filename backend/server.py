@@ -374,7 +374,11 @@ from fastapi.responses import FileResponse
 
 static_folder = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_folder):
-    app.mount("/static", StaticFiles(directory=static_folder), name="static")
+    static_folder = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_folder):
+    nested_static = os.path.join(static_folder, "static")
+    if os.path.exists(nested_static):
+        app.mount("/static", StaticFiles(directory=nested_static), name="static")
     
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
