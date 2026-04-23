@@ -1,19 +1,21 @@
-FROM node:20-alpine AS frontend-build
-WORKDIR /app
-COPY frontend/package.json frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile
+# Сборка фронтенда
+FROM node:20-alpine AS build-stage
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
 COPY frontend/ ./
-ENV REACT_APP_BACKEND_URL=""
-ENV CI=false
-RUN yarn build
+# После этой команды в папке build (или dist) появится нормальный index.html со скриптами
+RUN npm run build
 
+# Запуск сервера
 FROM python:3.11-slim
 WORKDIR /app
 COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install aiofiles
+RUN pip install --no-cache-dir -r requirements.txt aiofiles
 COPY backend/ ./
-COPY --from=frontend-build /app/build ./static
-ENV PORT=8000
-EXPOSE $PORT
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port $PORT"]
+# Копируем результат сборки в папку static
+COPY --from=build-stage /app/frontend/build ./static 
+# ВНИМАНИЕ: Если используете Vite, замените /build на /dist выше
+
+ENV PORT=8080
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8080}"]
