@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import os
 import uuid
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from dotenv import load_dotenv
@@ -26,7 +26,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Auth Tools
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 app = FastAPI()
@@ -83,11 +83,19 @@ class WalletLink(BaseModel):
     message: str
 
 # --- Helpers ---
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if hashed_password == 'WALLET_USER':
+        return False
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8')[:72],
+        hashed_password.encode('utf-8')
+    )
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    return bcrypt.hashpw(
+        password.encode('utf-8')[:72],
+        bcrypt.gensalt()
+    ).decode('utf-8')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
