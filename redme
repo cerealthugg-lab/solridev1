@@ -1,0 +1,7 @@
+backend on terminal:
+cd ~/Desktop/solride/backend
+uvicorn server:app --reload --port 8001
+=====
+frontend on terminal:
+cd ~/Desktop/solride/frontend
+yarn start
