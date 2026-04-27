@@ -1,3 +1,16 @@
+links and commands//
+==
+Xcode and Command Line Tools
+https://developer.apple.com/download/all
+==
+OpenCoreLP (also got on files)
+https://github.com/dortania/OpenCore-Legacy-Patcher/releases
+==
+nodejs and nvm
+https://nodejs.org/en/download
+==
+
+=====
 backend on terminal:
 cd ~/Desktop/solride/backend
 uvicorn server:app --reload --port 8001
@@ -5,3 +18,7 @@ uvicorn server:app --reload --port 8001
 frontend on terminal:
 cd ~/Desktop/solride/frontend
 yarn start
+=====
+oh my Zsh download thru Terminal:
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+=====
