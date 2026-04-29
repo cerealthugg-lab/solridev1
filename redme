@@ -22,3 +22,25 @@ yarn start
 oh my Zsh download thru Terminal:
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 =====
+caprun when edit.
+
+Every time you edit React code, you must run these in order:
+cd ~/Desktop/solride/frontend
+# 1. Compile React → static bundle
+yarn build
+# 2. Copy the new bundle into the iOS app
+npx cap sync ios
+# 3. In Xcode: Stop the running sim (red square) → Hit Play
+echo 'alias caprun="cd ~/Desktop/solride/frontend && yarn build && npx cap sync ios"' >> ~/.zshrc
+source ~/.zshrc
+Then every time you save changes, just type:
+caprun
+
+=====
+solship after edit
+
+echo '
+alias solship="cd ~/Desktop/solride && git add -A && git commit -m \"update\" && git push && cd frontend && yarn build && npx cap sync ios && echo \"\\n✓ Pushed to GitHub + Railway, iOS bundle synced. Run in Xcode now.\\n\""
+' >> ~/.zshrc
+source ~/.zshrc
+=====
