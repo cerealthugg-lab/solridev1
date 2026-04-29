@@ -129,15 +129,15 @@ const Welcome = () => {
             className="flex-1 bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-14 lg:h-16 text-base flex items-center justify-center gap-3 transition-colors"
           >
             Login
-            <ArrowRight size={18} strokeWidth={3} />
+            <ArrowRight size={18} strokeWidth={5} />
           </button>
           <button
             data-testid="welcome-register-button"
             onClick={() => goAuth("register")}
             className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 font-black uppercase tracking-widest rounded-none h-14 lg:h-16 text-base flex items-center justify-center gap-3 transition-colors"
           >
-            Create Account
-            <ArrowRight size={18} strokeWidth={3} />
+            Register
+            <ArrowRight size={18} strokeWidth={5} />
           </button>
         </section>
 
