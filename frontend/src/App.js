@@ -1,3 +1,4 @@
+import Welcome from './components/Welcome';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -320,6 +321,12 @@ const AuthPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
+<Link
+  to="/welcome"
+  className="absolute top-4 left-4 text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-white font-bold"
+>
+  ← Learn more
+</Link>
       <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent">SOLRIDE</h1>
       <p className="text-zinc-500 mb-8 uppercase tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
       
@@ -1042,6 +1049,7 @@ function App() {
         <RideProvider>
           <Layout>
               <Routes>
+                <Route path="/welcome" element={<Welcome />} /> 
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                   <Route path="/ride" element={<PrivateRoute><RidePage /></PrivateRoute>} />
@@ -1059,7 +1067,10 @@ function App() {
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#D2FF00] font-mono">LOADING...</div>;
-  if (!user) return <Navigate to="/auth" />;
+  if (!user) {
+    const seenWelcome = localStorage.getItem("solride.welcomeSeen") === "true";
+    return <Navigate to={seenWelcome ? "/auth" : "/welcome"} replace />;
+  }
   return children;
 };
 
