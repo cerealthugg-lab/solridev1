@@ -130,6 +130,7 @@ api = APIRouter(prefix="/api")
 
 @api.post("/auth/register")
 async def register(user: UserCreate):
+    user.username = user.username.lower().strip()
     # Check if username exists
     result = supabase.table('users').select('id').eq('username', user.username).execute()
     if result.data:
@@ -148,6 +149,7 @@ async def register(user: UserCreate):
 
 @api.post("/auth/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    form_data.username = form_data.username.lower().strip()
     result = supabase.table('users').select('username, hashed_password').eq('username', form_data.username).execute()
     if not result.data:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
@@ -161,6 +163,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @api.post("/auth/wallet-login", response_model=Token)
 async def wallet_login(data: WalletLogin):
+    # Normalize wallet address (case-sensitive on Solana, but trim whitespace)
+    data.wallet_address = data.wallet_address.strip()
     # Find user by wallet address
     result = supabase.table('users').select('*').eq('wallet_address', data.wallet_address).execute()
     
