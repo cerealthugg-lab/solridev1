@@ -321,8 +321,13 @@ const AuthPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
-
-      <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
+<Link
+  to="/welcome"
+  className="absolute top-4 left-4 text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-white font-bold"
+>
+  ← Learn more
+</Link>
+      <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent">SOLRIDE</h1>
       <p className="text-zinc-500 mb-8 uppercase tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
       
       <Card className="w-full bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
@@ -330,14 +335,9 @@ const AuthPage = () => {
           <div className="space-y-2">
             <Label className="uppercase text-xs text-zinc-500">Username</Label>
             <Input 
-                value={username} 
-                onChange={e => setUsername(e.target.value.toLowerCase().trim())} 
-                className="text-white bg-black border-zinc-800 focus:border-[#D2FF00] rounded-none  h-12 text-lg"
-                placeholder="skater_boi"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck="false"
-                autoComplete="username"
+              value={username} onChange={e => setUsername(e.target.value)} 
+              className="text-white bg-black border-zinc-800 focus:border-[#D2FF00] rounded-none h-12 text-lg"
+              placeholder="skater_boi"
             />
           </div>
           <div className="space-y-2">
@@ -358,19 +358,6 @@ const AuthPage = () => {
           </div>
         </CardContent>
       </Card>
-
-    <div className="mt-10 flex flex-col items-center gap-3">
-        <Link
-          to="/welcome"
-          className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-[#D2FF00] font-bold py-2 transition-colors"
-        >
-          Learn more →
-        </Link>
-        <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600 font-bold">
-          SOLRIDE © 2026
-        </span>
-      </div>
-
     </div>
   );
 };
@@ -1080,7 +1067,10 @@ function App() {
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#D2FF00] font-mono">LOADING...</div>;
-  if (!user) return <Navigate to="/welcome" replace />;
+  if (!user) {
+    const seenWelcome = localStorage.getItem("solride.welcomeSeen") === "true";
+    return <Navigate to={seenWelcome ? "/auth" : "/welcome"} replace />;
+  }
   return children;
 };
 

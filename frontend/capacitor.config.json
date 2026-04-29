@@ -1,0 +1,11 @@
+{
+  "appId": "com.cerealthugg.solride",
+  "appName": "solride",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

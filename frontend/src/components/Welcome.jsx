@@ -33,11 +33,11 @@ const Welcome = () => {
   const navigate = useNavigate();
 
   const goAuth = (mode) => {
-    localStorage.setItem("solride.welcomeSeen", "true");
     navigate(`/auth?mode=${mode}`);
   };
 
   useEffect(() => {
+      localStorage.removeItem("solride.welcomeSeen");  // ← cleans up old flag
     if (localStorage.getItem("token")) navigate("/", { replace: true });
   }, [navigate]);
 
@@ -118,26 +118,26 @@ const Welcome = () => {
           journey, in production.
         </Section>
 
-        {/* CTAs — stacked on mobile, side-by-side on bigger screens */}
+       {/* CTAs — full-width stacked, comfortable taps on mobile */}
         <section
           data-testid="welcome-cta-section"
-          className="mt-10 lg:mt-14 flex flex-col sm:flex-row gap-3 sm:gap-4"
+          className="mt-10 lg:mt-14 space-y-3"
         >
           <button
             data-testid="welcome-login-button"
             onClick={() => goAuth("login")}
-            className="flex-1 bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-14 lg:h-16 text-base flex items-center justify-center gap-3 transition-colors"
+            className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-14 lg:h-20 text-base lg:text-xl flex items-center justify-center gap-3 transition-colors"
           >
             Login
-            <ArrowRight size={18} strokeWidth={5} />
+            <ArrowRight size={20} strokeWidth={5} />
           </button>
           <button
             data-testid="welcome-register-button"
             onClick={() => goAuth("register")}
-            className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 font-black uppercase tracking-widest rounded-none h-14 lg:h-16 text-base flex items-center justify-center gap-3 transition-colors"
+            className="w-full bg-zinc-900 text-white hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 font-black uppercase tracking-widest rounded-none h-14 lg:h-20 text-base lg:text-xl flex items-center justify-center gap-3 transition-colors"
           >
             Register
-            <ArrowRight size={18} strokeWidth={5} />
+            <ArrowRight size={20} strokeWidth={5} />
           </button>
         </section>
 
