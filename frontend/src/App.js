@@ -327,7 +327,7 @@ const AuthPage = () => {
 >
   ← Learn more
 </Link>
-      <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent">SOLRIDE</h1>
+      <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
       <p className="text-zinc-500 mb-8 uppercase tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
       
       <Card className="w-full bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
@@ -358,6 +358,19 @@ const AuthPage = () => {
           </div>
         </CardContent>
       </Card>
+
+    <div className="mt-10 flex flex-col items-center gap-3">
+        <Link
+          to="/welcome"
+          className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-[#D2FF00] font-bold py-2 transition-colors"
+        >
+          Learn more →
+        </Link>
+        <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600 font-bold">
+          SOLRIDE © 2026
+        </span>
+      </div>
+
     </div>
   );
 };
