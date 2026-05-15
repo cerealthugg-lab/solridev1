@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, Coins, Cpu, ArrowRight } from "lucide-react";
+import FeedbackModal from "./FeedbackModal";
 
 const Section = ({ icon: Icon, eyebrow, title, accent, children }) => (
   <div
@@ -38,20 +39,16 @@ const Welcome = () => {
   };
 
   useEffect(() => {
-      localStorage.removeItem("solride.welcomeSeen");  // ← cleans up old flag
     if (localStorage.getItem("token")) navigate("/", { replace: true });
   }, [navigate]);
 
   return (
-    // Fixed fullscreen overlay — breaks out of any parent max-w container
     <div
       data-testid="welcome-screen"
       className="fixed inset-0 bg-[#09090b] text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black overflow-y-auto"
     >
-      {/* Top gradient accent bar */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50" />
 
-      {/* Skip link top-right */}
       <button
         data-testid="welcome-skip-button"
         onClick={() => goAuth("login")}
@@ -60,9 +57,7 @@ const Welcome = () => {
         Skip →
       </button>
 
-      {/* Single responsive column — gets wider and roomier on bigger screens */}
       <main className="mx-auto max-w-md sm:max-w-lg lg:max-w-2xl px-6 sm:px-8 lg:px-12 pt-14 pb-12">
-        {/* Hero */}
         <section
           data-testid="welcome-hero"
           className="flex flex-col items-center text-center pt-10 sm:pt-14 lg:pt-20 pb-12 sm:pb-16"
@@ -78,23 +73,13 @@ const Welcome = () => {
           </p>
         </section>
 
-        {/* Sections */}
-        <Section
-          icon={Compass}
-          eyebrow="How it works"
-          title="Ride. Skate. Connect."
-        >
+        <Section icon={Compass} eyebrow="How it works" title="Ride. Skate. Connect.">
           Open the app, find a ride or hit the streets on your board. Every
           trip is logged, every move is part of the network. The further you
           go, the more the world opens up.
         </Section>
 
-        <Section
-          icon={Coins}
-          eyebrow="The currency"
-          title="Earn DFQ in motion"
-          accent="#A855F7"
-        >
+        <Section icon={Coins} eyebrow="The currency" title="Earn DFQ in motion" accent="#A855F7">
           <p>
             DFQ is solride's in-app currency. You earn it by{" "}
             <span className="text-white font-bold">being in motion</span> —
@@ -108,22 +93,14 @@ const Welcome = () => {
           </p>
         </Section>
 
-        <Section
-          icon={Cpu}
-          eyebrow="The hardware"
-          title="Smart skateboard, smart risers."
-        >
+        <Section icon={Cpu} eyebrow="The hardware" title="Smart skateboard, smart risers.">
           We're building it: the SOLRIDE smart skateboard tool and GPS smart
           risers. Hardware that bridges your ride to the network — your board
           becomes the wallet, the sensor, the antenna. The final piece of the
           journey, in production.
         </Section>
 
-       {/* CTAs — full-width stacked, comfortable taps on mobile */}
-        <section
-          data-testid="welcome-cta-section"
-          className="mt-10 lg:mt-14 space-y-3"
-        >
+        <section data-testid="welcome-cta-section" className="mt-10 lg:mt-14 space-y-3">
           <button
             data-testid="welcome-login-button"
             onClick={() => goAuth("login")}
@@ -144,13 +121,22 @@ const Welcome = () => {
 
         <footer
           data-testid="welcome-footer"
-          className="mt-14 lg:mt-20 pb-4 text-center"
+          className="mt-14 lg:mt-20 pb-4 flex flex-col items-center gap-3"
         >
+          <button
+            data-testid="welcome-contact-button"
+            onClick={() => setFeedbackOpen(true)}
+            className="text-[10px] tracking-[0.25em] uppercase text-zinc-500 hover:text-[#D2FF00] font-bold py-2 transition-colors"
+          >
+            Contact · Drop feedback
+          </button>
           <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600 font-bold">
             SOLRIDE © 2026
           </span>
         </footer>
       </main>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 };
