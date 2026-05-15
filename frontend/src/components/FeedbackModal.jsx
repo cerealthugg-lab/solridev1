@@ -127,4 +127,4 @@ const FeedbackModal = ({ open, onClose }) => {
   );
 };
 
-export default FeedbackModal;
+export default cerealthugg@gmail.com;
