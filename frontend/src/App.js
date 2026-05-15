@@ -1,4 +1,5 @@
 import Welcome from './components/Welcome';
+import FeedbackModal from './components/Welcome';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -621,6 +622,7 @@ const WalletPage = () => {
 const ProfilePage = () => {
     const { user, logout, fetchUser } = useAuth();
     const navigate = useNavigate();
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [formData, setFormData] = useState({
         full_name: '', deck_size: '', deck_company: '', fav_trick: '', fav_spot: '', self_comment: '', birth_date: ''
     });
@@ -699,6 +701,27 @@ const ProfilePage = () => {
                     Save Changes
                 </Button>
             </div>
+
+            {/* Help & Feedback section */}
+            <div className="pt-6 mt-2 border-t border-zinc-900">
+                <button
+                    data-testid="profile-feedback-button"
+                    onClick={() => setFeedbackOpen(true)}
+                    className="w-full flex items-center justify-between px-4 py-4 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 transition-colors text-left"
+                >
+                    <div>
+                        <div className="text-sm font-black uppercase tracking-wider text-white">
+                            Send feedback
+                        </div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold mt-0.5">
+                            Bug · Lag · Idea · Anything
+                        </div>
+                    </div>
+                    <span className="text-[#D2FF00] font-black text-lg">→</span>
+                </button>
+            </div>
+
+            <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
         </div>
     );
 };

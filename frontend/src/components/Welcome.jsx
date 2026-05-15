@@ -31,6 +31,7 @@ const Section = ({ icon: Icon, eyebrow, title, accent, children }) => (
 
 const Welcome = () => {
   const navigate = useNavigate();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const goAuth = (mode) => {
     navigate(`/auth?mode=${mode}`);
