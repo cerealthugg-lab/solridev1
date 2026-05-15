@@ -1,5 +1,5 @@
 import Welcome from './components/Welcome';
-import FeedbackModal from './components/Welcome';
+import FeedbackModal from './components/FeedbackModal';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
