@@ -28,12 +28,13 @@ const FeedbackModal = ({ open, onClose }) => {
     if (!message.trim()) return;
     const subject = `[solride] ${ISSUE_TYPES.find(t => t.value === type)?.label || type}`;
     const body = [
+      `Message:`, message,
       `Type: ${type}`,
       `From: ${email || "anonymous skater"}`,
       `Device: ${navigator.userAgent}`,
       `Screen: ${window.innerWidth}×${window.innerHeight}`,
       `Time: ${new Date().toISOString()}`,
-      ``, `Message:`, message,
+      ``,
     ].join("\n");
     window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setMessage(""); setEmail(""); setType("bug");
