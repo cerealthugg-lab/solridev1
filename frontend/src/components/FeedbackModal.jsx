@@ -8,7 +8,7 @@ const ISSUE_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-const FEEDBACK_EMAIL = "feedback@solride.app"; // ← change to your real inbox
+const FEEDBACK_EMAIL = "cerealthugg@gmail.com"; // ← change to your real inbox
 
 const FeedbackModal = ({ open, onClose }) => {
   const [type, setType] = useState("bug");
@@ -127,4 +127,4 @@ const FeedbackModal = ({ open, onClose }) => {
   );
 };
 
-export default cerealthugg@gmail.com;
+export default FeedbackModal;
