@@ -167,9 +167,12 @@ var SpotsMapPage = function(props) {
   var formDataState = useState({ name: '', description: '', spot_type: 'street' });
   var formData = formDataState[0];
   var setFormData = formDataState[1];
-  var photosState = useState([]);
+   var photosState = useState([]);
   var photos = photosState[0];
   var setPhotos = photosState[1];
+  var submittingState = useState(false);
+  var isSubmitting = submittingState[0];
+  var setIsSubmitting = submittingState[1];
   var ridersVisState = useState(true);
   var showRiders = ridersVisState[0];
   var setShowRiders = ridersVisState[1];
@@ -247,8 +250,10 @@ var SpotsMapPage = function(props) {
   };
 
   var handleSubmitSpot = async function() {
+    if (isSubmitting) return;
     if (!formData.name.trim()) return toast.error("Give the spot a name!");
     if (!newPin) return toast.error("Drop a pin on the map first");
+    setIsSubmitting(true);
     try {
       await api.post('/spots', {
         name: formData.name,
@@ -270,6 +275,8 @@ var SpotsMapPage = function(props) {
       }, 300);
     } catch (e) {
       toast.error((e.response && e.response.data && e.response.data.detail) || "Failed to add spot");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -445,32 +452,56 @@ var SpotsMapPage = function(props) {
             </div>
             <div className="space-y-2">
               <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoSelect} className="hidden" />
-              <button
-                onClick={function() { if (fileInputRef.current) fileInputRef.current.click(); }}
-                className="flex items-center gap-2 text-xs text-zinc-500 hover:text-[#D2FF00] uppercase tracking-widest"
-              >
-                <Camera size={14} /> Add photos ({photos.length}/5)
-              </button>
-              {photos.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto">
-                  {photos.map(function(p, i) {
-                    return (
-                      <div key={i} className="relative w-16 h-16 flex-shrink-0">
-                        <img src={p} alt="" className="w-full h-full object-cover border border-zinc-800" />
-                        <button
-                          onClick={function() { setPhotos(function(prev) { return prev.filter(function(_, idx) { return idx !== i; }); }); }}
-                          className="absolute -top-1 -right-1 bg-[#FF3366] rounded-full w-4 h-4 flex items-center justify-center"
-                        >
-                          <X size={10} className="text-white" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-widest text-zinc-500">
+                  Photos ({photos.length}/5)
+                </span>
+                {photos.length === 0 && (
+                  <span className="text-[10px] uppercase tracking-widest text-[#D2FF00]">
+                    +5 DFQ bonus
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {photos.map(function(p, i) {
+                  return (
+                    <div key={i} className="relative aspect-square">
+                      <img src={p} alt="" className="w-full h-full object-cover border border-zinc-800" />
+                      <button
+                        onClick={function() { setPhotos(function(prev) { return prev.filter(function(_, idx) { return idx !== i; }); }); }}
+                        className="absolute -top-1 -right-1 bg-[#FF3366] rounded-full w-5 h-5 flex items-center justify-center"
+                      >
+                        <X size={12} className="text-white" />
+                      </button>
+                    </div>
+                  );
+                })}
+                {photos.length < 5 && (
+                  <button
+                    onClick={function() { if (fileInputRef.current) fileInputRef.current.click(); }}
+                    className="aspect-square border-2 border-dashed border-zinc-700 hover:border-[#D2FF00] flex flex-col items-center justify-center gap-1 transition-colors group"
+                  >
+                    <Camera size={20} className="text-zinc-600 group-hover:text-[#D2FF00] transition-colors" />
+                    <span className="text-[8px] uppercase tracking-widest text-zinc-600 group-hover:text-[#D2FF00] transition-colors">
+                      {photos.length === 0 ? 'Add' : '+'}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
-            <Button onClick={handleSubmitSpot} className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-bold uppercase tracking-widest rounded-none h-10">
-              Save Spot
+            <Button
+              onClick={handleSubmitSpot}
+              disabled={isSubmitting}
+              className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-bold uppercase tracking-widest rounded-none h-10 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                'Save Spot'
+              )}
             </Button>
           </CardContent>
         </Card>
