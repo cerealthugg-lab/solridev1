@@ -2,6 +2,25 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    
+    
+    /* ====solride spotmaps add==== */
+    
+    <key>NSLocationWhenInUseUsageDescription</key>
+<string>Solride uses your location to track rides, drop spots on the map, and let other riders see you in real time.</string>
+
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>Solride keeps tracking your ride and broadcasting your location while the app is in the background, so your DFQ keeps counting.</string>
+
+<key>NSCameraUsageDescription</key>
+<string>Take a photo of the spot you're adding to the map.</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Pick a photo of the spot you're adding to the map from your library.</string>
+
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>Save photos of spots you've added.</string>
+    
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

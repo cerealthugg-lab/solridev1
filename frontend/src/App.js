@@ -12,6 +12,7 @@ import { Label } from "./components/ui/label";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import SpotsMapPage from './components/SpotsMapPage';
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -427,6 +428,24 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="text-xs text-[#D2FF00] font-mono uppercase">V2</div>
+          </CardContent>
+        </Card>
+      </Link>
+
+{/* Spots Map Button */}
+      <Link to="/spots" className="block mt-3">
+        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#00D2FF] transition-colors cursor-pointer group">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#00D2FF] group-hover:text-black transition-colors text-white">
+                <MapPin size={20} />
+              </div>
+              <div>
+                <span className="font-bold uppercase tracking-wider text-sm text-white block">Spots Map</span>
+                <span className="text-xs text-zinc-500">Find spots • Live riders</span>
+              </div>
+            </div>
+            <div className="text-xs text-[#00D2FF] font-mono uppercase">NEW</div>
           </CardContent>
         </Card>
       </Link>
@@ -1077,6 +1096,11 @@ const FindMyToolPage = () => {
 
 // --- App Root ---
 
+const SpotsMapWrapper = () => {
+  const { user } = useAuth();
+  return <SpotsMapPage currentUser={user} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -1085,6 +1109,7 @@ function App() {
         <RideProvider>
           <Layout>
               <Routes>
+<Route path="/spots" element={<PrivateRoute><SpotsMapWrapper /></PrivateRoute>} />
                 <Route path="/welcome" element={<Welcome />} /> 
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

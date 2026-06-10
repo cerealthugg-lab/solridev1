@@ -367,6 +367,107 @@ async def withdraw_coins(req: WithdrawRequest, current_user: dict = Depends(get_
     supabase.table('transactions').insert(tx_data).execute()
     
     return {"message": "Withdraw successful", "signature": signature}
+# --- Spots ---
+
+class SpotCreate(BaseModel):
+    name: str
+    description: str = ""
+    lat: float
+    lng: float
+    spot_type: str = "street"
+    photos: list = []
+
+@api.post("/spots")
+async def create_spot(spot: SpotCreate, current_user: dict = Depends(get_current_user)):
+    photo_urls = []
+    for i, photo in enumerate(spot.photos[:5]):
+        if photo.startswith("data:"):
+            import base64
+            header, data = photo.split(",", 1)
+            ext = "jpg"
+            if "png" in header:
+                ext = "png"
+            file_bytes = base64.b64decode(data)
+            file_name = f"spots/{uuid.uuid4().hex}.{ext}"
+            try:
+                supabase.storage.from_("spot-photos").upload(file_name, file_bytes, {"content-type": f"image/{ext}"})
+                url = supabase.storage.from_("spot-photos").get_public_url(file_name)
+                photo_urls.append(url)
+            except Exception as e:
+                print(f"Photo upload error: {e}")
+        elif photo.startswith("http"):
+            photo_urls.append(photo)
+
+    spot_data = {
+        'id': str(uuid.uuid4()),
+        'user_id': current_user['username'],
+        'name': spot.name,
+        'description': spot.description,
+        'lat': spot.lat,
+        'lng': spot.lng,
+        'spot_type': spot.spot_type,
+        'photos': photo_urls,
+        'status': 'approved',
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    supabase.table('spots').insert(spot_data).execute()
+    return {"message": "Spot added!", "id": spot_data['id']}
+
+@api.get("/spots")
+async def get_spots():
+    try:
+        result = supabase.table('spots').select('*').eq('status', 'approved').order('created_at', desc=True).execute()
+        return result.data
+    except Exception:
+        return []
+
+@api.delete("/spots/{spot_id}")
+async def delete_spot(spot_id: str, current_user: dict = Depends(get_current_user)):
+    result = supabase.table('spots').select('user_id').eq('id', spot_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    if result.data[0]['user_id'] != current_user['username']:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    supabase.table('spots').delete().eq('id', spot_id).execute()
+    return {"message": "Spot removed"}
+
+# --- Active Riders ---
+
+@api.post("/riders/location")
+async def update_rider_location(location: dict, current_user: dict = Depends(get_current_user)):
+    lat = location.get('lat')
+    lng = location.get('lng')
+    if lat is None or lng is None:
+        raise HTTPException(status_code=400, detail="lat and lng required")
+
+    rider_data = {
+        'username': current_user['username'],
+        'lat': lat,
+        'lng': lng,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    existing = supabase.table('rider_locations').select('username').eq('username', current_user['username']).execute()
+    if existing.data:
+        supabase.table('rider_locations').update(rider_data).eq('username', current_user['username']).execute()
+    else:
+        supabase.table('rider_locations').insert(rider_data).execute()
+    return {"message": "Location updated"}
+
+@api.get("/riders/active")
+async def get_active_riders(current_user: dict = Depends(get_current_user)):
+    try:
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        result = supabase.table('rider_locations').select('username, lat, lng, updated_at').gte('updated_at', cutoff).execute()
+        return result.data
+    except Exception:
+        return []
+
+@api.delete("/riders/location")
+async def remove_rider_location(current_user: dict = Depends(get_current_user)):
+    supabase.table('rider_locations').delete().eq('username', current_user['username']).execute()
+    return {"message": "Location removed"}
+
 
 app.include_router(api)
 
