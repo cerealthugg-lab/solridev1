@@ -253,7 +253,10 @@ const RideProvider = ({ children }) => {
       setRideId(null);
       setCoords([]);
       setDistance(0);
-      toast.success(`Ride ended! You earned ${data.earned.toFixed(2)} DFQ`);
+     toast.success(`Ride ended! You earned ${data.earned.toFixed(2)} DFQ`);
+      if (data.first_ride_bonus > 0) {
+        setTimeout(() => toast.success(`First ride bonus! +${data.first_ride_bonus} DFQ`), 1500);
+      }
       fetchUser();
     } catch (e) {
       toast.error("Failed to stop ride");
@@ -381,12 +384,8 @@ const Dashboard = () => {
   const { user } = useAuth();
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+   <div className="flex justify-between items-end">
         <div>
-           <h2 className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Welcome back</h2>
-           <h1 className="text-3xl font-bold">{user.username}</h1>
-        </div>
-        <div className="text-right">
             <h2 className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Balance</h2>
             <div className="text-3xl font-black text-[#D2FF00]">{user.wallet_balance.toFixed(2)} <span className="text-sm text-white">DFQ</span></div>
         </div>
@@ -453,7 +452,7 @@ const Dashboard = () => {
       <Link to="/profile" className="block mt-6">
         <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
           <CardHeader>
-              <CardTitle className="uppercase tracking-widest text-sm text-zinc-500 group-hover:text-white transition-colors">Skater Profile</CardTitle>
+              <CardTitle className="uppercase tracking-widest text-lg text-white group-hover:text-[#D2FF00] transition-colors">{user.username}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
               <div className="flex justify-between border-b border-zinc-800 pb-2">
@@ -660,8 +659,11 @@ const ProfilePage = () => {
 
     const handleUpdate = async () => {
         try {
-            await api.put('/users/me', formData);
+           const { data } = await api.put('/users/me', formData);
             toast.success("Profile Updated");
+            if (data.profile_bonus > 0) {
+                setTimeout(() => toast.success(`Profile complete! +${data.profile_bonus} DFQ bonus`), 1000);
+            }
             await fetchUser();
             navigate('/');
         } catch(e) {

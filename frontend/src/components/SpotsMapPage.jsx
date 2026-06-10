@@ -78,7 +78,9 @@ const SpotsMapPage = ({ currentUser }) => {
   const [filterType, setFilterType] = useState('all');
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSpot, setSelectedSpot] = useState(null);
   const fileInputRef = useRef(null);
+  const listRef = useRef(null);
 
   const fetchSpots = async () => {
     try {
@@ -119,15 +121,17 @@ const SpotsMapPage = ({ currentUser }) => {
     fetchRiders();
     shareLocation();
 
-    const interval = setInterval(() => {
+    const spotsInterval = setInterval(fetchSpots, 5000);
+    const ridersInterval = setInterval(() => {
       fetchRiders();
       shareLocation();
-    }, 30000);
+    }, 10000);
 
     setLoading(false);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(spotsInterval);
+      clearInterval(ridersInterval);
       api.delete('/riders/location').catch(() => {});
     };
   }, []);
@@ -167,7 +171,11 @@ const SpotsMapPage = ({ currentUser }) => {
       setNewPin(null);
       setFormData({ name: '', description: '', spot_type: 'street' });
       setPhotos([]);
-      fetchSpots();
+      await fetchSpots();
+      // Scroll to the list so user sees the new spot
+      setTimeout(() => {
+        listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
     } catch (e) {
       toast.error(e.response?.data?.detail || "Failed to add spot");
     }
@@ -268,23 +276,18 @@ const SpotsMapPage = ({ currentUser }) => {
             {/* Spot markers */}
             {filteredSpots.map(spot => {
               const typeInfo = SPOT_TYPES.find(t => t.value === spot.spot_type) || SPOT_TYPES[0];
+              const isSelected = selectedSpot?.id === spot.id;
               return (
-                <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={createSpotIcon(typeInfo.color)}>
-                  <Popup>
-                    <div className="text-black text-xs space-y-1 min-w-[150px]">
-                      <strong className="text-sm">{spot.name}</strong>
-                      <div className="text-zinc-600">{typeInfo.label}</div>
-                      {spot.description && <p>{spot.description}</p>}
-                      <div className="text-zinc-400">by {spot.user_id}</div>
-                      {spot.photos && spot.photos.length > 0 && (
-                        <img src={spot.photos[0]} alt={spot.name} className="w-full h-20 object-cover rounded mt-1" />
-                      )}
-                      {spot.user_id === currentUser?.username && (
-                        <button onClick={() => handleDeleteSpot(spot.id)} className="text-red-500 text-xs mt-1 underline">Remove</button>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
+                <Marker
+                  key={spot.id}
+                  position={[spot.lat, spot.lng]}
+                  icon={createSpotIcon(isSelected ? '#FFFFFF' : typeInfo.color)}
+                  eventHandlers={{
+                    click: () => {
+                      setSelectedSpot(selectedSpot?.id === spot.id ? null : spot);
+                    }
+                  }}
+                />
               );
             })}
 
@@ -348,7 +351,7 @@ const SpotsMapPage = ({ currentUser }) => {
           onClick={() => setIsAdding(true)}
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-bold uppercase tracking-widest rounded-none h-12"
         >
-          <Plus size={18} className="mr-2" /> Add Spot
+         <Plus size={18} className="mr-2" /> Add Spot <span className="ml-2 text-[10px] opacity-70">• 1 DFQ</span>
         </Button>
       ) : showForm ? (
         <Card className="bg-zinc-900 border-zinc-800 rounded-none">
@@ -385,7 +388,6 @@ const SpotsMapPage = ({ currentUser }) => {
               ))}
             </div>
 
-            {/* Photo upload */}
             <div className="space-y-2">
               <input
                 ref={fileInputRef}
@@ -447,10 +449,78 @@ const SpotsMapPage = ({ currentUser }) => {
         <Navigation size={14} /> Center on me
       </button>
 
+      {/* Spot Detail Card */}
+      {selectedSpot && (() => {
+        const typeInfo = SPOT_TYPES.find(t => t.value === selectedSpot.spot_type) || SPOT_TYPES[0];
+        const dist = userLocation ? getDistanceKm(userLocation.lat, userLocation.lng, selectedSpot.lat, selectedSpot.lng) : null;
+        return (
+          <Card className="bg-zinc-900 border-2 rounded-none overflow-hidden" style={{ borderColor: typeInfo.color }}>
+            {selectedSpot.photos && selectedSpot.photos.length > 0 && (
+              <div className="flex overflow-x-auto gap-0 snap-x">
+                {selectedSpot.photos.map((photo, i) => (
+                  <img key={i} src={photo} alt={`${selectedSpot.name} ${i+1}`} className="w-full h-44 object-cover flex-shrink-0 snap-center" />
+                ))}
+              </div>
+            )}
+            <CardContent className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-lg font-bold text-white">{selectedSpot.name}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5" style={{ backgroundColor: typeInfo.color, color: '#000' }}>{typeInfo.label}</span>
+                    {dist !== null && (
+                      <span className="text-xs font-mono text-zinc-400">
+                        {dist < 1 ? `${(dist * 1000).toFixed(0)}m away` : `${dist.toFixed(1)}km away`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button onClick={() => setSelectedSpot(null)} className="text-zinc-500 hover:text-white p-1">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {selectedSpot.description && (
+                <p className="text-sm text-zinc-400 leading-relaxed">{selectedSpot.description}</p>
+              )}
+
+              <div className="flex items-center justify-between text-xs text-zinc-500">
+                <span>Added by <span className="text-white font-bold">{selectedSpot.user_id}</span></span>
+                <span className="font-mono">{new Date(selectedSpot.created_at).toLocaleDateString()}</span>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const { lat, lng } = selectedSpot;
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 h-10 border border-[#D2FF00] text-[#D2FF00] text-xs font-bold uppercase tracking-widest hover:bg-[#D2FF00]/10 transition-colors"
+                >
+                  <Navigation size={14} /> Navigate
+                </button>
+                {selectedSpot.user_id === currentUser?.username && (
+                  <button
+                    onClick={() => { handleDeleteSpot(selectedSpot.id); setSelectedSpot(null); }}
+                    className="flex items-center justify-center gap-2 h-10 px-4 border border-[#FF3366] text-[#FF3366] text-xs font-bold uppercase tracking-widest hover:bg-[#FF3366]/10 transition-colors"
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Nearest Spots List */}
-      <div className="space-y-2">
+      <div className="space-y-2" ref={listRef}>
         <h3 className="text-zinc-500 text-xs uppercase tracking-widest flex items-center justify-between">
-          <span>Nearest Spots</span>
+          <span className="flex items-center gap-2">
+            Nearest Spots
+            <span className="w-1.5 h-1.5 bg-[#D2FF00] rounded-full animate-pulse"></span>
+            <span className="text-[8px] text-[#D2FF00] font-mono">LIVE</span>
+          </span>
           <span className="text-[#D2FF00] font-mono">{nearbySpots.length}</span>
         </h3>
         {nearbySpots.length === 0 ? (
@@ -458,11 +528,21 @@ const SpotsMapPage = ({ currentUser }) => {
             No spots yet — be the first to add one!
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-80 overflow-y-auto">
             {nearbySpots.map(spot => {
               const typeInfo = SPOT_TYPES.find(t => t.value === spot.spot_type) || SPOT_TYPES[0];
+              const isSelected = selectedSpot?.id === spot.id;
               return (
-                <div key={spot.id} className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800 p-3 hover:border-zinc-700 transition-colors">
+                <div
+                  key={spot.id}
+                  onClick={() => setSelectedSpot(isSelected ? null : spot)}
+                  className={`flex items-center gap-3 p-3 cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-zinc-800 border-l-2 border-r border-t border-b border-zinc-700'
+                      : 'bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700'
+                  }`}
+                  style={isSelected ? { borderLeftColor: typeInfo.color } : {}}
+                >
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: typeInfo.color }}></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
@@ -479,11 +559,6 @@ const SpotsMapPage = ({ currentUser }) => {
                       )}
                     </div>
                   </div>
-                  {spot.user_id === currentUser?.username && (
-                    <button onClick={() => handleDeleteSpot(spot.id)} className="text-zinc-600 hover:text-[#FF3366] flex-shrink-0">
-                      <Trash2 size={14} />
-                    </button>
-                  )}
                 </div>
               );
             })}

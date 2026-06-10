@@ -20,6 +20,8 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30000
 
+SPOT_COST = 1.0  # DFQ cost to add a spot — change this number anytime
+
 # Supabase Setup
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
@@ -209,6 +211,9 @@ async def link_wallet(data: WalletLink, current_user: dict = Depends(get_current
 async def read_users_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
+SPOT_COST = 1.0  # DFQ cost to add a spot — change this number anytime
+Find the update_profile function and replace the whole thing:
+Old:
 @api.put("/users/me")
 async def update_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
     allowed = ["full_name", "birth_date", "deck_size", "deck_company", "fav_trick", "fav_spot", "self_comment"]
@@ -217,6 +222,40 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
     if update_data:
         supabase.table('users').update(update_data).eq('username', current_user['username']).execute()
     return {"message": "Profile updated"}
+New:
+@api.put("/users/me")
+async def update_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
+    allowed = ["full_name", "birth_date", "deck_size", "deck_company", "fav_trick", "fav_spot", "self_comment"]
+    update_data = {k: v for k, v in profile_data.items() if k in allowed}
+    
+    profile_bonus = 0
+    if update_data:
+        supabase.table('users').update(update_data).eq('username', current_user['username']).execute()
+        
+        # Check if profile is now complete → +5 DFQ bonus (one-time)
+        updated = supabase.table('users').select('*').eq('username', current_user['username']).execute()
+        if updated.data:
+            u = updated.data[0]
+            fields = [u.get('deck_size'), u.get('deck_company'), u.get('fav_trick'), u.get('fav_spot'), u.get('self_comment')]
+            all_filled = all(f and str(f).strip() for f in fields)
+            
+            if all_filled:
+                # Check if bonus was already given
+                existing_bonus = supabase.table('transactions').select('id').eq('receiver_id', current_user['username']).eq('type', 'profile_bonus').execute()
+                if not existing_bonus.data:
+                    profile_bonus = 5.0
+                    new_balance = (u.get('wallet_balance') or 0) + profile_bonus
+                    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
+                    supabase.table('transactions').insert({
+                        'id': str(uuid.uuid4()),
+                        'sender_id': 'SOLRIDE_BONUS',
+                        'receiver_id': current_user['username'],
+                        'amount': profile_bonus,
+                        'timestamp': datetime.now(timezone.utc).isoformat(),
+                        'type': 'profile_bonus'
+                    }).execute()
+    
+    return {"message": "Profile updated", "profile_bonus": profile_bonus}
 
 @api.post("/rides/start", response_model=Ride)
 async def start_ride(current_user: dict = Depends(get_current_user)):
@@ -271,8 +310,16 @@ async def stop_ride(ride_id: str, finish_data: RideFinish, current_user: dict = 
         'coins_earned': coins
     }).eq('id', ride_id).execute()
     
-    # Update user wallet balance
+# Update user wallet balance
     new_balance = (current_user.get('wallet_balance') or 0) + coins
+    
+    # First ride bonus: +5 DFQ
+    first_ride_bonus = 0
+    all_rides = supabase.table('rides').select('id').eq('user_id', current_user['username']).eq('status', 'completed').execute()
+    if len(all_rides.data) <= 1:  # This is their first completed ride
+        first_ride_bonus = 5.0
+        new_balance += first_ride_bonus
+    
     supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
     
     # Create transaction record
@@ -287,7 +334,19 @@ async def stop_ride(ride_id: str, finish_data: RideFinish, current_user: dict = 
     }
     supabase.table('transactions').insert(tx_data).execute()
     
-    return {"message": "Ride completed", "earned": coins}
+    # First ride bonus transaction
+    if first_ride_bonus > 0:
+        bonus_tx = {
+            'id': str(uuid.uuid4()),
+            'sender_id': 'SOLRIDE_BONUS',
+            'receiver_id': current_user['username'],
+            'amount': first_ride_bonus,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'type': 'first_ride_bonus'
+        }
+        supabase.table('transactions').insert(bonus_tx).execute()
+    
+    return {"message": "Ride completed", "earned": coins, "first_ride_bonus": first_ride_bonus}
 
 @api.get("/rides")
 async def get_rides(current_user: dict = Depends(get_current_user)):
@@ -379,6 +438,11 @@ class SpotCreate(BaseModel):
 
 @api.post("/spots")
 async def create_spot(spot: SpotCreate, current_user: dict = Depends(get_current_user)):
+    # Check balance
+    balance = current_user.get('wallet_balance') or 0
+    if balance < SPOT_COST:
+        raise HTTPException(status_code=400, detail=f"Need {SPOT_COST} DFQ to add a spot. You have {balance:.2f} DFQ.")
+    
     photo_urls = []
     for i, photo in enumerate(spot.photos[:5]):
         if photo.startswith("data:"):
@@ -410,8 +474,21 @@ async def create_spot(spot: SpotCreate, current_user: dict = Depends(get_current
         'status': 'approved',
         'created_at': datetime.now(timezone.utc).isoformat()
     }
-    supabase.table('spots').insert(spot_data).execute()
-    return {"message": "Spot added!", "id": spot_data['id']}
+   supabase.table('spots').insert(spot_data).execute()
+    
+    # Deduct DFQ
+    new_balance = balance - SPOT_COST
+    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': current_user['username'],
+        'receiver_id': 'SOLRIDE_SPOTS',
+        'amount': SPOT_COST,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'spot_purchase'
+    }).execute()
+    
+    return {"message": "Spot added!", "id": spot_data['id'], "cost": SPOT_COST}
 
 @api.get("/spots")
 async def get_spots():
