@@ -456,9 +456,11 @@ const SpotsMapPage = ({ currentUser }) => {
         return (
           <Card className="bg-zinc-900 border-2 rounded-none overflow-hidden" style={{ borderColor: typeInfo.color }}>
             {selectedSpot.photos && selectedSpot.photos.length > 0 && (
-              <div className="flex overflow-x-auto gap-0 snap-x">
+            <div className="flex overflow-x-auto gap-2 snap-x p-2">
                 {selectedSpot.photos.map((photo, i) => (
-                  <img key={i} src={photo} alt={`${selectedSpot.name} ${i+1}`} className="w-full h-44 object-cover flex-shrink-0 snap-center" />
+                  <img key={i} src={photo} alt={`${selectedSpot.name} ${i+1}`} className="w-64 h-64 object-cover flex-shrink-0 snap-center rounded border border-zinc-700" />
+                ))}
+              </div>
                 ))}
               </div>
             )}

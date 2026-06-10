@@ -284,8 +284,9 @@ const Layout = ({ children }) => {
     { path: '/', icon: Home, label: 'Home' },
   ];
 
-  return (
-    <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 max-w-md mx-auto relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900">
+   return (
+    <div className="bg-black min-h-screen">
+      <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 max-w-md mx-auto relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900">
        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50"></div>
       <main className="p-4 pt-8">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
@@ -297,6 +298,7 @@ const Layout = ({ children }) => {
         ))}
       </nav>
     </div>
+</div>
   );
 };
 
