@@ -389,27 +389,34 @@ async def wallet_login(data: WalletLogin):
 
 # --- bonus ---
 
-@api.post("/users/claim-profile-bonus")
-async def claim_profile_bonus(current_user: dict = Depends(get_current_user)):
-    # Already claimed? Block it.
-    if current_user.get('has_profile_bonus'):
-        raise HTTPException(400, "Bonus already claimed")
-    
-    # Required fields (self_comment is optional!)
-    required = [ 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
+@api.post("/users/claim-card-bonus")
+async def claim_card_bonus(current_user: dict = Depends(get_current_user)):
+    if current_user.get('has_card_bonus'):
+        raise HTTPException(status_code=400, detail="Bonus already claimed")
+
+    required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
     missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
-    
     if missing:
-        raise HTTPException(400, f"Still missing: {', '.join(missing)}")
-    
-    # Award bonus
+        raise HTTPException(status_code=400, detail=f"Still missing: {', '.join(missing)}")
+
     bonus = 5.0
+    new_balance = (current_user.get('wallet_balance') or 0) + bonus
+
     supabase.table('users').update({
-        'has_profile_bonus': True,
-        'wallet_balance': current_user['wallet_balance'] + bonus
-    }).eq('id', current_user['id']).execute()
-    
-    return { "success": True, "bonus": bonus }
+        'has_card_bonus': True,
+        'wallet_balance': new_balance
+    }).eq('username', current_user['username']).execute()
+
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': 'SOLRIDE_BONUS',
+        'receiver_id': current_user['username'],
+        'amount': bonus,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'card_bonus'
+    }).execute()
+
+    return {"success": True, "bonus": bonus, "new_balance": new_balance}
 
 @api.post("/users/link-wallet")
 async def link_wallet(data: WalletLink, current_user: dict = Depends(get_current_user)):
@@ -428,62 +435,11 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
     allowed = ["full_name", "birth_date", "deck_size", "deck_company", "fav_trick", "fav_spot", "self_comment"]
     update_data = {k: v for k, v in profile_data.items() if k in allowed}
 
-    profile_bonus = 0
     if update_data:
         supabase.table('users').update(update_data).eq('username', current_user['username']).execute()
 
-        updated = supabase.table('users').select('*').eq('username', current_user['username']).execute()
-        if updated.data:
-            u = updated.data[0]
-            fields = [u.get('deck_size'), u.get('deck_company'), u.get('fav_trick'), u.get('fav_spot'), u.get('self_comment')]
-            all_filled = all(f and str(f).strip() for f in fields)
-
-            if all_filled:
-                existing_bonus = supabase.table('transactions').select('id').eq('receiver_id', current_user['username']).eq('type', 'profile_bonus').execute()
-                if not existing_bonus.data:
-                    profile_bonus = 5.0
-                    new_balance = (u.get('wallet_balance') or 0) + profile_bonus
-                    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
-                    supabase.table('transactions').insert({
-                        'id': str(uuid.uuid4()),
-                        'sender_id': 'SOLRIDE_BONUS',
-                        'receiver_id': current_user['username'],
-                        'amount': profile_bonus,
-                        'timestamp': datetime.now(timezone.utc).isoformat(),
-                        'type': 'profile_bonus'
-                    }).execute()
-
+    return {"message": "Profile updated"}
     return {"message": "Profile updated", "profile_bonus": profile_bonus}
-
-# bonuses first ride 
-
-@api.post("/users/claim-profile-bonus")
-async def claim_profile_bonus(current_user: dict = Depends(get_current_user)):
-    if current_user.get('has_profile_bonus'):
-        raise HTTPException(status_code=400, detail="Bonus already claimed")
-    
-    required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
-    missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
-    
-    if missing:
-        raise HTTPException(status_code=400, detail=f"Still missing: {', '.join(missing)}")
-    
-    bonus = 5.0
-    new_balance = (current_user.get('wallet_balance') or 0) + bonus
-    
-    supabase.table('users').update({
-        'has_profile_bonus': True,
-        'wallet_balance': new_balance
-    }).eq('username', current_user['username']).execute()
-    
-    supabase.table('transactions').insert({
-        'id': str(uuid.uuid4()),
-        'sender_id': 'SOLRIDE_BONUS',
-        'receiver_id': current_user['username'],
-        'amount': bonus,
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'type': 'profile_bonus'
-    }).execute()
     
     return {"success": True, "bonus": bonus, "new_balance": new_balance}
 
@@ -522,60 +478,34 @@ async def start_ride(current_user: dict = Depends(get_current_user)):
         start_time=start_time
     )
 
-@api.post("/rides/{ride_id}/stop")
-async def stop_ride(ride_id: str, finish_data: RideFinish, current_user: dict = Depends(get_current_user)):
-    result = supabase.table('rides').select('*').eq('id', ride_id).eq('user_id', current_user['username']).execute()
-    if not result.data or result.data[0]['status'] != 'active':
-        raise HTTPException(status_code=404, detail="Active ride not found")
+@api.post("/users/claim-card-bonus")
+async def claim_card_bonus(current_user: dict = Depends(get_current_user)):
+    if current_user.get('has_card_bonus'):
+        raise HTTPException(status_code=400, detail="Bonus already claimed")
 
-    distance = finish_data.distance_meters
-    coins = distance / 100.0
-    end_time = datetime.now(timezone.utc)
+    required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
+    missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Still missing: {', '.join(missing)}")
 
-    supabase.table('rides').update({
-        'status': 'completed',
-        'end_time': end_time.isoformat(),
-        'distance_meters': distance,
-        'coins_earned': coins
-    }).eq('id', ride_id).execute()
+    bonus = 5.0
+    new_balance = (current_user.get('wallet_balance') or 0) + bonus
 
-    new_balance = (current_user.get('wallet_balance') or 0) + coins
+    supabase.table('users').update({
+        'has_card_bonus': True,
+        'wallet_balance': new_balance
+    }).eq('username', current_user['username']).execute()
 
-    first_ride_bonus = 0
-    all_rides = supabase.table('rides').select('id').eq('user_id', current_user['username']).eq('status', 'completed').execute()
-    if len(all_rides.data) <= 1:
-        first_ride_bonus = 5.0
-        new_balance += first_ride_bonus
-
-    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
-
-    tx_data = {
+    supabase.table('transactions').insert({
         'id': str(uuid.uuid4()),
-        'sender_id': 'SOLRIDE_EARN',
+        'sender_id': 'SOLRIDE_BONUS',
         'receiver_id': current_user['username'],
-        'amount': coins,
+        'amount': bonus,
         'timestamp': datetime.now(timezone.utc).isoformat(),
-        'type': 'ride_earning',
-        'distance': distance
-    }
-    supabase.table('transactions').insert(tx_data).execute()
+        'type': 'card_bonus'
+    }).execute()
 
-    if first_ride_bonus > 0:
-        supabase.table('transactions').insert({
-            'id': str(uuid.uuid4()),
-            'sender_id': 'SOLRIDE_BONUS',
-            'receiver_id': current_user['username'],
-            'amount': first_ride_bonus,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'type': 'first_ride_bonus'
-        }).execute()
-
-        return {
-        "message": "Ride completed",
-        "earned": coins,
-        "first_ride_bonus": first_ride_bonus,
-        "is_first_ride": first_ride_bonus > 0
-                }
+    return {"success": True, "bonus": bonus, "new_balance": new_balance}
 
 @api.get("/rides")
 async def get_rides(current_user: dict = Depends(get_current_user)):
