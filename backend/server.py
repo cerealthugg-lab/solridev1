@@ -153,12 +153,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 # --- Routes ---
 
 
-🐍 STEP 2 — Backend (Add to backend/server.py)
-Install profanity library
-cd backend
-pip install better-profanity
-pip freeze > requirements.txt
-Add at the TOP of server.py with other imports:
+
 from better_profanity import profanity
 from datetime import timedelta
 
