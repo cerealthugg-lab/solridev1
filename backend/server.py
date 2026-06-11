@@ -439,10 +439,6 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
         supabase.table('users').update(update_data).eq('username', current_user['username']).execute()
 
     return {"message": "Profile updated"}
-    return {"message": "Profile updated", "profile_bonus": profile_bonus}
-    
-    return {"success": True, "bonus": bonus, "new_balance": new_balance}
-
 
 @api.post("/rides/start", response_model=Ride)
 async def start_ride(current_user: dict = Depends(get_current_user)):
