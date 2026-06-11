@@ -168,7 +168,7 @@ CUSTOM_BAD_WORDS = [
     "нигер", "нигга", "хач", "чурк",
 ]
 profanity.add_censor_words(CUSTOM_BAD_WORDS)
-Add the chat endpoints (paste anywhere in the routes section):
+
 # --- Chat Configuration ---
 BAN_DURATIONS = [
     None,                        # Strike 1: warning only
