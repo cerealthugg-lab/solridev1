@@ -194,6 +194,30 @@ async def wallet_login(data: WalletLogin):
     access_token = create_access_token(data={"sub": user['username']})
     return {"access_token": access_token, "token_type": "bearer"}
 
+# --- bonus ---
+
+@api.post("/users/claim-profile-bonus")
+async def claim_profile_bonus(current_user: dict = Depends(get_current_user)):
+    # Already claimed? Block it.
+    if current_user.get('has_profile_bonus'):
+        raise HTTPException(400, "Bonus already claimed")
+    
+    # Required fields (self_comment is optional!)
+    required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
+    missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
+    
+    if missing:
+        raise HTTPException(400, f"Still missing: {', '.join(missing)}")
+    
+    # Award bonus
+    bonus = 5.0
+    supabase.table('users').update({
+        'has_profile_bonus': True,
+        'wallet_balance': current_user['wallet_balance'] + bonus
+    }).eq('id', current_user['id']).execute()
+    
+    return { "success": True, "bonus": bonus }
+
 @api.post("/users/link-wallet")
 async def link_wallet(data: WalletLink, current_user: dict = Depends(get_current_user)):
     result = supabase.table('users').select('username').eq('wallet_address', data.wallet_address).execute()
@@ -237,6 +261,39 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
                     }).execute()
 
     return {"message": "Profile updated", "profile_bonus": profile_bonus}
+
+# bonuses first ride 
+
+@api.post("/users/claim-profile-bonus")
+async def claim_profile_bonus(current_user: dict = Depends(get_current_user)):
+    if current_user.get('has_profile_bonus'):
+        raise HTTPException(status_code=400, detail="Bonus already claimed")
+    
+    required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
+    missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
+    
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Still missing: {', '.join(missing)}")
+    
+    bonus = 5.0
+    new_balance = (current_user.get('wallet_balance') or 0) + bonus
+    
+    supabase.table('users').update({
+        'has_profile_bonus': True,
+        'wallet_balance': new_balance
+    }).eq('username', current_user['username']).execute()
+    
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': 'SOLRIDE_BONUS',
+        'receiver_id': current_user['username'],
+        'amount': bonus,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'profile_bonus'
+    }).execute()
+    
+    return {"success": True, "bonus": bonus, "new_balance": new_balance}
+
 
 @api.post("/rides/start", response_model=Ride)
 async def start_ride(current_user: dict = Depends(get_current_user)):
@@ -320,7 +377,12 @@ async def stop_ride(ride_id: str, finish_data: RideFinish, current_user: dict = 
             'type': 'first_ride_bonus'
         }).execute()
 
-    return {"message": "Ride completed", "earned": coins, "first_ride_bonus": first_ride_bonus}
+        return {
+        "message": "Ride completed",
+        "earned": coins,
+        "first_ride_bonus": first_ride_bonus,
+        "is_first_ride": first_ride_bonus > 0
+                }
 
 @api.get("/rides")
 async def get_rides(current_user: dict = Depends(get_current_user)):

@@ -13,6 +13,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SpotsMapPage from './components/SpotsMapPage';
+import confetti from 'canvas-confetti';
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -106,6 +107,7 @@ const RideProvider = ({ children }) => {
   const [rideId, setRideId] = useState(null);
   const [distance, setDistance] = useState(0);
   const [coords, setCoords] = useState([]);
+    const [showFirstRideCelebration, setShowFirstRideCelebration] = useState(null);
   const wakeLock = useRef(null);
   const watchId = useRef(null);
 
@@ -248,14 +250,29 @@ const RideProvider = ({ children }) => {
 
   const stopRide = async () => {
     try {
-      const { data } = await api.post(`/rides/${rideId}/stop`, { distance_meters: distance });
+     const { data } = await api.post(`/rides/${rideId}/stop`, { distance_meters: distance });
+      const rideDistance = distance;
       setIsActive(false);
       setRideId(null);
       setCoords([]);
       setDistance(0);
-     toast.success(`Ride ended! You earned ${data.earned.toFixed(2)} DFQ`);
-      if (data.first_ride_bonus > 0) {
-        setTimeout(() => toast.success(`First ride bonus! +${data.first_ride_bonus} DFQ`), 1500);
+
+      if (data.is_first_ride) {
+        const duration = 4000;
+        const end = Date.now() + duration;
+        const colors = ['#D2FF00', '#FF3366', '#ffffff'];
+        (function frame() {
+          confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 }, colors });
+          confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 }, colors });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        })();
+        setShowFirstRideCelebration({
+          earned: data.earned,
+          bonus: data.first_ride_bonus,
+          distance: rideDistance
+        });
+      } else {
+        toast.success(`Ride ended! +${data.earned.toFixed(2)} DFQ`);
       }
       fetchUser();
     } catch (e) {
@@ -264,13 +281,71 @@ const RideProvider = ({ children }) => {
   };
 
   return (
-    <RideContext.Provider value={{ isActive, rideId, distance, startRide, stopRide }}>
+    <RideContext.Provider value={{ isActive, rideId, distance, startRide, stopRide, showFirstRideCelebration, setShowFirstRideCelebration }}>
       {children}
     </RideContext.Provider>
   );
 };
 
 const useRide = () => useContext(RideContext);
+
+// first ride celebration 
+
+const FirstRideCelebration = () => {
+  const { showFirstRideCelebration, setShowFirstRideCelebration } = useRide();
+  if (!showFirstRideCelebration) return null;
+
+  const { earned, bonus, distance } = showFirstRideCelebration;
+  const baseEarn = earned - bonus;
+
+  return (
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+      <div className="bg-zinc-900 border-2 border-[#D2FF00] rounded-none max-w-sm w-full p-8 text-center">
+        <div className="text-6xl mb-4 animate-bounce">🛹</div>
+        <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-2">
+          First Ride!
+        </h2>
+        <p className="text-[#D2FF00] text-sm uppercase tracking-widest font-bold mb-6">
+          Welcome to the crew
+        </p>
+
+        <div className="bg-black/50 border border-zinc-800 p-4 mb-6 space-y-2">
+          <div className="flex justify-between text-xs uppercase tracking-widest">
+            <span className="text-zinc-500">Distance</span>
+            <span className="text-white font-bold">{distance.toFixed(0)}m</span>
+          </div>
+          <div className="flex justify-between text-xs uppercase tracking-widest">
+            <span className="text-zinc-500">Earned</span>
+            <span className="text-white font-bold">{baseEarn.toFixed(2)} DFQ</span>
+          </div>
+          <div className="flex justify-between text-xs uppercase tracking-widest pt-2 border-t border-zinc-800">
+            <span className="text-[#D2FF00]">First-ride bonus</span>
+            <span className="text-[#D2FF00] font-bold">+{bonus.toFixed(0)} DFQ</span>
+          </div>
+          <div className="flex justify-between text-sm uppercase tracking-widest pt-2 border-t border-[#D2FF00]/30">
+            <span className="text-white font-bold">Total</span>
+            <span className="text-[#D2FF00] font-black text-lg">+{earned.toFixed(2)} DFQ</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-zinc-400 leading-relaxed mb-6 italic">
+          "Every ride from here matters. Every kilometer earns DFQ. Every spot you discover, every skater you meet — that's the network."
+        </p>
+
+        <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-6">
+          ▸ Add spots · Send DFQ · Find your crew
+        </p>
+
+        <Button
+          onClick={() => setShowFirstRideCelebration(null)}
+          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-12"
+        >
+          Let's Ride 🛹
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // --- Layout ---
 
@@ -284,23 +359,25 @@ const Layout = ({ children }) => {
     { path: '/', icon: Home, label: 'Home' },
   ];
 
-   return (
+  return (
     <div className="bg-black min-h-screen">
+      <FirstRideCelebration />
       <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 max-w-md mx-auto relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900">
-       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50"></div>
-      <main className="p-4 pt-8">{children}</main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
-        {navItems.map(({ path, icon: Icon, label }) => (
-          <Link key={path} to={path} className={`flex flex-col items-center gap-1 transition-all ${location.pathname === path ? 'text-[#D2FF00] scale-110' : 'text-zinc-500 hover:text-white'}`}>
-            <Icon size={24} strokeWidth={location.pathname === path ? 2.5 : 2} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-          </Link>
-        ))}
-      </nav>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50"></div>
+        <main className="p-4 pt-8">{children}</main>
+        <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
+          {navItems.map(({ path, icon: Icon, label }) => (
+            <Link key={path} to={path} className={`flex flex-col items-center gap-1 transition-all ${location.pathname === path ? 'text-[#D2FF00] scale-110' : 'text-zinc-500 hover:text-white'}`}>
+              <Icon size={24} strokeWidth={location.pathname === path ? 2.5 : 2} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </div>
-</div>
   );
 };
+
 
 // --- Pages ---
 
@@ -381,9 +458,25 @@ const AuthPage = () => {
     </div>
   );
 };
-
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, fetchUser } = useAuth();
+  
+  const handleClaimProfileBonus = async () => {
+    try {
+      const { data } = await api.post('/users/claim-profile-bonus');
+      toast.success(`🎉 +${data.bonus} DFQ claimed!`);
+      fetchUser();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Couldn't claim bonus");
+    }
+  };
+  
+  const required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
+  const filled = required.filter(f => user[f] && String(user[f]).trim() !== '').length;
+  const total = required.length;
+  const percent = Math.round((filled / total) * 100);
+  const isComplete = filled === total;
+  
   return (
     <div className="space-y-6">
    <div className="flex justify-between items-end">
@@ -432,6 +525,49 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </Link>
+
+# Profile bonus 
+
+{!user.has_profile_bonus && (
+  <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
+    <CardContent className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="text-white font-bold uppercase tracking-wider text-sm">
+            {isComplete ? '🎉 Profile Complete!' : 'Complete your profile'}
+          </p>
+          <p className="text-xs text-zinc-500">
+            {isComplete ? 'Claim your reward' : `${filled}/${total} fields filled`}
+          </p>
+        </div>
+        <span className="text-[#D2FF00] font-black text-lg">+5 DFQ</span>
+      </div>
+      <div className="h-1 bg-zinc-800 mb-3">
+        <div
+          className="h-full bg-[#D2FF00] transition-all duration-500"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {isComplete ? (
+        <Button
+          onClick={handleClaimProfileBonus}
+          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-10 text-xs"
+        >
+          Claim 5 DFQ
+        </Button>
+      ) : (
+        <Link to="/profile">
+          <Button className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-10 text-xs">
+            Fill profile →
+          </Button>
+        </Link>
+      )}
+      <p className="text-[10px] text-zinc-600 mt-2 text-center uppercase tracking-widest">
+        ▸ Note section is optional
+      </p>
+    </CardContent>
+  </Card>
+)}
 
 {/* Spots Map Button */}
       <Link to="/spots" className="block mt-3">

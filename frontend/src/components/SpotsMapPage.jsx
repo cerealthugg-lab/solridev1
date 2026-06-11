@@ -456,11 +456,7 @@ var SpotsMapPage = function(props) {
                 <span className="text-[10px] uppercase tracking-widest text-zinc-500">
                   Photos ({photos.length}/5)
                 </span>
-                {photos.length === 0 && (
-                  <span className="text-[10px] uppercase tracking-widest text-[#D2FF00]">
-                    +5 DFQ bonus
-                  </span>
-                )}
+                
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {photos.map(function(p, i) {
