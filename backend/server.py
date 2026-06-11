@@ -480,6 +480,63 @@ async def get_rides(current_user: dict = Depends(get_current_user)):
     result = supabase.table('rides').select('*').eq('user_id', current_user['username']).order('start_time', desc=True).limit(20).execute()
     return result.data
 
+# DFQ earning rate: 1 DFQ per 100 meters
+DFQ_PER_METER = 0.01
+FIRST_RIDE_BONUS = 10.0
+
+@api.post("/rides/{ride_id}/stop")
+async def stop_ride(ride_id: str, payload: RideFinish, current_user: dict = Depends(get_current_user)):
+    result = supabase.table('rides').select('*').eq('id', ride_id).eq('user_id', current_user['username']).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Ride not found")
+
+    ride = result.data[0]
+
+    # Idempotent: already finished → return last result, no double-credit
+    if ride.get('status') == 'finished':
+        return {
+            "earned": float(ride.get('coins_earned') or 0.0),
+            "is_first_ride": False,
+            "first_ride_bonus": 0.0,
+            "distance_meters": float(ride.get('distance_meters') or 0.0)
+        }
+
+    distance = max(0.0, float(payload.distance_meters or 0.0))
+    base_earn = round(distance * DFQ_PER_METER, 2)
+
+    finished = supabase.table('rides').select('id').eq('user_id', current_user['username']).eq('status', 'finished').limit(1).execute()
+    is_first_ride = len(finished.data) == 0
+    first_ride_bonus = FIRST_RIDE_BONUS if is_first_ride else 0.0
+    earned = round(base_earn + first_ride_bonus, 2)
+
+    end_time = datetime.now(timezone.utc).isoformat()
+    supabase.table('rides').update({
+        'status': 'finished',
+        'end_time': end_time,
+        'distance_meters': distance,
+        'coins_earned': earned
+    }).eq('id', ride_id).eq('status', 'active').execute()
+
+    new_balance = (current_user.get('wallet_balance') or 0) + earned
+    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', current_user['username']).execute()
+
+    if earned > 0:
+        supabase.table('transactions').insert({
+            'id': str(uuid.uuid4()),
+            'sender_id': 'SOLRIDE_RIDE',
+            'receiver_id': current_user['username'],
+            'amount': earned,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'type': 'ride_earning'
+        }).execute()
+
+    return {
+        "earned": earned,
+        "is_first_ride": is_first_ride,
+        "first_ride_bonus": first_ride_bonus,
+        "distance_meters": distance
+    }
+
 @api.post("/wallet/transfer")
 async def transfer_coins(req: TransferRequest, current_user: dict = Depends(get_current_user)):
     if req.amount <= 0:

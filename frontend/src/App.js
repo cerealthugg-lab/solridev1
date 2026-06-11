@@ -111,7 +111,11 @@ const RideProvider = ({ children }) => {
   const [rideId, setRideId] = useState(null);
   const [distance, setDistance] = useState(0);
   const [coords, setCoords] = useState([]);
-    const [showFirstRideCelebration, setShowFirstRideCelebration] = useState(null);
+  const [showFirstRideCelebration, setShowFirstRideCelebration] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const startLock = useRef(false);
+  const stopLock = useRef(false);
   const wakeLock = useRef(null);
   const watchId = useRef(null);
 
@@ -240,7 +244,10 @@ const RideProvider = ({ children }) => {
     };
   }, [isActive]);
 
-  const startRide = async () => {
+ const startRide = async () => {
+    if (startLock.current || isStarting || isActive) return;
+    startLock.current = true;
+    setIsStarting(true);
     try {
       const { data } = await api.post('/rides/start');
       setRideId(data.id);
@@ -249,12 +256,19 @@ const RideProvider = ({ children }) => {
       setCoords([]);
     } catch (e) {
       toast.error("Failed to start ride");
+    } finally {
+      setIsStarting(false);
+      setTimeout(() => { startLock.current = false; }, 400);
     }
   };
 
   const stopRide = async () => {
+    if (stopLock.current || isStopping || !isActive || !rideId) return;
+    stopLock.current = true;
+    setIsStopping(true);
     try {
      const { data } = await api.post(`/rides/${rideId}/stop`, { distance_meters: distance });
+        
       const rideDistance = distance;
       setIsActive(false);
       setRideId(null);
@@ -279,13 +293,20 @@ const RideProvider = ({ children }) => {
         toast.success(`Ride ended! +${data.earned.toFixed(2)} DFQ`);
       }
       fetchUser();
-    } catch (e) {
+        
+        
+  } catch (e) {
       toast.error("Failed to stop ride");
+    } finally {
+      setIsStopping(false);
+      setTimeout(() => { stopLock.current = false; }, 400);
     }
   };
 
   return (
-    <RideContext.Provider value={{ isActive, rideId, distance, startRide, stopRide, showFirstRideCelebration, setShowFirstRideCelebration }}>
+    <RideContext.Provider value={{ isActive, rideId, distance, startRide, stopRide, isStarting, isStopping, showFirstRideCelebration, setShowFirstRideCelebration }}>
+      
+      
       {children}
     </RideContext.Provider>
   );
@@ -662,9 +683,10 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
 
 
 
-
 const RidePage = () => {
-  const { isActive, distance, startRide, stopRide } = useRide();
+  const { isActive, distance, startRide, stopRide, isStarting, isStopping } = useRide();
+  const busy = isStarting || isStopping;
+  const noMultiTouch = { touchAction: 'manipulation', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
@@ -674,23 +696,49 @@ const RidePage = () => {
                 {distance.toFixed(0)}<span className="text-2xl text-zinc-600">m</span>
             </h1>
         </div>
-        
+
         {isActive ? (
-             <Button onClick={stopRide} className="w-full max-w-xs h-24 bg-[#FF3366] hover:bg-[#ff1f55] text-white text-2xl font-black uppercase tracking-widest rounded-none">
-                <Square className="mr-4 fill-current" /> Stop
+            <Button
+                data-testid="stop-ride-button"
+                onClick={stopRide}
+                disabled={busy}
+                style={noMultiTouch}
+                className="w-full max-w-xs h-24 bg-[#FF3366] hover:bg-[#ff1f55] active:scale-[0.97] disabled:opacity-80 disabled:cursor-not-allowed text-white text-2xl font-black uppercase tracking-widest rounded-none select-none transition-transform duration-75">
+                {isStopping ? (
+                  <>
+                    <span className="inline-block w-5 h-5 mr-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <><Square className="mr-4 fill-current" /> Stop</>
+                )}
             </Button>
         ) : (
-            <Button onClick={startRide} className="w-full max-w-xs h-24 bg-[#D2FF00] hover:bg-[#c2eb00] text-black text-2xl font-black uppercase tracking-widest rounded-none">
-                <Play className="mr-4 fill-current" /> Start Ride
+            <Button
+                data-testid="start-ride-button"
+                onClick={startRide}
+                disabled={busy}
+                style={noMultiTouch}
+                className="w-full max-w-xs h-24 bg-[#D2FF00] hover:bg-[#c2eb00] active:scale-[0.97] disabled:opacity-80 disabled:cursor-not-allowed text-black text-2xl font-black uppercase tracking-widest rounded-none select-none transition-transform duration-75">
+                {isStarting ? (
+                  <>
+                    <span className="inline-block w-5 h-5 mr-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <><Play className="mr-4 fill-current" /> Start Ride</>
+                )}
             </Button>
         )}
-        
-        <p className="text-zinc-500 text-xs uppercase tracking-widest">
-            {isActive ? "Tracking GPS..." : "Ready to shred?"}
+
+        <p className="text-zinc-500 text-xs uppercase tracking-widest min-h-[1rem]">
+            {isStopping ? "Saving your ride..." : isStarting ? "Loading ride..." : (isActive ? "Tracking GPS..." : "Ready to shred?")}
         </p>
     </div>
   );
 };
+
+
 
 const WalletPage = () => {
   const { user, fetchUser } = useAuth();
