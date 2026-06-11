@@ -48,6 +48,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 app = FastAPI()
+api = APIRouter(prefix="/api")
 
 # --- Models ---
 class User(BaseModel):
@@ -326,10 +327,6 @@ async def report_message(data: ReportMessage, current_user: dict = Depends(get_c
         supabase.table('messages').update({'hidden': True, 'flagged': True}).eq('id', data.message_id).execute()
 
     return {"ok": True}
-
-
-
-api = APIRouter(prefix="/api")
 
 @api.post("/auth/register")
 async def register(user: UserCreate):
