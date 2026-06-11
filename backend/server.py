@@ -11,6 +11,24 @@ from dotenv import load_dotenv
 from pathlib import Path
 from supabase import create_client, Client
 
+from better_profanity import profanity
+from datetime import timedelta
+
+# Initialize profanity filter with custom words (English + Russian/Belarusian)
+profanity.load_censor_words()
+CUSTOM_BAD_WORDS = [
+    # Russian common
+    "хуй", "хуя", "хуе", "пизд", "ебал", "ебан", "ебать", "блять", "блядь",
+    "сука", "сучка", "пидор", "пидар", "залупа", "мудак", "уебок", "ебло",
+    "ебуч", "наебал", "выебал", "охуе", "пиздец", "пиздос",
+    # Hate slurs (extend as needed)
+    "хач", "чурк",
+]
+profanity.add_censor_words(CUSTOM_BAD_WORDS)
+
+
+
+
 # Load env
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -133,6 +151,189 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # --- Routes ---
+
+
+🐍 STEP 2 — Backend (Add to backend/server.py)
+Install profanity library
+cd backend
+pip install better-profanity
+pip freeze > requirements.txt
+Add at the TOP of server.py with other imports:
+from better_profanity import profanity
+from datetime import timedelta
+
+# Initialize profanity filter with custom words (English + Russian/Belarusian)
+profanity.load_censor_words()
+CUSTOM_BAD_WORDS = [
+    # Russian common
+    "хуй", "хуя", "хуе", "пизд", "ебал", "ебан", "ебать", "блять", "блядь",
+    "сука", "сучка", "пидор", "пидар", "залупа", "мудак", "уебок", "ебло",
+    "ебуч", "наебал", "выебал", "охуе", "пиздец", "пиздос",
+    # Hate slurs (extend as needed)
+    "нигер", "нигга", "хач", "чурк",
+]
+profanity.add_censor_words(CUSTOM_BAD_WORDS)
+Add the chat endpoints (paste anywhere in the routes section):
+# --- Chat Configuration ---
+BAN_DURATIONS = [
+    None,                        # Strike 1: warning only
+    timedelta(hours=1),          # Strike 2: 1 hour
+    timedelta(days=1),           # Strike 3: 1 day
+    timedelta(weeks=1),          # Strike 4: 1 week
+    timedelta(days=30),          # Strike 5: 1 month
+]
+CHAT_COOLDOWN_SECONDS = 10
+MAX_MESSAGE_LENGTH = 500
+
+def get_ban_status(user_id: str):
+    res = supabase.table('chat_bans').select('*').eq('user_id', user_id).execute()
+    if not res.data:
+        return None
+    ban = res.data[0]
+    if ban.get('banned_until'):
+        banned_until = datetime.fromisoformat(ban['banned_until'].replace('Z', '+00:00'))
+        if banned_until > datetime.now(timezone.utc):
+            return ban
+    return None
+
+def escalate_ban(user_id: str, reason: str):
+    existing = supabase.table('chat_bans').select('*').eq('user_id', user_id).execute()
+    new_count = (existing.data[0]['strike_count'] + 1) if existing.data else 1
+    idx = min(new_count - 1, len(BAN_DURATIONS) - 1)
+    duration = BAN_DURATIONS[idx]
+    banned_until = (datetime.now(timezone.utc) + duration).isoformat() if duration else None
+
+    data = {
+        'user_id': user_id,
+        'strike_count': new_count,
+        'banned_until': banned_until,
+        'last_offense': reason,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    supabase.table('chat_bans').upsert(data).execute()
+    return new_count, banned_until
+
+
+@api.get("/chat/messages")
+async def get_messages(current_user: dict = Depends(get_current_user)):
+    res = supabase.table('messages').select('*').eq(
+        'hidden', False
+    ).order('created_at', desc=True).limit(100).execute()
+    # return oldest first for chat display
+    return list(reversed(res.data))
+
+
+@api.get("/chat/ban-status")
+async def get_my_ban_status(current_user: dict = Depends(get_current_user)):
+    ban = get_ban_status(current_user['id'])
+    if ban:
+        return {
+            "banned": True,
+            "banned_until": ban['banned_until'],
+            "strike_count": ban['strike_count'],
+            "reason": ban.get('last_offense', 'rules violation')
+        }
+    return {"banned": False, "strike_count": 0}
+
+
+class ChatSend(BaseModel):
+    content: str
+    reply_to: Optional[str] = None
+
+
+@api.post("/chat/send")
+async def send_message(msg: ChatSend, current_user: dict = Depends(get_current_user)):
+    # 1. Length check
+    content = msg.content.strip()
+    if not content:
+        raise HTTPException(400, "Message is empty")
+    if len(content) > MAX_MESSAGE_LENGTH:
+        raise HTTPException(400, f"Max {MAX_MESSAGE_LENGTH} characters")
+
+    # 2. Ban check
+    ban = get_ban_status(current_user['id'])
+    if ban:
+        raise HTTPException(403, {
+            "type": "banned",
+            "banned_until": ban['banned_until'],
+            "strike_count": ban['strike_count']
+        })
+
+    # 3. Cooldown check
+    last = supabase.table('messages').select('created_at').eq(
+        'user_id', current_user['id']
+    ).order('created_at', desc=True).limit(1).execute()
+
+    if last.data:
+        last_time = datetime.fromisoformat(last.data[0]['created_at'].replace('Z', '+00:00'))
+        seconds_since = (datetime.now(timezone.utc) - last_time).total_seconds()
+        if seconds_since < CHAT_COOLDOWN_SECONDS:
+            wait = int(CHAT_COOLDOWN_SECONDS - seconds_since)
+            raise HTTPException(429, {
+                "type": "cooldown",
+                "wait_seconds": wait
+            })
+
+    # 4. Profanity check
+    if profanity.contains_profanity(content.lower()):
+        strikes, banned_until = escalate_ban(current_user['id'], 'profanity')
+        raise HTTPException(400, {
+            "type": "profanity",
+            "strikes": strikes,
+            "banned_until": banned_until
+        })
+
+    # 5. Resolve reply_to (fetch original for snapshot)
+    reply_username = None
+    reply_content = None
+    if msg.reply_to:
+        orig = supabase.table('messages').select('username, content').eq('id', msg.reply_to).execute()
+        if orig.data:
+            reply_username = orig.data[0]['username']
+            reply_content = orig.data[0]['content'][:80]
+
+    # 6. Insert
+    new_msg = {
+        'id': str(uuid.uuid4()),
+        'user_id': current_user['id'],
+        'username': current_user['username'],
+        'content': content,
+        'reply_to': msg.reply_to,
+        'reply_to_username': reply_username,
+        'reply_to_content': reply_content,
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    supabase.table('messages').insert(new_msg).execute()
+    return {"ok": True, "message": new_msg}
+
+
+class ReportMessage(BaseModel):
+    message_id: str
+    reason: Optional[str] = "inappropriate"
+
+
+@api.post("/chat/report")
+async def report_message(data: ReportMessage, current_user: dict = Depends(get_current_user)):
+    try:
+        supabase.table('message_reports').insert({
+            'id': str(uuid.uuid4()),
+            'message_id': data.message_id,
+            'reporter_id': current_user['id'],
+            'reason': data.reason,
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+    except Exception:
+        raise HTTPException(400, "Already reported")
+
+    # Auto-hide if 3+ unique reports
+    reports = supabase.table('message_reports').select('id').eq('message_id', data.message_id).execute()
+    if len(reports.data) >= 3:
+        supabase.table('messages').update({'hidden': True, 'flagged': True}).eq('id', data.message_id).execute()
+
+    return {"ok": True}
+
+
+
 api = APIRouter(prefix="/api")
 
 @api.post("/auth/register")
@@ -203,7 +404,7 @@ async def claim_profile_bonus(current_user: dict = Depends(get_current_user)):
         raise HTTPException(400, "Bonus already claimed")
     
     # Required fields (self_comment is optional!)
-    required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
+    required = [ 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
     missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
     
     if missing:

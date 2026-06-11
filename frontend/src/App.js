@@ -15,6 +15,10 @@ import 'leaflet/dist/leaflet.css';
 import SpotsMapPage from './components/SpotsMapPage';
 import confetti from 'canvas-confetti';
 
+import ChatPage from './components/ChatPage';
+import { MessageCircle } from 'lucide-react';   
+// add to lucide imports
+
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -471,7 +475,7 @@ const Dashboard = () => {
     }
   };
   
-  const required = ['full_name', 'deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
+  const required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
   const filled = required.filter(f => user[f] && String(user[f]).trim() !== '').length;
   const total = required.length;
   const percent = Math.round((filled / total) * 100);
@@ -548,6 +552,28 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
         </Card>
       </Link>
 
+
+<Link to="/chat" className="block mt-3">
+  <Card className="bg-zinc-900 border-zinc-800 rounded-none hover:border-[#D2FF00] transition-colors">
+    <CardContent className="p-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <MessageCircle className="text-zinc-500" />
+        <div>
+          <span className="font-bold uppercase tracking-wider text-sm text-white block">
+            Global Chat
+          </span>
+          <span className="text-xs text-zinc-500">Talk to skaters worldwide</span>
+        </div>
+      </div>
+      <span className="text-[10px] text-[#D2FF00] font-black uppercase tracking-widest">
+        Live
+      </span>
+    </CardContent>
+  </Card>
+</Link>
+
+
+
       <Link to="/profile" className="block mt-6">
         <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
           <CardHeader>
@@ -587,12 +613,7 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
           </CardContent>
         </Card>
       </Link>
-    </div>
-  );
-};
-
-
-
+   
 {!user.has_profile_bonus && (
   <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
     <CardContent className="p-4">
@@ -633,6 +654,14 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
     </CardContent>
   </Card>
 )} 
+
+
+</div>
+  );
+};
+
+
+
 
 const RidePage = () => {
   const { isActive, distance, startRide, stopRide } = useRide();
@@ -1240,6 +1269,13 @@ const FindMyToolPage = () => {
 
 // --- App Root ---
 
+
+const ChatWrapper = () => {
+  const { user } = useAuth();
+  return <ChatPage currentUser={user} />;
+};
+
+
 const SpotsMapWrapper = () => {
   const { user } = useAuth();
   return <SpotsMapPage currentUser={user} />;
@@ -1249,11 +1285,13 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster theme="dark" position="top-center" />
+
       <AuthProvider>
         <RideProvider>
           <Layout>
               <Routes>
 <Route path="/spots" element={<PrivateRoute><SpotsMapWrapper /></PrivateRoute>} />
+<Route path="/chat" element={<PrivateRoute><ChatWrapper /></PrivateRoute>} />
                 <Route path="/welcome" element={<Welcome />} /> 
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
