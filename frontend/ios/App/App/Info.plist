@@ -3,9 +3,6 @@
 <plist version="1.0">
 <dict>
     
-    
-    /* ====solride spotmaps add==== */
-    
     <key>NSLocationWhenInUseUsageDescription</key>
 <string>Solride uses your location to track rides, drop spots on the map, and let other riders see you in real time.</string>
 
