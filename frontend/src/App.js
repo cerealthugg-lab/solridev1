@@ -477,6 +477,8 @@ const Dashboard = () => {
   const percent = Math.round((filled / total) * 100);
   const isComplete = filled === total;
   
+const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
+
   return (
     <div className="space-y-6">
    <div className="flex justify-between items-end">
@@ -526,48 +528,7 @@ const Dashboard = () => {
         </Card>
       </Link>
 
-# Profile bonus 
 
-{!user.has_profile_bonus && (
-  <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <p className="text-white font-bold uppercase tracking-wider text-sm">
-            {isComplete ? '🎉 Profile Complete!' : 'Complete your profile'}
-          </p>
-          <p className="text-xs text-zinc-500">
-            {isComplete ? 'Claim your reward' : `${filled}/${total} fields filled`}
-          </p>
-        </div>
-        <span className="text-[#D2FF00] font-black text-lg">+5 DFQ</span>
-      </div>
-      <div className="h-1 bg-zinc-800 mb-3">
-        <div
-          className="h-full bg-[#D2FF00] transition-all duration-500"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      {isComplete ? (
-        <Button
-          onClick={handleClaimProfileBonus}
-          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-10 text-xs"
-        >
-          Claim 5 DFQ
-        </Button>
-      ) : (
-        <Link to="/profile">
-          <Button className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-10 text-xs">
-            Fill profile →
-          </Button>
-        </Link>
-      )}
-      <p className="text-[10px] text-zinc-600 mt-2 text-center uppercase tracking-widest">
-        ▸ Note section is optional
-      </p>
-    </CardContent>
-  </Card>
-)}
 
 {/* Spots Map Button */}
       <Link to="/spots" className="block mt-3">
@@ -629,6 +590,49 @@ const Dashboard = () => {
     </div>
   );
 };
+
+
+
+{!user.has_profile_bonus && (
+  <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
+    <CardContent className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="text-white font-bold uppercase tracking-wider text-sm">
+            {isComplete ? '🎉 Profile Complete!' : 'Complete your profile'}
+          </p>
+         <p className="text-xs text-zinc-500">
+  {isComplete ? 'Claim your reward' : `${filled}/${total} · missing: ${missing.join(', ').replace(/_/g, ' ')}`}
+</p>
+        </div>
+        <span className="text-[#D2FF00] font-black text-lg">+5 DFQ</span>
+      </div>
+      <div className="h-1 bg-zinc-800 mb-3">
+        <div
+          className="h-full bg-[#D2FF00] transition-all duration-500"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {isComplete ? (
+        <Button
+          onClick={handleClaimProfileBonus}
+          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-10 text-xs"
+        >
+          Claim 5 DFQ
+        </Button>
+      ) : (
+        <Link to="/profile">
+          <Button className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-10 text-xs">
+            Fill profile →
+          </Button>
+        </Link>
+      )}
+      <p className="text-[10px] text-zinc-600 mt-2 text-center uppercase tracking-widest">
+        ▸ Note section is optional
+      </p>
+    </CardContent>
+  </Card>
+)} 
 
 const RidePage = () => {
   const { isActive, distance, startRide, stopRide } = useRide();
