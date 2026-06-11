@@ -265,13 +265,15 @@ function ChatPage(props) {
   maxLength={500}
   rows={1}
   className="flex-1 bg-zinc-900 text-white border border-transparent rounded-3xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D2FF00]/50 disabled:opacity-50 transition-colors resize-none leading-relaxed max-h-32 overflow-y-auto"
-/>
       
-      onInput={function (e) {
+     onInput={function (e) {
   e.target.style.height = 'auto';
   e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
 }}
+    
       
+/>
+
       
     <Button
       onClick={handleSend}

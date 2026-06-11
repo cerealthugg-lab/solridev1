@@ -2,13 +2,62 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover, shrink-to-fit=no"
+        />
         <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=no" />
         <meta name="description" content="SOLRIDE - Ride. Track. Earn." />
         <title>SOLRIDE</title>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
+        <script>
+            // Lock the web app at native scale: kill pinch-zoom and double-tap-zoom
+            // on iOS Safari so the web behaves exactly like the Capacitor build.
+            // The Leaflet map opts back in via CSS (.leaflet-container { touch-action: auto }).
+            (function () {
+                var block = function (e) {
+                    if (
+                        e.target &&
+                        e.target.closest &&
+                        e.target.closest('.leaflet-container')
+                    ) {
+                        return;
+                    }
+                    e.preventDefault();
+                };
+                document.addEventListener('gesturestart', block, { passive: false });
+                document.addEventListener('gesturechange', block, { passive: false });
+                document.addEventListener('gestureend', block, { passive: false });
+
+                // Block iOS double-tap zoom (Safari) outside the map
+                var lastTouch = 0;
+                document.addEventListener(
+                    'touchend',
+                    function (e) {
+                        var now = Date.now();
+                        if (
+                            e.target &&
+                            e.target.closest &&
+                            e.target.closest('.leaflet-container')
+                        ) {
+                            lastTouch = now;
+                            return;
+                        }
+                        if (now - lastTouch <= 350) {
+                            e.preventDefault();
+                        }
+                        lastTouch = now;
+                    },
+                    { passive: false }
+                );
+            })();
+        </script>
     </body>
 </html>

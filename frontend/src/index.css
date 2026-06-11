@@ -2,19 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === Native-parity lock: scrollable, NOT zoomable ===
+   Mirrors Capacitor/WKWebView behavior on the web build.
+   Maps & explicitly opted-in elements remain zoomable. */
+html,
 body {
     margin: 0;
+    height: 100%;
+    width: 100%;
+    /* Prevent pinch-to-zoom on the page itself */
+    touch-action: pan-x pan-y;
+    /* Prevent iOS auto text-size bumping in landscape */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Stop rubber-band / overscroll bounce */
+    overscroll-behavior: none;
+    /* Block the iOS callout/selection that triggers magnify */
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Belt & suspenders: kill pinch zoom on every descendant */
+* {
+    touch-action: pan-x pan-y;
+}
+
+/* Allow normal text selection in inputs */
+input,
+textarea,
+[contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* === Map opt-in: maps MUST stay zoomable === */
+.leaflet-container,
+.leaflet-container * {
+    touch-action: auto !important;
+}
+
+/* Generic escape hatch for any other element that needs to be pinch-zoomable */
+.zoomable,
+.zoomable * {
+    touch-action: auto !important;
+}
+
+body {
     font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
         "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
         sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 @layer base {
