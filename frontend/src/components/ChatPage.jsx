@@ -175,47 +175,66 @@ function ChatPage(props) {
             No messages yet · Be the first
           </p>
         )}
-        {messages.map(function (msg) {
-          var isMine = msg.user_id === (currentUser && currentUser.id);
-          return (
-            <div key={msg.id} className={'flex flex-col ' + (isMine ? 'items-end' : 'items-start')}>
-              <div className={'max-w-[80%] ' + (isMine ? 'items-end' : 'items-start')}>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className={'text-[10px] uppercase tracking-widest font-bold ' + (isMine ? 'text-[#D2FF00]' : 'text-zinc-400')}>
-                    {msg.username}
-                  </span>
-                  <span className="text-[9px] text-zinc-600">{formatTime(msg.created_at)}</span>
-                </div>
-                {msg.reply_to_username && (
-                  <div className="text-[10px] text-zinc-500 border-l-2 border-zinc-700 pl-2 mb-1 italic">
-                    ↪ {msg.reply_to_username}: {msg.reply_to_content}
-                  </div>
-                )}
-                <div className={'p-2 text-sm break-words ' + (isMine ? 'bg-[#D2FF00] text-black' : 'bg-zinc-900 text-white border border-zinc-800')}>
-                  {msg.content}
-                </div>
-                <div className="flex gap-2 mt-1">
-                  {!isMine && (
-                    <button
-                      onClick={function () { setReplyTo(msg); }}
-                      className="text-[10px] text-zinc-600 hover:text-[#D2FF00] uppercase tracking-widest flex items-center gap-1"
-                    >
-                      <Reply size={10} /> Reply
-                    </button>
-                  )}
-                  {!isMine && (
-                    <button
-                      onClick={function () { handleReport(msg); }}
-                      className="text-[10px] text-zinc-600 hover:text-[#FF3366] uppercase tracking-widest flex items-center gap-1"
-                    >
-                      <Flag size={10} /> Report
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+          
+          
+   {messages.map(function (msg) {
+  var isMine = msg.user_id === (currentUser && currentUser.id);
+  return (
+    <div key={msg.id} className={'flex flex-col ' + (isMine ? 'items-end' : 'items-start')}>
+      <div className="max-w-[78%]">
+        {!isMine && (
+          <div className="flex items-baseline gap-2 mb-1 px-2">
+            <span className="text-[10px] uppercase tracking-[0.15em] font-black text-zinc-400">
+              {msg.username}
+            </span>
+            <span className="text-[9px] text-zinc-600">{formatTime(msg.created_at)}</span>
+          </div>
+        )}
+
+        {msg.reply_to_username && (
+          <div className={
+            'text-[10px] text-zinc-500 border-l-2 pl-2 mb-1 italic ' +
+            (isMine ? 'border-[#D2FF00]/40 text-right' : 'border-zinc-700')
+          }>
+            ↪ {msg.reply_to_username}: {msg.reply_to_content}
+          </div>
+        )}
+
+        <div className={
+          'px-4 py-2.5 text-sm break-words leading-relaxed shadow-sm ' +
+          (isMine
+            ? 'bg-[#D2FF00] text-black rounded-3xl rounded-br-md'
+            : 'bg-zinc-900 text-white rounded-3xl rounded-bl-md')
+        }>
+          {msg.content}
+        </div>
+
+        {isMine && (
+          <span className="text-[9px] text-zinc-600 mt-1 px-2 self-end">
+            {formatTime(msg.created_at)}
+          </span>
+        )}
+
+        {!isMine && (
+          <div className="flex gap-3 mt-1.5 px-2">
+            <button
+              onClick={function () { setReplyTo(msg); }}
+              className="text-[10px] text-zinc-600 hover:text-[#D2FF00] uppercase tracking-widest flex items-center gap-1 transition-colors"
+            >
+              <Reply size={10} /> Reply
+            </button>
+            <button
+              onClick={function () { handleReport(msg); }}
+              className="text-[10px] text-zinc-600 hover:text-[#FF3366] uppercase tracking-widest flex items-center gap-1 transition-colors"
+            >
+              <Flag size={10} /> Report
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+})}
       </div>
 
       {/* Reply preview */}
@@ -232,33 +251,33 @@ function ChatPage(props) {
       )}
 
       {/* Input */}
-      <div className="border-t border-zinc-800 p-3 bg-black sticky bottom-0">
-        <div className="flex gap-2 items-center">
-          <input
-            value={input}
-            onChange={function (e) { setInput(e.target.value); }}
-            onKeyDown={function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            disabled={ban || cooldown > 0}
-            placeholder={
-              ban ? 'You are banned' :
-              cooldown > 0 ? 'Wait ' + cooldown + 's...' :
-              'Drop a message...'
-            }
-            maxLength={500}
-            className="flex-1 bg-zinc-900 text-white border border-zinc-800 px-3 h-10 text-sm focus:outline-none focus:border-[#D2FF00] disabled:opacity-50"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={ban || cooldown > 0 || !input.trim() || sending}
-            className="bg-[#D2FF00] text-black hover:bg-[#c2eb00] h-10 px-4 rounded-none disabled:opacity-40"
-          >
-            <Send size={16} />
-          </Button>
-        </div>
-        <p className="text-[9px] text-zinc-600 mt-1 text-center uppercase tracking-widest">
-          Be respectful · auto-filter active · 80-day retention
-        </p>
-      </div>
+      <div className="border-t border-zinc-900 p-3 bg-black sticky bottom-0">
+  <div className="flex gap-2 items-center">
+    <input
+      value={input}
+      onChange={function (e) { setInput(e.target.value); }}
+      onKeyDown={function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+      disabled={ban || cooldown > 0}
+      placeholder={
+        ban ? 'You are banned' :
+        cooldown > 0 ? 'Wait ' + cooldown + 's...' :
+        'Drop a message...'
+      }
+      maxLength={500}
+      className="flex-1 bg-zinc-900 text-white border border-transparent rounded-full px-4 h-11 text-sm focus:outline-none focus:border-[#D2FF00]/50 disabled:opacity-50 transition-colors"
+    />
+    <Button
+      onClick={handleSend}
+      disabled={ban || cooldown > 0 || !input.trim() || sending}
+      className="bg-[#D2FF00] text-black hover:bg-[#c2eb00] h-11 w-11 p-0 rounded-full disabled:opacity-40 transition-all hover:scale-105 active:scale-95"
+    >
+      <Send size={16} />
+    </Button>
+  </div>
+  <p className="text-[9px] text-zinc-700 mt-2 text-center uppercase tracking-[0.2em]">
+    Be respectful · auto-filter active
+  </p>
+</div>
     </div>
   );
 }
