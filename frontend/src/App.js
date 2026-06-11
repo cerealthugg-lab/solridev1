@@ -575,20 +575,18 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
 
 
 <Link to="/chat" className="block mt-3">
-  <Card className="bg-zinc-900 border-zinc-800 rounded-none hover:border-[#D2FF00] transition-colors">
+  <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
     <CardContent className="p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <MessageCircle className="text-zinc-500" />
+        <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#D2FF00] group-hover:text-black transition-colors text-white">
+          <MessageCircle size={20} />
+        </div>
         <div>
-          <span className="font-bold uppercase tracking-wider text-sm text-white block">
-            Global Chat
-          </span>
+          <span className="font-bold uppercase tracking-wider text-sm text-white block">Global Chat</span>
           <span className="text-xs text-zinc-500">Talk to skaters worldwide</span>
         </div>
       </div>
-      <span className="text-[10px] text-[#D2FF00] font-black uppercase tracking-widest">
-        Live
-      </span>
+      <div className="text-xs text-[#D2FF00] font-mono uppercase">Live</div>
     </CardContent>
   </Card>
 </Link>
