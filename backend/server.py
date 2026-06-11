@@ -474,35 +474,6 @@ async def start_ride(current_user: dict = Depends(get_current_user)):
         start_time=start_time
     )
 
-@api.post("/users/claim-card-bonus")
-async def claim_card_bonus(current_user: dict = Depends(get_current_user)):
-    if current_user.get('has_card_bonus'):
-        raise HTTPException(status_code=400, detail="Bonus already claimed")
-
-    required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date']
-    missing = [f for f in required if not current_user.get(f) or str(current_user.get(f)).strip() == '']
-    if missing:
-        raise HTTPException(status_code=400, detail=f"Still missing: {', '.join(missing)}")
-
-    bonus = 5.0
-    new_balance = (current_user.get('wallet_balance') or 0) + bonus
-
-    supabase.table('users').update({
-        'has_card_bonus': True,
-        'wallet_balance': new_balance
-    }).eq('username', current_user['username']).execute()
-
-    supabase.table('transactions').insert({
-        'id': str(uuid.uuid4()),
-        'sender_id': 'SOLRIDE_BONUS',
-        'receiver_id': current_user['username'],
-        'amount': bonus,
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'type': 'card_bonus'
-    }).execute()
-
-    return {"success": True, "bonus": bonus, "new_balance": new_balance}
-
 @api.get("/rides")
 async def get_rides(current_user: dict = Depends(get_current_user)):
     result = supabase.table('rides').select('*').eq('user_id', current_user['username']).order('start_time', desc=True).limit(20).execute()

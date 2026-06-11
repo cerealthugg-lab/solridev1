@@ -465,9 +465,9 @@ const AuthPage = () => {
 const Dashboard = () => {
   const { user, fetchUser } = useAuth();
   
-  const handleClaimProfileBonus = async () => {
+  const handleClaimCardBonus = async () => {
     try {
-      const { data } = await api.post('/users/claim-profile-bonus');
+      const { data } = await api.post('/users/claim-card-bonus');
       toast.success(`🎉 +${data.bonus} DFQ claimed!`);
       fetchUser();
     } catch (e) {
@@ -614,7 +614,7 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
         </Card>
       </Link>
    
-{!user.has_profile_bonus && (
+{!user.has_card_bonus && (
   <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
     <CardContent className="p-4">
       <div className="flex items-center justify-between mb-2">
@@ -636,7 +636,7 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
       </div>
       {isComplete ? (
         <Button
-          onClick={handleClaimProfileBonus}
+          onClick={handleClaimCardBonus}
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-10 text-xs"
         >
           Claim 5 DFQ
@@ -832,8 +832,8 @@ const ProfilePage = () => {
         try {
            const { data } = await api.put('/users/me', formData);
             toast.success("Profile Updated");
-            if (data.profile_bonus > 0) {
-                setTimeout(() => toast.success(`Profile complete! +${data.profile_bonus} DFQ bonus`), 1000);
+            if (data.card_bonus > 0) {
+                setTimeout(() => toast.success(`Profile complete! +${data.card_bonus} DFQ bonus`), 1000);
             }
             await fetchUser();
             navigate('/');
