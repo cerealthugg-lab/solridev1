@@ -178,7 +178,7 @@ function ChatPage(props) {
           
           
    {messages.map(function (msg) {
-  var isMine = msg.user_id === (currentUser && currentUser.id);
+  var isMine = msg.user_id === (currentUser && currentUser.username);
   return (
     <div key={msg.id} className={'flex flex-col ' + (isMine ? 'items-end' : 'items-start')}>
       <div className="max-w-[78%]">
@@ -253,19 +253,26 @@ function ChatPage(props) {
       {/* Input */}
       <div className="border-t border-zinc-900 p-3 bg-black sticky bottom-0">
   <div className="flex gap-2 items-center">
-    <input
-      value={input}
-      onChange={function (e) { setInput(e.target.value); }}
-      onKeyDown={function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-      disabled={ban || cooldown > 0}
-      placeholder={
-        ban ? 'You are banned' :
-        cooldown > 0 ? 'Wait ' + cooldown + 's...' :
-        'Drop a message...'
-      }
-      maxLength={500}
-      className="flex-1 bg-zinc-900 text-white border border-transparent rounded-full px-4 h-11 text-sm focus:outline-none focus:border-[#D2FF00]/50 disabled:opacity-50 transition-colors"
-    />
+  <textarea
+  value={input}
+  onChange={function (e) { setInput(e.target.value); }}
+  disabled={ban || cooldown > 0}
+  placeholder={
+    ban ? 'You are banned' :
+    cooldown > 0 ? 'Wait ' + cooldown + 's...' :
+    'Drop a message...'
+  }
+  maxLength={500}
+  rows={1}
+  className="flex-1 bg-zinc-900 text-white border border-transparent rounded-3xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D2FF00]/50 disabled:opacity-50 transition-colors resize-none leading-relaxed max-h-32 overflow-y-auto"
+/>
+      
+      onInput={function (e) {
+  e.target.style.height = 'auto';
+  e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+}}
+      
+      
     <Button
       onClick={handleSend}
       disabled={ban || cooldown > 0 || !input.trim() || sending}
