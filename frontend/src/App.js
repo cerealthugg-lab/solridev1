@@ -377,6 +377,45 @@ const FirstRideCelebration = () => {
 const Layout = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  // Global presence: while the app is open and the user is logged in,
+  // ping the backend every 30s. That ping also keeps the user counted
+  // as "online" even when they're on /wallet, /profile, /trucks, etc.
+  // We also poll the count every 15s for the badge in the nav.
+  useEffect(() => {
+    if (!user) return;
+
+    let alive = true;
+    const ping = () => { api.post('/presence/ping').catch(() => {}); };
+    const fetchCount = () => {
+      api.get('/presence/count')
+        .then((r) => { if (alive) setOnlineCount(r.data.online || 0); })
+        .catch(() => {});
+    };
+
+    ping();
+    fetchCount();
+    const p = setInterval(ping, 30000);
+    const c = setInterval(fetchCount, 15000);
+
+    // Re-ping when the tab returns to the foreground so the count
+    // updates quickly after the phone is unlocked.
+    const onVis = () => {
+      if (document.visibilityState === 'visible') {
+        ping();
+        fetchCount();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      alive = false;
+      clearInterval(p);
+      clearInterval(c);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [user]);
 
   if (!user) return <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black">{children}</div>;
 
@@ -389,6 +428,23 @@ const Layout = ({ children }) => {
       <FirstRideCelebration />
       <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 max-w-md mx-auto relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50"></div>
+
+        {/* X RIDERS ONLINE badge - visible on every authed page */}
+        <div
+          data-testid="online-riders-badge"
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-50 max-w-md w-fit pointer-events-none"
+        >
+          <div className="flex items-center gap-2 px-3 py-1 bg-black/70 backdrop-blur-md border border-zinc-800 rounded-full">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[#D2FF00] opacity-75 animate-ping"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D2FF00]"></span>
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+              <span className="text-[#D2FF00]">{onlineCount}</span> rider{onlineCount === 1 ? '' : 's'} online
+            </span>
+          </div>
+        </div>
+
         <main className="p-4 pt-8">{children}</main>
         <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
           {navItems.map(({ path, icon: Icon, label }) => (

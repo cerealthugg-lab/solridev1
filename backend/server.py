@@ -709,6 +709,61 @@ async def remove_rider_location(current_user: dict = Depends(get_current_user)):
     supabase.table('rider_locations').delete().eq('username', current_user['username']).execute()
     return {"message": "Location removed"}
 
+# --- Presence (online count) ---
+# Lightweight heartbeat used to compute "X RIDERS ONLINE" across the app.
+# Reuses the existing rider_locations table (no schema change). The lat/lng
+# are not displayed; they just keep updated_at fresh so the user counts
+# as online. Real GPS pins remain a future DFQ-paid feature.
+
+@api.post("/presence/ping")
+async def presence_ping(current_user: dict = Depends(get_current_user)):
+    now = datetime.now(timezone.utc).isoformat()
+    existing = supabase.table('rider_locations').select('username').eq(
+        'username', current_user['username']
+    ).execute()
+    if existing.data:
+        supabase.table('rider_locations').update(
+            {'updated_at': now}
+        ).eq('username', current_user['username']).execute()
+    else:
+        supabase.table('rider_locations').insert({
+            'username': current_user['username'],
+            'lat': 0.0,
+            'lng': 0.0,
+            'updated_at': now,
+        }).execute()
+    return {"ok": True}
+
+
+@api.get("/presence/count")
+async def presence_count(current_user: dict = Depends(get_current_user)):
+    """
+    Online = anyone who matches AT LEAST ONE of:
+      - has a ride with status='active' (riding right now), OR
+      - has pinged in the last 2 minutes (app is open on any page).
+    Returns a single integer; no locations leak out.
+    """
+    try:
+        from datetime import timedelta
+        online = set()
+
+        rides = supabase.table('rides').select('user_id').eq(
+            'status', 'active'
+        ).execute()
+        for r in (rides.data or []):
+            online.add(r['user_id'])
+
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=2)).isoformat()
+        recent = supabase.table('rider_locations').select('username').gte(
+            'updated_at', cutoff
+        ).execute()
+        for r in (recent.data or []):
+            online.add(r['username'])
+
+        return {"online": len(online)}
+    except Exception:
+        return {"online": 0}
+
 app.include_router(api)
 
 from starlette.middleware.cors import CORSMiddleware
