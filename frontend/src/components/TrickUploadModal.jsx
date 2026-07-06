@@ -107,69 +107,69 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
 
   return (
     <div
-      data-testid=\"trick-upload-modal\"
-      className=\"fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm px-3\"
+      data-testid="trick-upload-modal"
+      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm px-3"
       onClick={onClose}
     >
       <div
-        className=\"w-full max-w-md bg-[#09090b] border border-zinc-800 relative max-h-[94vh] overflow-y-auto\"
+        className="w-full max-w-md bg-[#09090b] border border-zinc-800 relative max-h-[94vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className=\"absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] via-[#00D2FF] to-[#FF3366]\" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] via-[#00D2FF] to-[#FF3366]" />
 
         <button
           onClick={onClose}
-          data-testid=\"trick-upload-close\"
-          className=\"absolute top-3 right-3 text-zinc-500 hover:text-white p-2\"
-          aria-label=\"Close\"
+          data-testid="trick-upload-close"
+          className="absolute top-3 right-3 text-zinc-500 hover:text-white p-2"
+          aria-label="Close"
         >
           <X size={18} />
         </button>
 
-        <div className=\"p-6 pt-8\">
-          <div className=\"text-[10px] uppercase tracking-[0.25em] font-bold text-zinc-500\">
+        <div className="p-6 pt-8">
+          <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-zinc-500">
             @ {spot?.name || 'this spot'}
           </div>
-          <h2 className=\"text-xl font-black uppercase tracking-tight text-white mt-1\">
+          <h2 className="text-xl font-black uppercase tracking-tight text-white mt-1">
             Land a trick
           </h2>
-          <p className=\"text-xs text-zinc-500 mt-1 uppercase tracking-[0.15em] font-bold\">
+          <p className="text-xs text-zinc-500 mt-1 uppercase tracking-[0.15em] font-bold">
             5 DFQ per clip · 5-a-day max
           </p>
 
           {/* VIDEO PICKER */}
-          <div className=\"mt-6\">
-            <label className=\"block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2\">
-              Clip <span className=\"text-zinc-700 normal-case tracking-normal\">(max {MAX_SECONDS}s)</span>
+          <div className="mt-6">
+            <label className="block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2">
+              Clip <span className="text-zinc-700 normal-case tracking-normal">(max {MAX_SECONDS}s)</span>
             </label>
             <input
               ref={fileRef}
-              type=\"file\"
-              accept=\"video/*\"
-              capture=\"environment\"
+              type="file"
+              accept="video/*"
+              capture="environment"
               onChange={pickVideo}
-              data-testid=\"trick-video-input\"
-              className=\"hidden\"
+              data-testid="trick-video-input"
+              className="hidden"
             />
             {videoUrl ? (
-              <div className=\"relative border border-zinc-800\">
+              <div className="relative border border-zinc-800">
                 <video
                   src={videoUrl}
                   controls
                   playsInline
                   muted
-                  className=\"w-full max-h-64 bg-black\"
+                  className="w-full max-h-64 bg-black"
                 />
                 <button
                   onClick={() => { setVideoFile(null); setVideoUrl(null); setDuration(0); if (fileRef.current) fileRef.current.value=''; }}
-                  className=\"absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-1.5\"
-                  data-testid=\"trick-video-clear\"
-                  aria-label=\"Remove\"
+                  className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-1.5"
+                  data-testid="trick-video-clear"
+                  aria-label="Remove"
                 >
                   <Trash2 size={14} />
                 </button>
                 {duration > 0 && (
-                  <div className=\"absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1\">
+                  <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1">
                     {duration.toFixed(1)}s
                   </div>
                 )}
@@ -177,91 +177,91 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
             ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                data-testid=\"trick-video-pick\"
-                className=\"w-full border border-dashed border-zinc-800 hover:border-[#D2FF00] hover:text-[#D2FF00] text-zinc-500 h-28 flex flex-col items-center justify-center gap-1 transition-colors\"
+                data-testid="trick-video-pick"
+                className="w-full border border-dashed border-zinc-800 hover:border-[#D2FF00] hover:text-[#D2FF00] text-zinc-500 h-28 flex flex-col items-center justify-center gap-1 transition-colors"
               >
                 <Video size={22} />
-                <span className=\"text-[10px] tracking-[0.25em] uppercase font-bold\">Record or upload</span>
+                <span className="text-[10px] tracking-[0.25em] uppercase font-bold">Record or upload</span>
               </button>
             )}
-<p className=\"text-[9px] uppercase tracking-[0.2em] text-zinc-700 font-bold mt-2 leading-relaxed\">
+<p className="text-[9px] uppercase tracking-[0.2em] text-zinc-700 font-bold mt-2 leading-relaxed">
               iPhone tip: if the clip won't play for others, switch<br />
-              <span className=\"text-zinc-500\">Settings → Camera → Formats → Most Compatible</span>
+              <span className="text-zinc-500">Settings → Camera → Formats → Most Compatible</span>
             </p>
           </div>
 
           {/* TRICK NAME */}
-          <div className=\"mt-5\">
-            <label className=\"block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2\">
+          <div className="mt-5">
+            <label className="block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2">
               Trick name
             </label>
             <input
               value={trickName}
               onChange={(e) => setTrickName(e.target.value)}
-              placeholder=\"Kickflip, 360 flip, Bluntslide...\"
+              placeholder="Kickflip, 360 flip, Bluntslide..."
               maxLength={60}
-              list=\"trick-presets\"
-              data-testid=\"trick-name-input\"
-              className=\"w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none h-11 px-3 text-base transition-colors\"
+              list="trick-presets"
+              data-testid="trick-name-input"
+              className="w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none h-11 px-3 text-base transition-colors"
             />
-            <datalist id=\"trick-presets\">
+            <datalist id="trick-presets">
               {TRICK_PRESETS.map((t) => <option key={t} value={t} />)}
             </datalist>
           </div>
 
           {/* CAPTION */}
-          <div className=\"mt-5\">
-            <label className=\"block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2\">
-              Caption <span className=\"text-zinc-700 normal-case tracking-normal\">(optional)</span>
+          <div className="mt-5">
+            <label className="block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2">
+              Caption <span className="text-zinc-700 normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder=\"First try, mistře...\"
+              placeholder="First try, mistře..."
               rows={2}
               maxLength={280}
-              data-testid=\"trick-caption\"
-              className=\"w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none p-3 text-sm resize-none transition-colors\"
+              data-testid="trick-caption"
+              className="w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none p-3 text-sm resize-none transition-colors"
             />
           </div>
 
           {/* TAGS */}
-          <div className=\"mt-5\">
-            <label className=\"block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2 flex items-center gap-1\">
-              <AtSign size={11} /> Tag riders <span className=\"text-zinc-700 normal-case tracking-normal\">(comma-sep)</span>
+          <div className="mt-5">
+            <label className="block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2 flex items-center gap-1">
+              <AtSign size={11} /> Tag riders <span className="text-zinc-700 normal-case tracking-normal">(comma-sep)</span>
             </label>
             <input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder=\"kfly, bones, purple_thang\"
+              placeholder="kfly, bones, purple_thang"
               maxLength={200}
-              data-testid=\"trick-tags\"
-              className=\"w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none h-11 px-3 text-sm transition-colors\"
+              data-testid="trick-tags"
+              className="w-full bg-black text-white border border-zinc-800 focus:border-[#D2FF00] focus:outline-none rounded-none h-11 px-3 text-sm transition-colors"
             />
           </div>
 
           {error && (
-            <div data-testid=\"trick-error\" className=\"mt-4 text-[#FF3366] text-xs uppercase tracking-wider font-bold border border-[#FF3366]/30 bg-[#FF3366]/5 p-3\">
+            <div data-testid="trick-error" className="mt-4 text-[#FF3366] text-xs uppercase tracking-wider font-bold border border-[#FF3366]/30 bg-[#FF3366]/5 p-3">
               {error}
             </div>
           )}
 
           {submitting && progress > 0 && (
-            <div className=\"mt-4\">
-              <div className=\"h-1 bg-zinc-900\">
-                <div className=\"h-full bg-[#D2FF00] transition-all\" style={{ width: `${progress}%` }} />
+            <div className="mt-4">
+              <div className="h-1 bg-zinc-900">
+                <div className="h-full bg-[#D2FF00] transition-all" style={{ width: `${progress}%` }} />
               </div>
-              <div className=\"text-[10px] uppercase tracking-widest text-zinc-500 mt-1\">Uploading {progress}%</div>
+              <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">Uploading {progress}%</div>
             </div>
           )}
 
           <button
             onClick={submit}
             disabled={submitting || !videoFile || !trickName.trim() || duration < 1 || duration > MAX_SECONDS}
-            data-testid=\"trick-submit\"
-            className=\"w-full mt-6 bg-[#D2FF00] text-black hover:bg-[#c2eb00] disabled:opacity-40 disabled:cursor-not-allowed font-black uppercase tracking-widest rounded-none h-12 text-sm transition-colors flex items-center justify-center gap-2\"
+            data-testid="trick-submit"
+            className="w-full mt-6 bg-[#D2FF00] text-black hover:bg-[#c2eb00] disabled:opacity-40 disabled:cursor-not-allowed font-black uppercase tracking-widest rounded-none h-12 text-sm transition-colors flex items-center justify-center gap-2"
           >
-            {submitting ? (<><Loader2 size={16} className=\"animate-spin\" /> Landing...</>) : 'Land it · +5 DFQ →'}
+            {submitting ? (<><Loader2 size={16} className="animate-spin" /> Landing...</>) : 'Land it · +5 DFQ →'}
           </button>
         </div>
       </div>

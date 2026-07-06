@@ -83,34 +83,34 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
   return (
     <article
       data-testid={`trick-card-${trick.id}`}
-      className=\"border border-zinc-900 bg-[#0a0a0d] overflow-hidden\"
+      className="border border-zinc-900 bg-[#0a0a0d] overflow-hidden"
     >
       {/* Header */}
-      <header className=\"flex items-center justify-between px-4 py-3 border-b border-zinc-900\">
-        <div className=\"min-w-0\">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
+        <div className="min-w-0">
           <Link
             to={`/skater/${trick.user_id}`}
             data-testid={`trick-user-${trick.id}`}
-            className=\"text-white font-black uppercase tracking-tight text-sm hover:text-[#D2FF00] truncate block\"
+            className="text-white font-black uppercase tracking-tight text-sm hover:text-[#D2FF00] truncate block"
           >
             {trick.user_id}
           </Link>
           {trick.spot_id && (
             <Link
               to={`/spots?focus=${trick.spot_id}`}
-              className=\"text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-[#D2FF00] font-bold flex items-center gap-1 mt-0.5\"
+              className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-[#D2FF00] font-bold flex items-center gap-1 mt-0.5"
             >
               <MapPin size={10} /> {trick.spot_name || 'spot'}
             </Link>
           )}
         </div>
-        <div className=\"text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold shrink-0\">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold shrink-0">
           {when}
         </div>
       </header>
 
       {/* Video */}
-      <div className=\"relative bg-black\">
+      <div className="relative bg-black">
         <video
           ref={videoRef}
           src={trick.video_url}
@@ -118,8 +118,8 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
           loop
           muted
           playsInline
-          preload=\"metadata\"
-          className=\"w-full max-h-[70vh] object-contain bg-black\"
+          preload="metadata"
+          className="w-full max-h-[70vh] object-contain bg-black"
           onClick={(e) => {
             if (autoplay) {
               // tap to toggle sound in feed
@@ -127,26 +127,26 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
             }
           }}
         />
-        <div className=\"absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 border border-white/10\">
+        <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 border border-white/10">
           {trick.trick_name}
         </div>
       </div>
 
       {/* Caption + tags */}
       {(trick.caption || (trick.tagged_users && trick.tagged_users.length > 0)) && (
-        <div className=\"px-4 py-3 border-b border-zinc-900\">
+        <div className="px-4 py-3 border-b border-zinc-900">
           {trick.caption && (
-            <p className=\"text-sm text-zinc-300 leading-snug whitespace-pre-wrap break-words\">
+            <p className="text-sm text-zinc-300 leading-snug whitespace-pre-wrap break-words">
               {trick.caption}
             </p>
           )}
           {trick.tagged_users && trick.tagged_users.length > 0 && (
-            <div className=\"mt-2 flex flex-wrap gap-2\">
+            <div className="mt-2 flex flex-wrap gap-2">
               {trick.tagged_users.map((u) => (
                 <Link
                   key={u}
                   to={`/skater/${u}`}
-                  className=\"text-[11px] font-bold text-[#00D2FF] hover:text-white\"
+                  className="text-[11px] font-bold text-[#00D2FF] hover:text-white"
                 >
                   @{u}
                 </Link>
@@ -157,7 +157,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
       )}
 
       {/* Actions */}
-      <footer className=\"flex items-center justify-between px-4 py-3\">
+      <footer className="flex items-center justify-between px-4 py-3">
         <button
           onClick={tip}
           disabled={tipping || tipped || isOwn}
@@ -169,11 +169,11 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
               ? 'border-zinc-900 text-zinc-700 cursor-not-allowed'
               : 'border-zinc-800 text-white hover:border-[#D2FF00] hover:text-[#D2FF00]'
           }`}
-          title={isOwn ? \"Can't tip your own trick\" : tipped ? 'Already tipped' : 'Tip 1 DFQ'}
+          title={isOwn ? "Can't tip your own trick" : tipped ? 'Already tipped' : 'Tip 1 DFQ'}
         >
           <Coins size={14} strokeWidth={2.5} />
           {tipped ? 'Tipped' : isOwn ? '+ tips only' : 'Tip 1 DFQ'}
-          <span className=\"text-zinc-500\">·</span>
+          <span className="text-zinc-500">·</span>
           <span data-testid={`trick-tip-count-${trick.id}`}>{tips.toFixed(0)}</span>
         </button>
 
@@ -181,8 +181,8 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
           <button
             onClick={remove}
             data-testid={`trick-delete-${trick.id}`}
-            className=\"text-zinc-600 hover:text-[#FF3366] p-2\"
-            aria-label=\"Delete trick\"
+            className="text-zinc-600 hover:text-[#FF3366] p-2"
+            aria-label="Delete trick"
           >
             <Trash2 size={14} />
           </button>

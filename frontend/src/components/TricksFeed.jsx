@@ -14,7 +14,7 @@ api.interceptors.request.use((config) => {
 const PAGE_SIZE = 20;
 
 /**
- * TricksFeed — the \"IG-lite for skaters\" page.
+ * TricksFeed — the "IG-lite for skaters" page.
  * Props: currentUser: { username }
  */
 function TricksFeed({ currentUser }) {
@@ -76,31 +76,31 @@ function TricksFeed({ currentUser }) {
   };
 
   return (
-    <div className=\"space-y-4\">
-      <header className=\"flex items-end justify-between gap-3\">
+    <div className="space-y-4">
+      <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className=\"text-3xl font-black uppercase tracking-tight text-white flex items-center gap-2\">
-            <Flame size={22} className=\"text-[#FF3366]\" /> Tricks
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+            <Flame size={22} className="text-[#FF3366]" /> Tricks
           </h1>
-          <p className=\"text-zinc-500 uppercase tracking-[0.2em] text-xs font-bold mt-1\">
+          <p className="text-zinc-500 uppercase tracking-[0.2em] text-xs font-bold mt-1">
             Land · Tip · Level up
           </p>
         </div>
       </header>
 
       {loading ? (
-        <div className=\"flex items-center justify-center py-16 text-zinc-600 text-xs uppercase tracking-widest font-bold\">
-          <Loader2 size={18} className=\"animate-spin mr-2\" /> Loading feed...
+        <div className="flex items-center justify-center py-16 text-zinc-600 text-xs uppercase tracking-widest font-bold">
+          <Loader2 size={18} className="animate-spin mr-2" /> Loading feed...
         </div>
       ) : tricks.length === 0 ? (
-        <div className=\"border border-zinc-900 p-8 text-center\">
-          <p className=\"text-zinc-400 text-sm\">
+        <div className="border border-zinc-900 p-8 text-center">
+          <p className="text-zinc-400 text-sm">
             No tricks yet. Open a spot on the map and drop the first clip. 🛹
           </p>
         </div>
       ) : (
         <>
-          <div className=\"space-y-4\" data-testid=\"tricks-feed-list\">
+          <div className="space-y-4" data-testid="tricks-feed-list">
             {tricks.map((t) => (
               <TrickCard
                 key={t.id}
@@ -118,14 +118,14 @@ function TricksFeed({ currentUser }) {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              data-testid=\"tricks-feed-load-more\"
-              className=\"w-full border border-zinc-800 hover:border-[#D2FF00] hover:text-[#D2FF00] text-zinc-400 py-3 font-black uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2\"
+              data-testid="tricks-feed-load-more"
+              className="w-full border border-zinc-800 hover:border-[#D2FF00] hover:text-[#D2FF00] text-zinc-400 py-3 font-black uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2"
             >
-              {loadingMore ? (<><Loader2 size={14} className=\"animate-spin\" /> Loading...</>) : 'Load more'}
+              {loadingMore ? (<><Loader2 size={14} className="animate-spin" /> Loading...</>) : 'Load more'}
             </button>
           )}
           {reachedEnd && tricks.length > 0 && (
-            <div className=\"text-center text-zinc-700 text-[10px] uppercase tracking-[0.25em] font-bold py-4\">
+            <div className="text-center text-zinc-700 text-[10px] uppercase tracking-[0.25em] font-bold py-4">
               — end of feed —
             </div>
           )}
