@@ -1395,7 +1395,7 @@ function App() {
                     <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
                     <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
-                    <Route path="/tricks/" element={<PrivateRoute><Layout user={user}><TricksFeed currentUser={user} /></Layout></PrivateRoute>}/>
+                    <Route path="/tricks" element={<PrivateRoute><Layout user={user}><TricksFeed currentUser={user} /></Layout></PrivateRoute>}/>
               </Routes>
           </Layout>
         </RideProvider>
