@@ -8,6 +8,8 @@ import { MapPin, Plus, X, Camera, Navigation, Users, Filter, Trash2 } from 'luci
 import { toast } from "./ui/sonner";
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import TrickUploadModal from './TrickUploadModal';
+import { Video, Play } from 'lucide-react';   // Play is already imported if you kept the original
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -149,6 +151,51 @@ var SpotDetailCard = function(props) {
   <span className="font-mono">{new Date(spot.created_at).toLocaleDateString()}</span>
 </div>
           
+          {/* Tricks landed at this spot */}
+        <div className="border-t border-zinc-800 pt-3 mt-1">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-bold">
+              Tricks landed · {props.spotTricks ? props.spotTricks.length : 0}
+            </div>
+            <button
+              onClick={function() { if (props.onOpenTrickModal) props.onOpenTrickModal(); }}
+              data-testid="add-trick-btn"
+              className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#D2FF00] hover:text-white flex items-center gap-1"
+            >
+              <Video size={12} /> Add trick · +5 DFQ
+            </button>
+          </div>
+          {props.spotTricks && props.spotTricks.length > 0 && (
+            <div className="grid grid-cols-3 gap-1">
+              {props.spotTricks.slice(0, 6).map(function(t) {
+                return (
+                  <a
+                    key={t.id}
+                    href={"/tricks#" + t.id}
+                    className="relative aspect-square bg-black border border-zinc-800 overflow-hidden group"
+                    title={t.trick_name + " by " + t.user_id}
+                  >
+                    <video
+                      src={t.video_url}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
+                      <Play size={20} className="text-white" fill="white" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[8px] font-black uppercase tracking-wider px-1 py-0.5 truncate">
+                      {t.trick_name}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </div>
+          
+          
         <div className="flex gap-2">
           <button
             onClick={function() {
@@ -218,6 +265,22 @@ var SpotsMapPage = function(props) {
     var centerTriggerState = useState(0);
     var centerTrigger = centerTriggerState[0];
     var setCenterTrigger = centerTriggerState[1];
+    // Tricks integration
+  var trickModalState = useState(false);
+  var trickModalOpen = trickModalState[0];
+  var setTrickModalOpen = trickModalState[1];
+  var spotTricksState = useState([]);
+  var spotTricks = spotTricksState[0];
+  var setSpotTricks = spotTricksState[1];
+
+  // Load tricks whenever a new spot is selected
+  useEffect(function() {
+    if (!selectedSpot) { setSpotTricks([]); return; }
+    api.get('/tricks/spot/' + selectedSpot.id)
+      .then(function(res) { setSpotTricks(res.data || []); })
+      .catch(function() { setSpotTricks([]); });
+  }, [selectedSpot]);
+    
 
   var fetchSpots = async function() {
     try {
@@ -554,15 +617,28 @@ var SpotsMapPage = function(props) {
         <Navigation size={14} /> Center on me
       </button>
 
-      {selectedSpot && (
-        <SpotDetailCard
-          spot={selectedSpot}
-          onClose={function() { setSelectedSpot(null); }}
-          onDelete={handleDeleteSpot}
-          canDelete={currentUser && selectedSpot.user_id === currentUser.username}
-          userLocation={userLocation}
-        />
-      )}
+     {selectedSpot && (
+  <SpotDetailCard
+    spot={selectedSpot}
+    onClose={function() { setSelectedSpot(null); }}
+    onDelete={handleDeleteSpot}
+    canDelete={currentUser && selectedSpot.user_id === currentUser.username}
+    userLocation={userLocation}
+    spotTricks={spotTricks}
+    onOpenTrickModal={function() { setTrickModalOpen(true); }}
+  />
+)}
+
+{selectedSpot && (
+  <TrickUploadModal
+    open={trickModalOpen}
+    onClose={function() { setTrickModalOpen(false); }}
+    spot={selectedSpot}
+    onUploaded={function(newTrick) {
+      setSpotTricks(function(prev) { return [newTrick].concat(prev); });
+    }}
+  />
+)}
 
       <div className="space-y-2" ref={listRef}>
         <h3 className="text-zinc-500 text-xs uppercase tracking-widest flex items-center justify-between">

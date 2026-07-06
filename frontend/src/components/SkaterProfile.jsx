@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Play } from 'lucide-react';
+import TrickCard from './TrickCard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });

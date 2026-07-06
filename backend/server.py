@@ -800,6 +800,269 @@ async def presence_count(current_user: dict = Depends(get_current_user)):
         return {"online": len(online)}
     except Exception:
         return {"online": 0}
+    
+    # --- Tricks (short skate clips tied to a spot) ---
+
+TRICK_REWARD = 5.0            # DFQ granted on trick upload
+TIP_AMOUNT = 1.0              # DFQ tipped per tap
+DAILY_TRICK_LIMIT = 5         # max tricks per user per 24h
+MAX_VIDEO_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
+MIN_TRICK_SECONDS = 1
+MAX_TRICK_SECONDS = 15
+
+
+@api.get(\"/tricks/feed\")
+async def tricks_feed(limit: int = 20, offset: int = 0):
+    \"\"\"Global feed — newest tricks across every spot & rider.\"\"\"
+    res = supabase.table('tricks').select('*').order(
+        'created_at', desc=True
+    ).range(offset, offset + limit - 1).execute()
+    tricks = res.data or []
+
+    # Attach spot name for each trick (single roundtrip)
+    spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
+    spot_map = {}
+    if spot_ids:
+        srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
+        spot_map = {s['id']: s['name'] for s in (srs.data or [])}
+    for t in tricks:
+        t['spot_name'] = spot_map.get(t.get('spot_id'), 'Unknown spot')
+
+    return tricks
+
+
+@api.get(\"/tricks/my-tips\")
+async def my_tipped_tricks(current_user: dict = Depends(get_current_user)):
+    \"\"\"Which tricks the current user has already tipped (so the UI can grey the button).\"\"\"
+    res = supabase.table('trick_tips').select('trick_id').eq(
+        'tipper_id', current_user['username']
+    ).execute()
+    return {\"tipped_trick_ids\": [t['trick_id'] for t in (res.data or [])]}
+
+
+@api.get(\"/tricks/spot/{spot_id}\")
+async def tricks_at_spot(spot_id: str):
+    res = supabase.table('tricks').select('*').eq(
+        'spot_id', spot_id
+    ).order('created_at', desc=True).execute()
+    return res.data or []
+
+
+@api.get(\"/tricks/user/{username}\")
+async def tricks_by_user(username: str):
+    username = username.lower().strip()
+    res = supabase.table('tricks').select('*').eq(
+        'user_id', username
+    ).order('created_at', desc=True).execute()
+
+    tricks = res.data or []
+    # Attach spot name for the profile page
+    spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
+    spot_map = {}
+    if spot_ids:
+        srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
+        spot_map = {s['id']: s['name'] for s in (srs.data or [])}
+    for t in tricks:
+        t['spot_name'] = spot_map.get(t.get('spot_id'), 'Unknown spot')
+    return tricks
+
+
+@api.post(\"/tricks\")
+async def create_trick(
+    trick_name: str = Form(...),
+    caption: str = Form(\"\"),
+    spot_id: str = Form(...),
+    tagged_users: str = Form(\"\"),        # comma-separated usernames
+    duration_seconds: float = Form(...),
+    video: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    # Validate basics
+    trick_name = trick_name.strip()[:60]
+    if not trick_name:
+        raise HTTPException(400, \"Trick name required\")
+    if duration_seconds < MIN_TRICK_SECONDS or duration_seconds > MAX_TRICK_SECONDS:
+        raise HTTPException(400, f\"Video must be {MIN_TRICK_SECONDS}-{MAX_TRICK_SECONDS} seconds\")
+
+    # Daily limit
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    recent = supabase.table('tricks').select('id', count='exact').eq(
+        'user_id', current_user['username']
+    ).gte('created_at', cutoff).execute()
+    if (recent.count or 0) >= DAILY_TRICK_LIMIT:
+        raise HTTPException(
+            429,
+            f\"Daily limit reached ({DAILY_TRICK_LIMIT} tricks/24h). Come back tomorrow.\"
+        )
+
+    # Confirm spot exists
+    spot_res = supabase.table('spots').select('id').eq('id', spot_id).execute()
+    if not spot_res.data:
+        raise HTTPException(404, \"Spot not found\")
+
+    # Read + size check
+    video_bytes = await video.read()
+    if len(video_bytes) > MAX_VIDEO_BYTES:
+        raise HTTPException(400, f\"Video too big (max {MAX_VIDEO_BYTES // (1024*1024)}MB)\")
+    if len(video_bytes) < 1024:
+        raise HTTPException(400, \"Video is empty or corrupt\")
+
+               # --- AI moderation gate ---
+    # Import here to keep this file paste-friendly; in your real backend/server.py
+    # you'll likely move this to the top of the file.
+    #from moderation import moderate_video
+    #accepted, mod_reason, mod_confidence = await moderate_video(video_bytes)
+    #if not accepted:
+        #raise HTTPException(
+            #status_code=400,
+           # detail=(
+                #\"Video rejected by content check: \"
+                #f\"{mod_reason}. \"
+               # \"Try a clearer shot of your trick or spot.\"
+            ),
+        )
+            
+    # Pick an extension
+    ext = 'mp4'
+    if video.filename and '.' in video.filename:
+        candidate = video.filename.rsplit('.', 1)[-1].lower()
+        if candidate in ('mp4', 'mov', 'webm', 'm4v'):
+            ext = candidate
+
+    # Upload to Supabase Storage bucket 'tricks'
+    video_key = f\"{current_user['username']}/{uuid.uuid4().hex}.{ext}\"
+    try:
+        supabase.storage.from_(\"tricks\").upload(
+            video_key,
+            video_bytes,
+            {\"content-type\": video.content_type or \"video/mp4\"},
+        )
+    except Exception as e:
+        raise HTTPException(500, f\"Upload failed: {e}\")
+    video_url = supabase.storage.from_(\"tricks\").get_public_url(video_key)
+
+    # Filter tagged users to real accounts
+    tag_list = [u.strip().lstrip('@').lower() for u in tagged_users.split(',') if u.strip()]
+    tag_list = list({t for t in tag_list if t and t != current_user['username']})[:10]
+    if tag_list:
+        existing = supabase.table('users').select('username').in_('username', tag_list).execute()
+        tag_list = [u['username'] for u in (existing.data or [])]
+
+    # Insert trick row
+    trick_id = str(uuid.uuid4())
+    trick_data = {
+        'id': trick_id,
+        'user_id': current_user['username'],
+        'spot_id': spot_id,
+        'trick_name': trick_name,
+        'caption': (caption or '').strip()[:280] or None,
+        'video_url': video_url,
+        'duration_seconds': float(duration_seconds),
+        'tagged_users': tag_list,
+        'tips_received': 0,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    supabase.table('tricks').insert(trick_data).execute()
+
+    # Grant 5 DFQ reward
+    new_balance = (current_user.get('wallet_balance') or 0) + TRICK_REWARD
+    supabase.table('users').update({'wallet_balance': new_balance}).eq(
+        'username', current_user['username']
+    ).execute()
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': 'SOLRIDE_TRICKS',
+        'receiver_id': current_user['username'],
+        'amount': TRICK_REWARD,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'trick_reward',
+    }).execute()
+
+    return {\"trick\": trick_data, \"earned\": TRICK_REWARD, \"new_balance\": new_balance}
+
+
+@api.post(\"/tricks/{trick_id}/tip\")
+async def tip_trick(trick_id: str, current_user: dict = Depends(get_current_user)):
+    \"\"\"Send 1 DFQ to the trick creator. One tip per user per trick.\"\"\"
+    trick_res = supabase.table('tricks').select('*').eq('id', trick_id).execute()
+    if not trick_res.data:
+        raise HTTPException(404, \"Trick not found\")
+    trick = trick_res.data[0]
+
+    if trick['user_id'] == current_user['username']:
+        raise HTTPException(400, \"Can't tip your own trick\")
+
+    balance = current_user.get('wallet_balance') or 0
+    if balance < TIP_AMOUNT:
+        raise HTTPException(400, f\"Need {TIP_AMOUNT} DFQ to tip\")
+
+    # Already tipped?
+    dup = supabase.table('trick_tips').select('id').eq(
+        'trick_id', trick_id
+    ).eq('tipper_id', current_user['username']).execute()
+    if dup.data:
+        raise HTTPException(400, \"Already tipped this trick\")
+
+    # Insert tip
+    supabase.table('trick_tips').insert({
+        'id': str(uuid.uuid4()),
+        'trick_id': trick_id,
+        'tipper_id': current_user['username'],
+        'amount': TIP_AMOUNT,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }).execute()
+
+    # Move DFQ tipper → creator
+    supabase.table('users').update({'wallet_balance': balance - TIP_AMOUNT}).eq(
+        'username', current_user['username']
+    ).execute()
+    creator_res = supabase.table('users').select('wallet_balance').eq(
+        'username', trick['user_id']
+    ).execute()
+    if creator_res.data:
+        creator_balance = creator_res.data[0].get('wallet_balance') or 0
+        supabase.table('users').update({
+            'wallet_balance': creator_balance + TIP_AMOUNT
+        }).eq('username', trick['user_id']).execute()
+
+    # Bump aggregate on trick
+    new_tips = (trick.get('tips_received') or 0) + TIP_AMOUNT
+    supabase.table('tricks').update({'tips_received': new_tips}).eq('id', trick_id).execute()
+
+    # Log tx
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': current_user['username'],
+        'receiver_id': trick['user_id'],
+        'amount': TIP_AMOUNT,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'trick_tip',
+    }).execute()
+
+    return {\"tipped\": TIP_AMOUNT, \"new_tips_total\": new_tips}
+
+
+@api.delete(\"/tricks/{trick_id}\")
+async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_user)):
+    res = supabase.table('tricks').select('user_id, video_url').eq('id', trick_id).execute()
+    if not res.data:
+        raise HTTPException(404, \"Trick not found\")
+    if res.data[0]['user_id'] != current_user['username']:
+        raise HTTPException(403, \"Not your trick\")
+
+    # Best-effort: delete the storage object too
+    try:
+        vurl = res.data[0].get('video_url', '')
+        if '/tricks/' in vurl:
+            key = vurl.split('/tricks/', 1)[1].split('?')[0]
+            supabase.storage.from_(\"tricks\").remove([key])
+    except Exception:
+        pass
+
+    supabase.table('tricks').delete().eq('id', trick_id).execute()
+    return {\"message\": \"Trick removed\"}
+            
+            
 
     # Everything under this line is unvisible to an app.
 app.include_router(api)

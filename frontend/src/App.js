@@ -7,17 +7,19 @@ import { Toaster, toast } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Home, MapPin, Wallet, User, Play, Square, Send, LogOut, Wrench, Volume2, Navigation, Battery, Wifi, WifiOff, Radio, Crosshair, History, Zap, Lock } from 'lucide-react';
+import { Home, MapPin, Wallet, User, Play, Square, Send, LogOut, Wrench, Volume2, Navigation, Battery, Wifi, WifiOff, Radio, Crosshair, History, Zap, Lock, Flame } from 'lucide-react';
 import { Label } from "./components/ui/label";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SpotsMapPage from './components/SpotsMapPage';
+import TricksFeed from './components/TricksFeed';
 import confetti from 'canvas-confetti';
 
 import ChatPage from './components/ChatPage';
 import { MessageCircle } from 'lucide-react'; 
 import SkaterProfile from './components/SkaterProfile';
+
 // add to lucide imports
 
 // Fix Leaflet marker icons
@@ -420,9 +422,13 @@ const Layout = ({ children }) => {
 
   if (!user) return <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black">{children}</div>;
 
-  const navItems = [
+ const navItems = [
     { path: '/', icon: Home, label: 'Home' },
-  ];
+    { path: '/spots', icon: MapPin, label: 'Spots' },
+    { path: '/tricks', icon: Flame, label: 'Tricks' },
+    { path: '/wallet', icon: Wallet, label: 'Wallet' },
+    { path: '/profile', icon: User, label: 'Profile' },
+];
 
   return (
     <div className="bg-black min-h-screen">
@@ -1366,6 +1372,11 @@ const SpotsMapWrapper = () => {
   return <SpotsMapPage currentUser={user} />;
 };
 
+const TricksFeedWrapper = () => {
+const { user } = useContext(AppContext); // use your actual context/hook
+return <TricksFeed currentUser={user} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -1384,7 +1395,7 @@ function App() {
                     <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
                     <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
-
+                    <Route path="/tricks/" element={<PrivateRoute><Layout user={user}><TricksFeed currentUser={user} /></Layout></PrivateRoute>}/>
               </Routes>
           </Layout>
         </RideProvider>
