@@ -579,7 +579,7 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
       <div className="grid grid-cols-2 gap-4">
 
 
-{/* Ride now big Button 
+{/* Ride now big Button */}
          <Link to="/ride">
           <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
              <CardContent className="p-6 flex flex-col items-center justify-center gap-2 aspect-square">
@@ -590,9 +590,8 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
              </CardContent>
           </Card>
          </Link>
-*/}
 
-{/* Wallet big Button 
+{/* Wallet big Button */}
          <Link to="/wallet">
           <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
              <CardContent className="p-6 flex flex-col items-center justify-center gap-2 aspect-square">
@@ -604,25 +603,6 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
           </Card>
          </Link>
       </div>
-*/}
-
-{/* Ride new Button */}
-      <Link to="/ride" >
-        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#00D2FF] transition-colors cursor-pointer group">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#00D2FF] group-hover:text-black transition-colors text-white">
-                <MapPin size={20} />
-              </div>
-              <div>
-                <span className="font-bold uppercase tracking-wider text-sm text-white block">Ride Now</span>
-            
-              </div>
-            </div>
-            <div className="text-xs text-[#00D2FF] font-mono uppercase">NEW</div>
-          </CardContent>
-        </Card>
-      </Link>
 
       
 {/* Spots Map Button */}
