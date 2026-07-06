@@ -21,9 +21,13 @@ const TRICK_PRESETS = [
 const MAX_SECONDS = 15;
 
 function TrickUploadModal({ open, onClose, spot, onUploaded }) {
-  const [videoFile, setVideoFile] = useState(null);
+const [videoFile, setVideoFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [duration, setDuration] = useState(0);
+  const [videoW, setVideoW] = useState(0);
+  const [videoH, setVideoH] = useState(0);
+  const [cropX, setCropX] = useState(50); // 0-100, horizontal position of the square window
+  const [cropY, setCropY] = useState(50); // 0-100, vertical position
   const [trickName, setTrickName] = useState('');
   const [caption, setCaption] = useState('');
   const [tags, setTags] = useState('');
@@ -34,7 +38,8 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
 
   useEffect(() => {
     if (!open) {
-      setVideoFile(null); setVideoUrl(null); setDuration(0);
+     setVideoFile(null); setVideoUrl(null); setDuration(0);
+      setVideoW(0); setVideoH(0); setCropX(50); setCropY(50);
       setTrickName(''); setCaption(''); setTags('');
       setError(''); setProgress(0); setSubmitting(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -56,15 +61,17 @@ const pickVideo = (e) => {
     const url = URL.createObjectURL(f);
     setVideoFile(f);
     setVideoUrl(url);
+    setCropX(50); setCropY(50); // reset framing to center
 
-    // Read duration with a SEPARATE object URL, so revoking the probe
-    // never kills the blob the preview <video> is still using.
+    // Read duration + dimensions with a SEPARATE object URL
     const probeUrl = URL.createObjectURL(f);
     const v = document.createElement('video');
     v.preload = 'metadata';
     v.onloadedmetadata = () => {
       const d = v.duration || 0;
       setDuration(d);
+      setVideoW(v.videoWidth || 0);
+      setVideoH(v.videoHeight || 0);
       if (d > MAX_SECONDS + 0.5) {
         setError(`Clip is ${d.toFixed(1)}s — max ${MAX_SECONDS}s. Trim it first.`);
       }
@@ -82,13 +89,16 @@ const pickVideo = (e) => {
     }
     setSubmitting(true); setError(''); setProgress(0);
 
-    const fd = new FormData();
+  const fd = new FormData();
     fd.append('video', videoFile);
     fd.append('trick_name', trickName.trim());
     fd.append('caption', caption.trim());
     fd.append('spot_id', spot.id);
     fd.append('tagged_users', tags);
     fd.append('duration_seconds', duration.toFixed(2));
+    // Square framing (0-100). Backend crops with ffmpeg.
+    fd.append('crop_x', String(Math.round(cropX)));
+    fd.append('crop_y', String(Math.round(cropY)));
 
     try {
       const res = await api.post('/tricks', fd, {
@@ -144,39 +154,74 @@ const pickVideo = (e) => {
             <label className="block text-[10px] tracking-[0.25em] uppercase text-zinc-500 font-bold mb-2">
               Clip <span className="text-zinc-700 normal-case tracking-normal">(max {MAX_SECONDS}s)</span>
             </label>
+
+
+{/* No `capture` attribute → OS shows BOTH "Camera" and "Photo Library"
+                on iOS/Android, and file dialog on desktop. Same pattern as Spots photos. */}
             <input
               ref={fileRef}
               type="file"
               accept="video/*"
-              capture="environment"
               onChange={pickVideo}
               data-testid="trick-video-input"
               className="hidden"
             />
-            {videoUrl ? (
-              <div className="relative border border-zinc-800">
-                <video
-                  src={videoUrl}
-                  controls
-                  playsInline
-                  muted
-                  className="w-full max-h-64 bg-black"
-                />
-                <button
-                  onClick={() => { setVideoFile(null); setVideoUrl(null); setDuration(0); if (fileRef.current) fileRef.current.value=''; }}
-                  className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-1.5"
-                  data-testid="trick-video-clear"
-                  aria-label="Remove"
-                >
-                  <Trash2 size={14} />
-                </button>
-                {duration > 0 && (
-                  <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1">
-                    {duration.toFixed(1)}s
+
+     {videoUrl ? (
+              <div>
+                {/* Square 1:1 preview — object-cover with adjustable position */}
+                <div className="relative border border-zinc-800 aspect-square bg-black overflow-hidden">
+                  <video
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    muted
+                    className="w-full h-full bg-black"
+                    style={{ objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%` }}
+                  />
+                  <button
+                    onClick={() => { setVideoFile(null); setVideoUrl(null); setDuration(0); setVideoW(0); setVideoH(0); setCropX(50); setCropY(50); if (fileRef.current) fileRef.current.value=''; }}
+                    className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-1.5"
+                    data-testid="trick-video-clear"
+                    aria-label="Remove"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  {duration > 0 && (
+                    <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1">
+                      {duration.toFixed(1)}s · 1:1
+                    </div>
+                  )}
+                </div>
+
+                {/* Framing sliders — only the relevant one is shown */}
+                {videoW > 0 && videoH > 0 && videoW !== videoH && (
+                  <div className="mt-3 space-y-2">
+                    <div className="text-[9px] uppercase tracking-[0.25em] font-bold text-zinc-500">
+                      Adjust framing
+                    </div>
+                    {videoW > videoH ? (
+                      <input
+                        type="range" min="0" max="100" value={cropX}
+                        onChange={(e) => setCropX(Number(e.target.value))}
+                        data-testid="trick-crop-x"
+                        className="w-full accent-[#D2FF00]"
+                        aria-label="Horizontal framing"
+                      />
+                    ) : (
+                      <input
+                        type="range" min="0" max="100" value={cropY}
+                        onChange={(e) => setCropY(Number(e.target.value))}
+                        data-testid="trick-crop-y"
+                        className="w-full accent-[#D2FF00]"
+                        aria-label="Vertical framing"
+                      />
+                    )}
                   </div>
                 )}
               </div>
             ) : (
+
               <button
                 onClick={() => fileRef.current?.click()}
                 data-testid="trick-video-pick"
@@ -187,8 +232,8 @@ const pickVideo = (e) => {
               </button>
             )}
 <p className="text-[9px] uppercase tracking-[0.2em] text-zinc-700 font-bold mt-2 leading-relaxed">
-              iPhone tip: if the clip won't play for others, switch<br />
-              <span className="text-zinc-500">Settings → Camera → Formats → Most Compatible</span>
+              Any format works — SOLRIDE auto-converts your clip<br />
+              <span className="text-zinc-500">so it plays on every phone &amp; browser.</span>
             </p>
           </div>
 

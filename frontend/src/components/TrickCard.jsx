@@ -85,24 +85,29 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
       data-testid={`trick-card-${trick.id}`}
       className="border border-zinc-900 bg-[#0a0a0d] overflow-hidden"
     >
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-900">
-        <div className="min-w-0">
+  {/* Header — one line: "<spot> by @<user>" */}
+      <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-900">
+        <div className="min-w-0 flex items-center gap-1.5 text-sm font-black uppercase tracking-tight">
+          <MapPin size={14} className={`shrink-0 ${trick.spot_id ? 'text-[#D2FF00]' : 'text-zinc-600'}`} />
+          {trick.spot_id ? (
+            <Link
+              to={`/spots?focus=${trick.spot_id}`}
+              data-testid={`trick-spot-${trick.id}`}
+              className="text-white hover:text-[#D2FF00] truncate max-w-[45%]"
+            >
+              {trick.spot_name || 'Unknown spot'}
+            </Link>
+          ) : (
+            <span className="text-zinc-500 truncate max-w-[45%]">Unknown spot</span>
+          )}
+          <span className="text-zinc-600 font-bold">by</span>
           <Link
             to={`/skater/${trick.user_id}`}
             data-testid={`trick-user-${trick.id}`}
-            className="text-white font-black uppercase tracking-tight text-sm hover:text-[#D2FF00] truncate block"
+            className="text-zinc-300 hover:text-[#D2FF00] truncate"
           >
-            {trick.user_id}
+            @{trick.user_id}
           </Link>
-          {trick.spot_id && (
-            <Link
-              to={`/spots?focus=${trick.spot_id}`}
-              className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 hover:text-[#D2FF00] font-bold flex items-center gap-1 mt-0.5"
-            >
-              <MapPin size={10} /> {trick.spot_name || 'spot'}
-            </Link>
-          )}
         </div>
         <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold shrink-0">
           {when}

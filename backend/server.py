@@ -802,13 +802,75 @@ async def presence_count(current_user: dict = Depends(get_current_user)):
         return {"online": 0}
     
     # --- Tricks (short skate clips tied to a spot) ---
-
 TRICK_REWARD = 5.0            # DFQ granted on trick upload
 TIP_AMOUNT = 1.0              # DFQ tipped per tap
 DAILY_TRICK_LIMIT = 5         # max tricks per user per 24h
 MAX_VIDEO_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
 MIN_TRICK_SECONDS = 1
 MAX_TRICK_SECONDS = 15
+
+
+import subprocess
+import tempfile
+import shutil
+
+
+def transcode_to_mp4_h264(input_bytes: bytes, crop_x: int = 50, crop_y: int = 50) -> bytes:
+    """
+    Re-encode any uploaded video to a browser-universal H.264 + AAC MP4,
+    AND crop it to a centered 1:1 square. `crop_x` / `crop_y` are 0-100
+    percentages controlling where the square window sits on the longer axis.
+    """
+    if not shutil.which("ffmpeg"):
+        return input_bytes
+
+    crop_x = max(0, min(100, int(crop_x)))
+    crop_y = max(0, min(100, int(crop_y)))
+
+    with tempfile.NamedTemporaryFile(suffix=".src", delete=False) as src, \
+         tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as dst:
+        src_path, dst_path = src.name, dst.name
+        src.write(input_bytes)
+
+    try:
+        # Square crop using ffmpeg expressions:
+        #   side = min(iw, ih)
+        #   x    = (iw - side) * crop_x/100
+        #   y    = (ih - side) * crop_y/100
+        # Then scale to a max of 720x720 for reasonable file size.
+        vf = (
+            f"crop='min(iw,ih)':'min(iw,ih)':"
+            f"'(iw-min(iw,ih))*{crop_x}/100':'(ih-min(iw,ih))*{crop_y}/100',"
+            f"scale='min(720,iw)':'min(720,ih)',"
+            f"scale=trunc(iw/2)*2:trunc(ih/2)*2"
+        )
+
+        cmd = [
+            "ffmpeg", "-y", "-i", src_path,
+            "-vcodec", "libx264",
+            "-profile:v", "baseline", "-level", "3.1",
+            "-preset", "veryfast",
+            "-crf", "24",
+            "-pix_fmt", "yuv420p",
+            "-vf", vf,
+            "-acodec", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            "-max_muxing_queue_size", "1024",
+            dst_path,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, timeout=120)
+        if proc.returncode != 0:
+            err = proc.stderr.decode("utf-8", errors="ignore")[-400:]
+            raise HTTPException(400, f"Video conversion failed: {err}")
+
+        with open(dst_path, "rb") as f:
+            return f.read()
+    finally:
+        for p in (src_path, dst_path):
+            try:
+                os.unlink(p)
+            except Exception:
+                pass
 
 
 @api.get("/tricks/feed")
@@ -874,9 +936,12 @@ async def create_trick(
     spot_id: str = Form(...),
     tagged_users: str = Form(""),        # comma-separated usernames
     duration_seconds: float = Form(...),
+    crop_x: int = Form(50),              # 0-100, square framing on longer axis
+    crop_y: int = Form(50),
     video: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
 ):
+    
     # Validate basics
     trick_name = trick_name.strip()[:60]
     if not trick_name:
@@ -922,6 +987,67 @@ async def create_trick(
            # ),
        # )
             
+
+TRICK_REWARD = 5.0            # DFQ granted on trick upload
+TIP_AMOUNT = 1.0              # DFQ tipped per tap
+DAILY_TRICK_LIMIT = 5         # max tricks per user per 24h
+MAX_VIDEO_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
+MIN_TRICK_SECONDS = 1
+MAX_TRICK_SECONDS = 15
+
+
+import subprocess
+import tempfile
+import shutil
+
+
+def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
+    """
+    Re-encode any uploaded video (iPhone HEVC .mov, .webm, etc.) to a
+    browser-universal H.264 + AAC MP4 with a moov atom up front so the
+    <video> tag can start playing before the full file is downloaded.
+
+    Requires the `ffmpeg` binary on PATH (installed via Dockerfile).
+    """
+    if not shutil.which("ffmpeg"):
+        # No ffmpeg available — fall back to raw bytes (will fail on HEVC
+        # for non-Safari clients, but the app keeps working locally).
+        return input_bytes
+
+    with tempfile.NamedTemporaryFile(suffix=".src", delete=False) as src, \
+         tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as dst:
+        src_path, dst_path = src.name, dst.name
+        src.write(input_bytes)
+
+    try:
+        cmd = [
+            "ffmpeg", "-y", "-i", src_path,
+            "-vcodec", "libx264",
+            "-profile:v", "baseline", "-level", "3.1",
+            "-preset", "veryfast",
+            "-crf", "24",
+            "-pix_fmt", "yuv420p",
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-acodec", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            "-max_muxing_queue_size", "1024",
+            dst_path,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, timeout=120)
+        if proc.returncode != 0:
+            err = proc.stderr.decode("utf-8", errors="ignore")[-400:]
+            raise HTTPException(400, f"Video conversion failed: {err}")
+
+        with open(dst_path, "rb") as f:
+            return f.read()
+    finally:
+        for p in (src_path, dst_path):
+            try:
+                os.unlink(p)
+            except Exception:
+                pass
+Edit 2b: use the helper inside create_trick
+Find this block (inside @api.post("/tricks"), around line 925):
     # Pick an extension
     ext = 'mp4'
     if video.filename and '.' in video.filename:
@@ -936,6 +1062,37 @@ async def create_trick(
             video_key,
             video_bytes,
             {"content-type": video.content_type or "video/mp4"},
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Upload failed: {e}")
+    video_url = supabase.storage.from_("tricks").get_public_url(video_key)
+Replace with:
+    # --- Transcode to browser-safe H.264/AAC MP4 ---
+    # iPhone videos are HEVC in a .mov container. Safari/iOS decodes HEVC
+    # natively, so the uploader sees their own clip fine, but Chrome/Firefox
+    # on desktop and most Android browsers show a black screen. Re-encoding
+    # to H.264 + AAC in an MP4 container fixes this for everyone.
+    try:
+        video_bytes = transcode_to_mp4_h264(video_bytes, crop_x=crop_x, crop_y=crop_y)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(400, f"Could not process video: {e}")
+
+    if len(video_bytes) < 1024:
+        raise HTTPException(400, "Video is empty after conversion")
+
+    # Force extension + MIME after transcode
+    ext = 'mp4'
+    content_type = 'video/mp4'
+
+    # Upload to Supabase Storage bucket 'tricks'
+    video_key = f"{current_user['username']}/{uuid.uuid4().hex}.{ext}"
+    try:
+        supabase.storage.from_("tricks").upload(
+            video_key,
+            video_bytes,
+            {"content-type": content_type},
         )
     except Exception as e:
         raise HTTPException(500, f"Upload failed: {e}")
