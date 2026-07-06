@@ -919,8 +919,8 @@ async def create_trick(
                 #"Video rejected by content check: "
                 #f"{mod_reason}. "
                # "Try a clearer shot of your trick or spot."
-            ),
-        )
+           # ),
+       # )
             
     # Pick an extension
     ext = 'mp4'
