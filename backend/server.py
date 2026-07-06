@@ -479,28 +479,47 @@ async def start_ride(current_user: dict = Depends(get_current_user)):
 async def get_rides(current_user: dict = Depends(get_current_user)):
     result = supabase.table('rides').select('*').eq('user_id', current_user['username']).order('start_time', desc=True).limit(20).execute()
     return result.data
-
-  # Public Skater Profile Page 
-
-@api.get("/users/{username}/public")
-async def get_public_profile(username: str):
-    username = username.lower().strip()
-    res = supabase.table('users').select(
-        'username, deck_size, deck_company, fav_trick, fav_spot, self_comment, birth_date, has_first_ride, created_at'
-    ).eq('username', username).execute()
-    
-    if not res.data:
-        raise HTTPException(status_code=404, detail="Skater not found")
-    
-    user = res.data[0]
-    
-    # Add stats
-    spots = supabase.table('spots').select('id', count='exact').eq('user_id', username).execute()
-    rides = supabase.table('rides').select('id', count='exact').eq('user_id', username).eq('status', 'completed').execute()
     
 # DFQ earning rate: 1 DFQ per 100 meters
 DFQ_PER_METER = 0.01
 FIRST_RIDE_BONUS = 10.0
+
+# --- Public Skater Profile ---
+@api.get("/users/{username}/public")
+async def get_public_profile(username: str):
+    username = username.lower().strip()
+
+    res = supabase.table('users').select(
+        'username, deck_size, deck_company, fav_trick, fav_spot, '
+        'self_comment, birth_date, has_first_ride, created_at'
+    ).eq('username', username).execute()
+
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Skater not found")
+
+    user = res.data[0]
+
+    # Stats — spots created + rides finished
+    try:
+        spots_res = supabase.table('spots').select(
+            'id', count='exact'
+        ).eq('user_id', username).execute()
+        spot_count = spots_res.count or 0
+    except Exception:
+        spot_count = 0
+
+    try:
+        # NOTE: stop_ride writes status='finished', NOT 'completed'
+        rides_res = supabase.table('rides').select(
+            'id', count='exact'
+        ).eq('user_id', username).eq('status', 'finished').execute()
+        ride_count = rides_res.count or 0
+    except Exception:
+        ride_count = 0
+
+    user['spot_count'] = spot_count
+    user['ride_count'] = ride_count
+    return user
 
 @api.post("/rides/{ride_id}/stop")
 async def stop_ride(ride_id: str, payload: RideFinish, current_user: dict = Depends(get_current_user)):
