@@ -1046,27 +1046,7 @@ def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
                 os.unlink(p)
             except Exception:
                 pass
-Edit 2b: use the helper inside create_trick
-Find this block (inside @api.post("/tricks"), around line 925):
-    # Pick an extension
-    ext = 'mp4'
-    if video.filename and '.' in video.filename:
-        candidate = video.filename.rsplit('.', 1)[-1].lower()
-        if candidate in ('mp4', 'mov', 'webm', 'm4v'):
-            ext = candidate
 
-    # Upload to Supabase Storage bucket 'tricks'
-    video_key = f"{current_user['username']}/{uuid.uuid4().hex}.{ext}"
-    try:
-        supabase.storage.from_("tricks").upload(
-            video_key,
-            video_bytes,
-            {"content-type": video.content_type or "video/mp4"},
-        )
-    except Exception as e:
-        raise HTTPException(500, f"Upload failed: {e}")
-    video_url = supabase.storage.from_("tricks").get_public_url(video_key)
-Replace with:
     # --- Transcode to browser-safe H.264/AAC MP4 ---
     # iPhone videos are HEVC in a .mov container. Safari/iOS decodes HEVC
     # natively, so the uploader sees their own clip fine, but Chrome/Firefox
