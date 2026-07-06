@@ -16,7 +16,8 @@ import SpotsMapPage from './components/SpotsMapPage';
 import confetti from 'canvas-confetti';
 
 import ChatPage from './components/ChatPage';
-import { MessageCircle } from 'lucide-react';   
+import { MessageCircle } from 'lucide-react'; 
+import SkaterProfile from './components/SkaterProfile';
 // add to lucide imports
 
 // Fix Leaflet marker icons
@@ -1374,15 +1375,15 @@ function App() {
         <RideProvider>
           <Layout>
               <Routes>
-<Route path="/spots" element={<PrivateRoute><SpotsMapWrapper /></PrivateRoute>} />
-<Route path="/chat" element={<PrivateRoute><ChatWrapper /></PrivateRoute>} />
-                <Route path="/welcome" element={<Welcome />} /> 
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                  <Route path="/ride" element={<PrivateRoute><RidePage /></PrivateRoute>} />
-                  <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
-                  <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-             
+                    <Route path="/spots" element={<PrivateRoute><SpotsMapWrapper /></PrivateRoute>} />
+                    <Route path="/chat" element={<PrivateRoute><ChatWrapper /></PrivateRoute>} />
+                    <Route path="/welcome" element={<Welcome />} /> 
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                    <Route path="/ride" element={<PrivateRoute><RidePage /></PrivateRoute>} />
+                    <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
+                    <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+                    <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
 
               </Routes>
           </Layout>
