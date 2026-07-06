@@ -1373,7 +1373,7 @@ const SpotsMapWrapper = () => {
 };
 
 const TricksFeedWrapper = () => {
-const { user } = useContext(AppContext); // use your actual context/hook
+const { user } = useAuth; // use your actual context/hook
 return <TricksFeed currentUser={user} />;
 };
 
@@ -1395,7 +1395,7 @@ function App() {
                     <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
                     <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
-                    <Route path="/tricks" element={<PrivateRoute><Layout user={user}><TricksFeed currentUser={user} /></Layout></PrivateRoute>}/>
+                 <Route path="/tricks" element={<PrivateRoute><TricksFeedWrapper /></PrivateRoute>}/>
               </Routes>
           </Layout>
         </RideProvider>
