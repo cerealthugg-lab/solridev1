@@ -47,7 +47,7 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
 
   if (!open) return null;
 
-  const pickVideo = (e) => {
+const pickVideo = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > 50 * 1024 * 1024) { setError('Video too big (max 50MB)'); return; }
@@ -57,7 +57,9 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
     setVideoFile(f);
     setVideoUrl(url);
 
-    // Read duration
+    // Read duration with a SEPARATE object URL, so revoking the probe
+    // never kills the blob the preview <video> is still using.
+    const probeUrl = URL.createObjectURL(f);
     const v = document.createElement('video');
     v.preload = 'metadata';
     v.onloadedmetadata = () => {
@@ -66,9 +68,9 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
       if (d > MAX_SECONDS + 0.5) {
         setError(`Clip is ${d.toFixed(1)}s — max ${MAX_SECONDS}s. Trim it first.`);
       }
-      URL.revokeObjectURL(v.src);
+      URL.revokeObjectURL(probeUrl);
     };
-    v.src = url;
+    v.src = probeUrl;
   };
 
   const submit = async () => {
