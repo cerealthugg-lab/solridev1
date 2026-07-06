@@ -592,25 +592,7 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
          </Link>
       </div>
 
-      <Link to="/find-tool" className="block mt-4">
-        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#D2FF00] group-hover:text-black transition-colors text-white">
-                <Wrench size={20} />
-              </div>
-              <div>
-                <span className="font-bold uppercase tracking-wider text-sm text-white block">Find My Tool</span>
-                <span className="text-xs text-zinc-500">GPS Tracker • Beep</span>
-              </div>
-            </div>
-            <div className="text-xs text-[#D2FF00] font-mono uppercase">V2</div>
-          </CardContent>
-        </Card>
-      </Link>
-
-
-
+      
 {/* Spots Map Button */}
       <Link to="/spots" className="block mt-3">
         <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#00D2FF] transition-colors cursor-pointer group">
@@ -1400,7 +1382,8 @@ function App() {
                   <Route path="/ride" element={<PrivateRoute><RidePage /></PrivateRoute>} />
                   <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
                   <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-                  <Route path="/find-tool" element={<PrivateRoute><FindMyToolPage /></PrivateRoute>} />
+             
+
               </Routes>
           </Layout>
         </RideProvider>

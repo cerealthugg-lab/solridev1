@@ -7,6 +7,7 @@ import { Card, CardContent } from "./ui/card";
 import { MapPin, Plus, X, Camera, Navigation, Users, Filter, Trash2 } from 'lucide-react';
 import { toast } from "./ui/sonner";
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -58,9 +59,24 @@ var MapClickHandler = function(props) {
 
 var FlyToLocation = function(props) {
   var map = useMap();
+  var hasFlownRef = useRef(false);
+
+  // Fly ONCE on first load (city zoom)
   useEffect(function() {
-    if (props.position) map.flyTo(props.position, 15);
+    if (!props.position) return;
+    if (!hasFlownRef.current) {
+      map.flyTo(props.position, 13, { duration: 1.5 });
+      hasFlownRef.current = true;
+    }
   }, [props.position, map]);
+
+  // Fly on manual trigger (closer zoom on button click)
+  useEffect(function() {
+    if (props.position && props.trigger > 0) {
+      map.flyTo(props.position, 15, { duration: 1.2 });
+    }
+  }, [props.trigger]);
+
   return null;
 };
 
@@ -119,11 +135,20 @@ var SpotDetailCard = function(props) {
           <p className="text-sm text-zinc-400 leading-relaxed">{spot.description}</p>
         )}
 
-        <div className="flex items-center justify-between text-xs text-zinc-500">
-          <span>Added by <span className="text-white font-bold">{spot.user_id}</span></span>
-          <span className="font-mono">{new Date(spot.created_at).toLocaleDateString()}</span>
-        </div>
-
+     <div className="flex items-center justify-between text-xs text-zinc-500">
+  <span>
+    Added by{' '}
+    <Link
+      to={"/skater/" + spot.user_id}
+      onClick={function(e) { e.stopPropagation(); }}
+      className="text-[#D2FF00] hover:underline font-bold"
+    >
+      {spot.user_id}
+    </Link>
+  </span>
+  <span className="font-mono">{new Date(spot.created_at).toLocaleDateString()}</span>
+</div>
+          
         <div className="flex gap-2">
           <button
             onClick={function() {
@@ -190,6 +215,9 @@ var SpotsMapPage = function(props) {
   var setSelectedSpot = selectedState[1];
   var fileInputRef = useRef(null);
   var listRef = useRef(null);
+    var centerTriggerState = useState(0);
+    var centerTrigger = centerTriggerState[0];
+    var setCenterTrigger = centerTriggerState[1];
 
   var fetchSpots = async function() {
     try {
@@ -348,7 +376,15 @@ var SpotsMapPage = function(props) {
           <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false}>
             <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution="CARTO" />
             <MapClickHandler onMapClick={handleMapClick} isAdding={isAdding} />
-            {userLocation && <FlyToLocation position={[userLocation.lat, userLocation.lng]} />}
+              
+              
+              
+            {userLocation && (
+  <FlyToLocation
+    position={[userLocation.lat, userLocation.lng]}
+    trigger={centerTrigger}
+  />
+)}
 
             {filteredSpots.map(function(spot) {
               var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
@@ -508,7 +544,11 @@ var SpotsMapPage = function(props) {
       )}
 
       <button
-        onClick={function() { shareLocation(); toast.success("Location updated"); }}
+        onClick={function() {
+  shareLocation();
+  setCenterTrigger(function(prev) { return prev + 1; });
+  toast.success("Centering...");
+}}
         className="w-full flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-[#D2FF00] uppercase tracking-widest py-2"
       >
         <Navigation size={14} /> Center on me
