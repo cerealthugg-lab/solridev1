@@ -48,7 +48,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
     return () => io.disconnect();
   }, [autoplay]);
 
-  const isOwn = currentUsername && currentUsername === trick.user_id;
+  const isOwn = !!currentUsername && String(currentUsername).toLowerCase() === String(trick.user_id || '').toLowerCase();
 
   const tip = async () => {
     if (tipping || tipped || isOwn) return;
