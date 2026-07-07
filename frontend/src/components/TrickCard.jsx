@@ -48,16 +48,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
     return () => io.disconnect();
   }, [autoplay]);
 
-  const isOwn = !!currentUsername && String(currentUsername).toLowerCase() === String(trick.user_id || '').toLowerCase();
-    
-    const spotRemoved = !!trick.spot_removed;
-  const showRemovedSpot = () => {
-    const coord = (trick.spot_lat != null && trick.spot_lng != null)
-      ? `${Number(trick.spot_lat).toFixed(5)}, ${Number(trick.spot_lng).toFixed(5)}`
-      : 'unknown location';
-    toast(`Spot has been removed or banned. It was placed at: ${coord}`);
-  };
-    
+  const isOwn = currentUsername && currentUsername === trick.user_id;
 
   const tip = async () => {
     if (tipping || tipped || isOwn) return;
@@ -98,9 +89,8 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
   {/* Header — one line: "<spot> by @<user>" */}
       <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-900">
         <div className="min-w-0 flex items-center gap-1.5 text-sm font-black uppercase tracking-tight">
-     
-<MapPin size={14} className={`shrink-0 ${trick.spot_id && !spotRemoved ? 'text-[#D2FF00]' : 'text-zinc-600'}`} />
-          {trick.spot_id && !spotRemoved ? (
+          <MapPin size={14} className={`shrink-0 ${trick.spot_id ? 'text-[#D2FF00]' : 'text-zinc-600'}`} />
+          {trick.spot_id ? (
             <Link
               to={`/spots?focus=${trick.spot_id}`}
               data-testid={`trick-spot-${trick.id}`}
@@ -108,20 +98,9 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
             >
               {trick.spot_name || 'Unknown spot'}
             </Link>
-          ) : trick.spot_id && spotRemoved ? (
-            <button
-              type="button"
-              onClick={showRemovedSpot}
-              data-testid={`trick-spot-removed-${trick.id}`}
-              className="text-zinc-500 hover:text-[#FF3366] truncate max-w-[45%] underline decoration-dotted underline-offset-2"
-              title="Spot removed or banned"
-            >
-              {trick.spot_name || 'Removed spot'}
-            </button>
           ) : (
             <span className="text-zinc-500 truncate max-w-[45%]">Unknown spot</span>
           )}
-
           <span className="text-zinc-600 font-bold">by</span>
           <Link
             to={`/skater/${trick.user_id}`}

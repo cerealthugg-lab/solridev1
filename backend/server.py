@@ -704,13 +704,10 @@ async def delete_spot(spot_id: str, current_user: dict = Depends(get_current_use
     result = supabase.table('spots').select('user_id').eq('id', spot_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Spot not found")
-        
     if result.data[0]['user_id'] != current_user['username']:
         raise HTTPException(status_code=403, detail="Not authorized")
-    # Soft-delete: keep the row so its tricks (videos) stay in the feed.
-    supabase.table('spots').update({'status': 'removed'}).eq('id', spot_id).execute()
+    supabase.table('spots').delete().eq('id', spot_id).execute()
     return {"message": "Spot removed"}
-
 
 # --- Active Riders ---
 
@@ -884,13 +881,14 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
     ).range(offset, offset + limit - 1).execute()
     tricks = res.data or []
 
+    # Attach spot name for each trick (single roundtrip)
     spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
     spot_map = {}
     if spot_ids:
-        srs = supabase.table('spots').select('id, name, status, lat, lng').in_('id', spot_ids).execute()
-        spot_map = {s['id']: s for s in (srs.data or [])}
+        srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
+        spot_map = {s['id']: s['name'] for s in (srs.data or [])}
     for t in tricks:
-        _attach_spot_info(t, spot_map)
+        t['spot_name'] = spot_map.get(t.get('spot_id'), 'Unknown spot')
 
     return tricks
 
