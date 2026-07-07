@@ -877,21 +877,6 @@ def transcode_to_mp4_h264(input_bytes: bytes, crop_x: int = 50, crop_y: int = 50
 
 
 @api.get("/tricks/feed")
-
-def _attach_spot_info(t, spot_map):
-    s = spot_map.get(t.get('spot_id'))
-    if s:
-        t['spot_name'] = s.get('name') or 'Unknown spot'
-        t['spot_removed'] = s.get('status') != 'approved'
-        t['spot_lat'] = s.get('lat')
-        t['spot_lng'] = s.get('lng')
-    else:
-        t['spot_name'] = 'Removed spot'
-        t['spot_removed'] = bool(t.get('spot_id'))
-        t['spot_lat'] = None
-        t['spot_lng'] = None
-    return t
-
 async def tricks_feed(limit: int = 20, offset: int = 0):
     """Global feed — newest tricks across every spot & rider."""
     res = supabase.table('tricks').select('*').order(
@@ -899,14 +884,14 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
     ).range(offset, offset + limit - 1).execute()
     tricks = res.data or []
 
-    # Attach spot name for each trick (single roundtrip)
     spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
     spot_map = {}
-if spot_ids:
+    if spot_ids:
         srs = supabase.table('spots').select('id, name, status, lat, lng').in_('id', spot_ids).execute()
         spot_map = {s['id']: s for s in (srs.data or [])}
     for t in tricks:
         _attach_spot_info(t, spot_map)
+
     return tricks
 
 
