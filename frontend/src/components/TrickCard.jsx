@@ -159,7 +159,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
           </div>
         )}
       </div>
-      )}
+    
 
       {/* Actions */}
       <footer className="flex items-center justify-between px-4 py-3">
