@@ -460,7 +460,7 @@ var SpotsMapPage = function(props) {
 )}
               
               {userLocation && (
-  <Marker position={[userLocation.lat, userLocation.lng]} icon={riderIcon}>
+  <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
     <Popup>
       <div className="text-black text-xs">
         <strong>You</strong>
