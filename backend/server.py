@@ -972,86 +972,7 @@ async def create_trick(
     if len(video_bytes) < 1024:
         raise HTTPException(400, "Video is empty or corrupt")
 
-               # --- AI moderation gate ---
-    # Import here to keep this file paste-friendly; in your real backend/server.py
-    # you'll likely move this to the top of the file.
-    #from moderation import moderate_video
-    #accepted, mod_reason, mod_confidence = await moderate_video(video_bytes)
-    #if not accepted:
-        #raise HTTPException(
-            #status_code=400,
-           # detail=(
-                #"Video rejected by content check: "
-                #f"{mod_reason}. "
-               # "Try a clearer shot of your trick or spot."
-           # ),
-       # )
-            
-
-TRICK_REWARD = 5.0            # DFQ granted on trick upload
-TIP_AMOUNT = 1.0              # DFQ tipped per tap
-DAILY_TRICK_LIMIT = 5         # max tricks per user per 24h
-MAX_VIDEO_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
-MIN_TRICK_SECONDS = 1
-MAX_TRICK_SECONDS = 15
-
-
-import subprocess
-import tempfile
-import shutil
-
-
-def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
-    """
-    Re-encode any uploaded video (iPhone HEVC .mov, .webm, etc.) to a
-    browser-universal H.264 + AAC MP4 with a moov atom up front so the
-    <video> tag can start playing before the full file is downloaded.
-
-    Requires the `ffmpeg` binary on PATH (installed via Dockerfile).
-    """
-    if not shutil.which("ffmpeg"):
-        # No ffmpeg available — fall back to raw bytes (will fail on HEVC
-        # for non-Safari clients, but the app keeps working locally).
-        return input_bytes
-
-    with tempfile.NamedTemporaryFile(suffix=".src", delete=False) as src, \
-         tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as dst:
-        src_path, dst_path = src.name, dst.name
-        src.write(input_bytes)
-
-    try:
-        cmd = [
-            "ffmpeg", "-y", "-i", src_path,
-            "-vcodec", "libx264",
-            "-profile:v", "baseline", "-level", "3.1",
-            "-preset", "veryfast",
-            "-crf", "24",
-            "-pix_fmt", "yuv420p",
-            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            "-acodec", "aac", "-b:a", "128k",
-            "-movflags", "+faststart",
-            "-max_muxing_queue_size", "1024",
-            dst_path,
-        ]
-        proc = subprocess.run(cmd, capture_output=True, timeout=120)
-        if proc.returncode != 0:
-            err = proc.stderr.decode("utf-8", errors="ignore")[-400:]
-            raise HTTPException(400, f"Video conversion failed: {err}")
-
-        with open(dst_path, "rb") as f:
-            return f.read()
-    finally:
-        for p in (src_path, dst_path):
-            try:
-                os.unlink(p)
-            except Exception:
-                pass
-
-    # --- Transcode to browser-safe H.264/AAC MP4 ---
-    # iPhone videos are HEVC in a .mov container. Safari/iOS decodes HEVC
-    # natively, so the uploader sees their own clip fine, but Chrome/Firefox
-    # on desktop and most Android browsers show a black screen. Re-encoding
-    # to H.264 + AAC in an MP4 container fixes this for everyone.
+# --- Transcode to browser-safe H.264/AAC MP4 (also square-crops) ---
     try:
         video_bytes = transcode_to_mp4_h264(video_bytes, crop_x=crop_x, crop_y=crop_y)
     except HTTPException:
@@ -1062,30 +983,24 @@ def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
     if len(video_bytes) < 1024:
         raise HTTPException(400, "Video is empty after conversion")
 
-    # Force extension + MIME after transcode
     ext = 'mp4'
     content_type = 'video/mp4'
 
-    # Upload to Supabase Storage bucket 'tricks'
     video_key = f"{current_user['username']}/{uuid.uuid4().hex}.{ext}"
     try:
         supabase.storage.from_("tricks").upload(
-            video_key,
-            video_bytes,
-            {"content-type": content_type},
+            video_key, video_bytes, {"content-type": content_type},
         )
     except Exception as e:
         raise HTTPException(500, f"Upload failed: {e}")
     video_url = supabase.storage.from_("tricks").get_public_url(video_key)
 
-    # Filter tagged users to real accounts
     tag_list = [u.strip().lstrip('@').lower() for u in tagged_users.split(',') if u.strip()]
     tag_list = list({t for t in tag_list if t and t != current_user['username']})[:10]
     if tag_list:
         existing = supabase.table('users').select('username').in_('username', tag_list).execute()
         tag_list = [u['username'] for u in (existing.data or [])]
 
-    # Insert trick row
     trick_id = str(uuid.uuid4())
     trick_data = {
         'id': trick_id,
@@ -1101,7 +1016,6 @@ def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
     }
     supabase.table('tricks').insert(trick_data).execute()
 
-    # Grant 5 DFQ reward
     new_balance = (current_user.get('wallet_balance') or 0) + TRICK_REWARD
     supabase.table('users').update({'wallet_balance': new_balance}).eq(
         'username', current_user['username']
@@ -1116,7 +1030,6 @@ def transcode_to_mp4_h264(input_bytes: bytes) -> bytes:
     }).execute()
 
     return {"trick": trick_data, "earned": TRICK_REWARD, "new_balance": new_balance}
-
 
 @api.post("/tricks/{trick_id}/tip")
 async def tip_trick(trick_id: str, current_user: dict = Depends(get_current_user)):

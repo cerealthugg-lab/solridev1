@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Trash2, Coins } from 'lucide-react';
+import { MapPin, Trash2, Coins, Volume2, VolumeX } from 'lucide-react';
 import axios from 'axios';
 import { toast } from './ui/sonner';
 
@@ -27,6 +27,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
   const [tips, setTips] = useState(Number(trick.tips_received) || 0);
   const [tipped, setTipped] = useState(tippedByMe);
   const [tipping, setTipping] = useState(false);
+    const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
 
   useEffect(() => { setTipped(tippedByMe); }, [tippedByMe]);
@@ -114,51 +115,50 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
         </div>
       </header>
 
-      {/* Video */}
+  {/* Video */}
       <div className="relative bg-black">
         <video
           ref={videoRef}
           src={trick.video_url}
           controls={!autoplay}
           loop
-          muted
+          muted={muted}
           playsInline
           preload="metadata"
           className="w-full max-h-[70vh] object-contain bg-black"
-          onClick={(e) => {
-            if (autoplay) {
-              // tap to toggle sound in feed
-              e.currentTarget.muted = !e.currentTarget.muted;
-            }
-          }}
+          onClick={(e) => e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause()}
         />
-        <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 border border-white/10">
-          {trick.trick_name}
-        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }}
+          data-testid={`trick-mute-${trick.id}`}
+          className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/90 text-white p-2 border border-white/10"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+        </button>
       </div>
 
-      {/* Caption + tags */}
-      {(trick.caption || (trick.tagged_users && trick.tagged_users.length > 0)) && (
-        <div className="px-4 py-3 border-b border-zinc-900">
-          {trick.caption && (
-            <p className="text-sm text-zinc-300 leading-snug whitespace-pre-wrap break-words">
-              {trick.caption}
-            </p>
-          )}
-          {trick.tagged_users && trick.tagged_users.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {trick.tagged_users.map((u) => (
-                <Link
-                  key={u}
-                  to={`/skater/${u}`}
-                  className="text-[11px] font-bold text-[#00D2FF] hover:text-white"
-                >
-                  @{u}
-                </Link>
-              ))}
-            </div>
-          )}
+      {/* Trick name + caption + tags */}
+      <div className="px-4 py-3 border-b border-zinc-900 space-y-2">
+        <div className="text-white text-sm font-black uppercase tracking-widest">
+          {trick.trick_name}
         </div>
+        {trick.caption && (
+          <p className="text-sm text-zinc-300 leading-snug whitespace-pre-wrap break-words">
+            {trick.caption}
+          </p>
+        )}
+        {trick.tagged_users && trick.tagged_users.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {trick.tagged_users.map((u) => (
+              <Link key={u} to={`/skater/${u}`} className="text-[11px] font-bold text-[#00D2FF] hover:text-white">
+                @{u}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
       )}
 
       {/* Actions */}
