@@ -1097,11 +1097,9 @@ async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_u
     res = supabase.table('tricks').select('user_id, video_url').eq('id', trick_id).execute()
     if not res.data:
         raise HTTPException(404, "Trick not found")
-        
-   if (res.data[0]['user_id'] or '').lower() != current_user['username'].lower():
+    owner = (res.data[0].get('user_id') or "").lower()
+    if owner != current_user['username'].lower():
         raise HTTPException(403, "Not your trick")
-
-    # Best-effort: delete the storage object too
     try:
         vurl = res.data[0].get('video_url', '')
         if '/tricks/' in vurl:
@@ -1109,7 +1107,6 @@ async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_u
             supabase.storage.from_("tricks").remove([key])
     except Exception:
         pass
-
     supabase.table('tricks').delete().eq('id', trick_id).execute()
     return {"message": "Trick removed"}
             
