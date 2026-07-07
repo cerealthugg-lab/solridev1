@@ -48,6 +48,14 @@ const newPinIcon = new L.DivIcon({
   iconAnchor: [14, 14],
 });
 
+const userIcon = new L.DivIcon({
+  className: 'user-marker',
+  html: '<div style="background: #00D2FF; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px #00D2FF;"></div>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+
 var MapClickHandler = function(props) {
   useMapEvents({
     click: function(e) {
@@ -304,7 +312,9 @@ var SpotsMapPage = function(props) {
           setUserLocation(loc);
           try { await api.post('/riders/location', loc); } catch (e) {}
         },
-        function() {},
+        function(err) {
+            toast.error("Location access denied - can't show your position")
+        },
         { enableHighAccuracy: true }
       );
     }
@@ -448,6 +458,18 @@ var SpotsMapPage = function(props) {
     trigger={centerTrigger}
   />
 )}
+              
+              {userLocation && (
+  <Marker position={[userLocation.lat, userLocation.lng]} icon={riderIcon}>
+    <Popup>
+      <div className="text-black text-xs">
+        <strong>You</strong>
+        <div className="text-zinc-500">You are here</div>
+      </div>
+    </Popup>
+  </Marker>
+)}
+
 
             {filteredSpots.map(function(spot) {
               var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
