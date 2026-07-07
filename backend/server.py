@@ -704,10 +704,13 @@ async def delete_spot(spot_id: str, current_user: dict = Depends(get_current_use
     result = supabase.table('spots').select('user_id').eq('id', spot_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Spot not found")
-    if result.data[0]['user_id'] != current_user['username']:
+        
+    iif result.data[0]['user_id'] != current_user['username']:
         raise HTTPException(status_code=403, detail="Not authorized")
-    supabase.table('spots').delete().eq('id', spot_id).execute()
+    # Soft-delete: keep the row so its tricks (videos) stay in the feed.
+    supabase.table('spots').update({'status': 'removed'}).eq('id', spot_id).execute()
     return {"message": "Spot removed"}
+
 
 # --- Active Riders ---
 
@@ -874,6 +877,21 @@ def transcode_to_mp4_h264(input_bytes: bytes, crop_x: int = 50, crop_y: int = 50
 
 
 @api.get("/tricks/feed")
+
+def _attach_spot_info(t, spot_map):
+    s = spot_map.get(t.get('spot_id'))
+    if s:
+        t['spot_name'] = s.get('name') or 'Unknown spot'
+        t['spot_removed'] = s.get('status') != 'approved'
+        t['spot_lat'] = s.get('lat')
+        t['spot_lng'] = s.get('lng')
+    else:
+        t['spot_name'] = 'Removed spot'
+        t['spot_removed'] = bool(t.get('spot_id'))
+        t['spot_lat'] = None
+        t['spot_lng'] = None
+    return t
+
 async def tricks_feed(limit: int = 20, offset: int = 0):
     """Global feed — newest tricks across every spot & rider."""
     res = supabase.table('tricks').select('*').order(
@@ -884,12 +902,11 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
     # Attach spot name for each trick (single roundtrip)
     spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
     spot_map = {}
-    if spot_ids:
-        srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
-        spot_map = {s['id']: s['name'] for s in (srs.data or [])}
+if spot_ids:
+        srs = supabase.table('spots').select('id, name, status, lat, lng').in_('id', spot_ids).execute()
+        spot_map = {s['id']: s for s in (srs.data or [])}
     for t in tricks:
-        t['spot_name'] = spot_map.get(t.get('spot_id'), 'Unknown spot')
-
+        _attach_spot_info(t, spot_map)
     return tricks
 
 

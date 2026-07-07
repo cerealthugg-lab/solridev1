@@ -609,6 +609,7 @@ var SpotsMapPage = function(props) {
       <button
         onClick={function() {
   shareLocation();
+  setShowRiders(true);
   setCenterTrigger(function(prev) { return prev + 1; });
   toast.success("Centering...");
 }}
