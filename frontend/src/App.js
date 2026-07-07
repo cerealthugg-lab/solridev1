@@ -1378,7 +1378,7 @@ const SpotsMapWrapper = () => {
 };
 
 const TricksFeedWrapper = () => {
-const { user } = useAuth; // use your actual context/hook
+const { user } = useAuth(); // use your actual context/hook
 return <TricksFeed currentUser={user} />;
 };
 

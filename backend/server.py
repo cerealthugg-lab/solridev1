@@ -1097,7 +1097,7 @@ async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_u
     res = supabase.table('tricks').select('user_id, video_url').eq('id', trick_id).execute()
     if not res.data:
         raise HTTPException(404, "Trick not found")
-    owner = (res.data[0].get('user_id') or "").lower()
+    owner = (res.data[0].get('user_id') or '').lower()
     if owner != current_user['username'].lower():
         raise HTTPException(403, "Not your trick")
     try:
