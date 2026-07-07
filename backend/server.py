@@ -705,7 +705,7 @@ async def delete_spot(spot_id: str, current_user: dict = Depends(get_current_use
     if not result.data:
         raise HTTPException(status_code=404, detail="Spot not found")
         
-    iif result.data[0]['user_id'] != current_user['username']:
+    if result.data[0]['user_id'] != current_user['username']:
         raise HTTPException(status_code=403, detail="Not authorized")
     # Soft-delete: keep the row so its tricks (videos) stay in the feed.
     supabase.table('spots').update({'status': 'removed'}).eq('id', spot_id).execute()
