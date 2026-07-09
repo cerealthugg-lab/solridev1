@@ -24,6 +24,7 @@ api.interceptors.request.use((config) => {
  *   autoplay: boolean (feed context)
  */
 function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, autoplay = true }) {
+  const [showRemovedInfo, setShowRemovedInfo] = useState(false);
   const [tips, setTips] = useState(Number(trick.tips_received) || 0);
   const [tipped, setTipped] = useState(tippedByMe);
   const [tipping, setTipping] = useState(false);
@@ -98,18 +99,41 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
             >
               {trick.spot_name || 'Unknown spot'}
             </Link>
-        ) : (trick.spot_lat && trick.spot_lng) ? (
-            <a
-              href={`https://www.google.com/maps?q=${trick.spot_lat},${trick.spot_lng}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#FF3366] hover:underline truncate max-w-[60%]"
-              title="This spot was removed"
-            >
-              {trick.spot_name ? `${trick.spot_name} (removed)` : 'Spot removed'} · {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
-            </a>
-          ) : (
-            <span className="text-zinc-500 truncate max-w-[45%]">Unknown spot</span>
+   ) : (
+            <span className="relative flex items-center gap-1.5 min-w-0">
+              {/* click name = open popup */}
+              <button
+                type="button"
+                onClick={() => setShowRemovedInfo(true)}
+                className="flex items-center gap-1 text-zinc-500 hover:text-zinc-300 truncate max-w-[45%]"
+                title="This spot was removed"
+              >
+                <span className="w-2 h-2 rounded-full bg-zinc-500 inline-block shrink-0" />
+                {trick.spot_name || 'Spot removed'}
+              </button>
+
+              {showRemovedInfo && (
+                <div className="absolute top-6 left-0 z-20 w-56 p-3 bg-[#0a0a0d] border border-zinc-800 rounded-lg shadow-xl text-left normal-case tracking-normal">
+                  <p className="text-xs font-bold text-white mb-1">This spot was removed</p>
+                  {trick.spot_lat && trick.spot_lng ? (
+                    <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                      <span className="w-2 h-2 rounded-full bg-zinc-500 inline-block" />
+                      {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-zinc-500">No coordinates saved</p>
+                  )}
+                  {/* :( closes the popup */}
+                  <button
+                    type="button"
+                    onClick={() => setShowRemovedInfo(false)}
+                    className="mt-2 w-full py-1 text-sm font-bold text-zinc-400 hover:text-[#FF3366] border border-zinc-800 rounded"
+                  >
+                    :(
+                  </button>
+                </div>
+              )}
+            </span>
           )}
           <span className="text-zinc-600 font-bold">by</span>
           <Link
