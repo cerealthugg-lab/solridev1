@@ -313,7 +313,7 @@ var SpotsMapPage = function(props) {
           try { await api.post('/riders/location', loc); } catch (e) {}
         },
         function(err) {
-            toast.error("Location access denied - can't show your position")
+            toast.error("Location access denied - can't show your location.")
         },
         { enableHighAccuracy: true }
       );
@@ -382,6 +382,7 @@ var SpotsMapPage = function(props) {
   };
 
   var handleDeleteSpot = async function(spotId) {
+    if (!window.confirm("Delete this spot? The  videos stay in the Tricks feed, but the spot info and map pin will be removed.")) return;
     try {
       await api.delete('/spots/' + spotId);
       toast.success("Spot removed");

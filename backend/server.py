@@ -706,6 +706,7 @@ async def delete_spot(spot_id: str, current_user: dict = Depends(get_current_use
         raise HTTPException(status_code=404, detail="Spot not found")
     if result.data[0]['user_id'] != current_user['username']:
         raise HTTPException(status_code=403, detail="Not authorized")
+    supabase.table('tricks').update({'spot_status': 'removed'}).eq('spot_id', spot_id).execute()
     supabase.table('spots').delete().eq('id', spot_id).execute()
     return {"message": "Spot removed"}
 
@@ -888,7 +889,14 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
         srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
         spot_map = {s['id']: s['name'] for s in (srs.data or [])}
     for t in tricks:
-        t['spot_name'] = spot_map.get(t.get('spot_id'), 'Unknown spot')
+        live_name = spot_map.get(t.get('spot_id'))
+        if live_name:
+            t['spot_name'] = live_name
+            t['spot_removed'] = False
+        else:
+            # spot deleted — use the snapshot saved at upload
+            t['spot_removed'] = True
+            t['spot_name'] = t.get('spot_name') or 'Unknown spot'
 
     return tricks
 
@@ -1001,6 +1009,8 @@ async def create_trick(
         existing = supabase.table('users').select('username').in_('username', tag_list).execute()
         tag_list = [u['username'] for u in (existing.data or [])]
 
+    spot_row = supabase.table('spots').select('name, lat, lng').eq('id', spot_id).execute()
+    spot_info = spot_row.data[0] if spot_row.data else {}
     trick_id = str(uuid.uuid4())
     trick_data = {
         'id': trick_id,
@@ -1013,6 +1023,10 @@ async def create_trick(
         'tagged_users': tag_list,
         'tips_received': 0,
         'created_at': datetime.now(timezone.utc).isoformat(),
+        'spot_name': spot_info.get('name'),
+        'spot_lat': spot_info.get('lat'),
+        'spot_lng': spot_info.get('lng'),
+        'spot_status': 'active',
     }
     supabase.table('tricks').insert(trick_data).execute()
 

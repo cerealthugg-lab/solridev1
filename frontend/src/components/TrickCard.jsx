@@ -98,6 +98,16 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
             >
               {trick.spot_name || 'Unknown spot'}
             </Link>
+        ) : (trick.spot_lat && trick.spot_lng) ? (
+            <a
+              href={`https://www.google.com/maps?q=${trick.spot_lat},${trick.spot_lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#FF3366] hover:underline truncate max-w-[60%]"
+              title="This spot was removed"
+            >
+              {trick.spot_name ? `${trick.spot_name} (removed)` : 'Spot removed'} · {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
+            </a>
           ) : (
             <span className="text-zinc-500 truncate max-w-[45%]">Unknown spot</span>
           )}
