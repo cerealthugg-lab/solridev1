@@ -930,12 +930,9 @@ const WalletPage = () => {
 };
 
 const ProfilePage = () => {
-    const { user, logout, fetchUser } = useAuth();
-    const navigate = useNavigate();
-    const [feedbackOpen, setFeedbackOpen] = useState(false);
-    const [formData, setFormData] = useState({
-        full_name: '', deck_size: '', deck_company: '', fav_trick: '', fav_spot: '', self_comment: '', birth_date: ''
-    });
+  const { user, fetchUser, logout } = useAuth();
+  return <MyProfile user={user} api={api} fetchUser={fetchUser} logout={logout} />;
+};
 
     useEffect(() => {
         if(user) setFormData({
