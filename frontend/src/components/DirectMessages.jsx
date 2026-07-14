@@ -29,9 +29,9 @@ export default function DirectMessages() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const open = (username) =>
-    axios.post(`${BACKEND_URL}/api/conversations`, { username }, auth())
-      .then(r => navigate(`/messages/${r.data.id}`)).catch(() => {});
+const open = (username) =>
+  axios.post(`${BACKEND_URL}/api/conversations`, { username }, auth())
+    .then(r => navigate(`/messages/${r.data.id}`, { state: { other: username } })).catch(() => {});
 
   return (
     <div className="max-w-md mx-auto p-4 text-white">
@@ -53,7 +53,8 @@ export default function DirectMessages() {
       <div className="border border-zinc-800 rounded divide-y divide-zinc-800">
         {convos.length === 0 && <p className="p-4 text-zinc-500 text-sm">No conversations yet.</p>}
         {convos.map((c) => (
-          <button key={c.id} onClick={() => navigate(`/messages/${c.id}`)}
+          <button key={c.id} onClick={() => navigate(`/messages/${c.id}, { state: { other: c.other_user}})}
+
             className="flex items-center gap-3 w-full p-3 hover:bg-zinc-900 text-left">
             <Avatar url={c.other_photo} name={c.other_user} />
             <div className="min-w-0 flex-1">

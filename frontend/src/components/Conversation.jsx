@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import {useParams, useNavigate, useLocation } from "react-router-dom";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
 
@@ -13,10 +13,16 @@ export default function Conversation({ currentUsername }) {
   const navigate = useNavigate();
   const bottomRef = useRef(null);
   const me = (currentUsername || "").toLowerCase();
-
+const location = useLocation();
+    const [other, setOther] = useState(location.state?.other || "");
+    
   const load = useCallback(() => {
     axios.get(`${BACKEND_URL}/api/conversations/${cid}/messages`, auth())
-      .then(r => setMessages(r.data || [])).catch(() => {});
+     .then(r => {
+  const data = r.data || [];
+  setMessages(data);
+  setOther(prev => prev || data.find(m => m.sender_id !== me)?.sender_id || prev);
+}).catch(() => {});
   }, [cid]);
 
   useEffect(() => {
@@ -58,7 +64,16 @@ export default function Conversation({ currentUsername }) {
       style={{ top: vp.top, height: vp.height }}>
       <header className="flex items-center gap-3 p-3 border-b border-zinc-800 shrink-0">
         <button onClick={() => navigate("/messages")} className="text-zinc-400 text-2xl leading-none">←</button>
-        <span className="font-black uppercase tracking-widest text-sm text-white">Chat</span>
+          
+      {other ? (
+  <button onClick={() => navigate(`/skater/${other}`)}
+    className="font-black uppercase tracking-widest text-sm text-white hover:text-[#D2FF00]">
+    @{other}
+  </button>
+) : (
+  <span className="font-black uppercase tracking-widest text-sm text-white">Chat</span>
+)}
+          
       </header>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
