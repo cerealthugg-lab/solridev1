@@ -51,6 +51,15 @@ function SkaterProfile() {
       </div>
     );
   }
+    
+  const [tricks, setTricks] = useState([]);
+
+useEffect(() => {
+  axios.get(`${BACKEND_URL}/api/tricks/user/${username}`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  }).then(r => setTricks(r.data || [])).catch(() => {});
+}, [username]);
+    
 
   if (error || !profile) {
     return (
@@ -108,7 +117,7 @@ function SkaterProfile() {
             <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Rides</div>
           </div>
           <div className="bg-zinc-900 border border-zinc-800 p-3 text-center">
-            <div className="text-2xl font-black text-[#D2FF00]">0</div>
+            <div className="text-2xl font-black text-[#D2FF00]">{tricks.length}</div>
             <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Tricks</div>
           </div>
         </div>
@@ -152,9 +161,22 @@ function SkaterProfile() {
           <Play size={16} className="text-[#D2FF00]" />
           <h2 className="text-sm font-black uppercase tracking-widest">Tricks</h2>
         </div>
-        <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">
-          No tricks uploaded yet
-        </p>
+       
+          {tricks.length === 0 ? (
+  <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">
+    No tricks uploaded yet
+  </p>
+) : (
+  <div className="grid grid-cols-3 gap-1">
+    {tricks.map((t) => (
+      <a key={t.id} href={`/tricks#${t.id}`}
+        className="relative aspect-square bg-black border border-zinc-800 overflow-hidden">
+        <video src={t.video_url} muted playsInline className="w-full h-full object-cover" />
+      </a>
+    ))}
+  </div>
+)}
+
       </div>
     </div>
   );
