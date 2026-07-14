@@ -58,8 +58,17 @@ function SkaterProfile() {
   useEffect(() => { /* tricks fetch */ }, [username]);
 
   // 2️⃣ THEN the guard returns
-  if (loading) return (/* spinner */);
-  if (error || !profile) return (/* error */);
+if (loading) return (
+  <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 uppercase tracking-widest text-sm">
+    Loading…
+  </div>
+);
+
+if (error || !profile) return (
+  <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 uppercase tracking-widest text-sm">
+    {error || "Skater not found"}
+  </div>
+);
 
   // 3️⃣ THEN the main render
   return (/* profile + tricks */);
