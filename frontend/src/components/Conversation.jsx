@@ -9,7 +9,7 @@ export default function Conversation({ currentUsername }) {
   const { cid } = useParams();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [vh, setVh] = useState(window.innerHeight);
+  const [vp, setVp] = useState({ top: 0, height: window.innerHeight });
   const navigate = useNavigate();
   const bottomRef = useRef(null);
   const me = (currentUsername || "").toLowerCase();
@@ -25,17 +25,25 @@ export default function Conversation({ currentUsername }) {
     return () => clearInterval(i);
   }, [load]);
 
-  // track the VISIBLE viewport so the input stays above the mobile keyboard
+  // track the VISIBLE viewport (height + top offset) — handles the mobile keyboard
   useEffect(() => {
     const vv = window.visualViewport;
-    const onResize = () => setVh(vv ? vv.height : window.innerHeight);
-    onResize();
-    vv?.addEventListener("resize", onResize);
-    window.addEventListener("resize", onResize);
-    return () => { vv?.removeEventListener("resize", onResize); window.removeEventListener("resize", onResize); };
+    const update = () => setVp({
+      top: vv ? vv.offsetTop : 0,
+      height: vv ? vv.height : window.innerHeight,
+    });
+    update();
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, []);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, vh]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, vp]);
 
   const send = () => {
     const body = text.trim();
@@ -46,7 +54,8 @@ export default function Conversation({ currentUsername }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black flex flex-col" style={{ height: vh }}>
+    <div className="fixed left-0 right-0 z-[9999] bg-black flex flex-col"
+      style={{ top: vp.top, height: vp.height }}>
       <header className="flex items-center gap-3 p-3 border-b border-zinc-800 shrink-0">
         <button onClick={() => navigate("/messages")} className="text-zinc-400 text-2xl leading-none">←</button>
         <span className="font-black uppercase tracking-widest text-sm text-white">Chat</span>
@@ -63,8 +72,7 @@ export default function Conversation({ currentUsername }) {
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex gap-2 p-3 border-t border-zinc-800 shrink-0"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+      <div className="flex gap-2 p-3 border-t border-zinc-800 shrink-0">
         <input value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView(), 300)}
