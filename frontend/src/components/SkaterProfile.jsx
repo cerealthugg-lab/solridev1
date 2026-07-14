@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Play } from 'lucide-react';
@@ -15,6 +15,7 @@ export default function SkaterProfile() {
   const [tricks, setTricks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+    const [active, setActive] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -106,27 +107,21 @@ export default function SkaterProfile() {
           <Play size={16} className="text-[#D2FF00]" />
           <h2 className="text-sm font-black uppercase tracking-widest">Tricks</h2>
         </div>
-        {tricks.length === 0 ? (
-          <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">No tricks uploaded yet</p>
-        ) : (
-              
-          <div className="space-y-3">
-  {tricks.map((t) => (
-    <div key={t.id} className="border border-zinc-800 bg-[#0a0a0d] overflow-hidden">
-      <video src={t.video_url} muted playsInline controls
-        className="w-full aspect-square object-cover bg-black" />
-      <div className="p-3 flex items-center justify-between text-xs">
-        <span className="text-zinc-400 truncate">
-          📍 {t.spot_id ? (t.spot_name || 'Spot') : (t.spot_name ? `${t.spot_name} (removed)` : 'Spot removed')}
-        </span>
-        <span className="text-[#D2FF00] font-bold shrink-0">⚡ {t.tips_received ?? 0} DFQ</span>
-      </div>
-      {t.caption && <p className="px-3 pb-3 text-xs text-white/70">{t.caption}</p>}
-    </div>
-  ))}
-</div>
-              
-        )}
+          
+       {tricks.length === 0 ? (
+  <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">No tricks uploaded yet</p>
+) : (
+  <div className="grid grid-cols-3 gap-1">
+    {tricks.map((t, i) => (
+      <button key={t.id} onClick={() => setActive(i)}
+        className="relative aspect-square bg-black border border-zinc-800 overflow-hidden">
+        <video src={t.video_url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+        <span className="absolute bottom-1 right-1 text-[10px] text-[#D2FF00] font-bold">⚡{t.tips_received ?? 0}</span>
+      </button>
+    ))}
+  </div>
+)}
+          
       </div>
     </div>
   );
