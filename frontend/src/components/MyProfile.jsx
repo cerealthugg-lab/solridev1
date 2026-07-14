@@ -30,19 +30,11 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   if (!user) return null;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-const uploadPhoto = async (e) => {
-  const f = e.target.files?.[0];
-  if (!f) { alert("No file selected"); return; }
-  const fd = new FormData();
-  fd.append("photo", f);
-  try {
-    const r = await api.post("/users/me/photo", fd);
-    alert("Upload OK → " + (r.data?.photo_url || "but NO url returned"));
-    await fetchUser();
-  } catch (err) {
-    alert("Upload FAILED → " + (err.response?.status || "") + " " + (err.response?.data?.detail || err.message));
-  }
-};
+  const uploadPhoto = async (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const fd = new FormData(); fd.append("photo", f);
+    try { await api.post("/users/me/photo", fd); await fetchUser(); } catch {}
+  };
 
   const save = async () => {
     setSaving(true);
