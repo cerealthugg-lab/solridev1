@@ -23,8 +23,6 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
     axios.post(`${BACKEND_URL}/api/dm/report`, { reported_user: profile.username }, _auth())
       .then(() => toast("Reported — thanks")).catch(() => {});
 
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 api.interceptors.request.use(function (config) {
   var token = localStorage.getItem('token');
