@@ -109,13 +109,23 @@ export default function SkaterProfile() {
         {tricks.length === 0 ? (
           <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">No tricks uploaded yet</p>
         ) : (
-          <div className="grid grid-cols-3 gap-1">
-            {tricks.map((t) => (
-              <a key={t.id} href={`/tricks#${t.id}`} className="relative aspect-square bg-black border border-zinc-800 overflow-hidden">
-                <video src={t.video_url} muted playsInline className="w-full h-full object-cover" />
-              </a>
-            ))}
-          </div>
+              
+          <div className="space-y-3">
+  {tricks.map((t) => (
+    <div key={t.id} className="border border-zinc-800 bg-[#0a0a0d] overflow-hidden">
+      <video src={t.video_url} muted playsInline controls
+        className="w-full aspect-square object-cover bg-black" />
+      <div className="p-3 flex items-center justify-between text-xs">
+        <span className="text-zinc-400 truncate">
+          📍 {t.spot_id ? (t.spot_name || 'Spot') : (t.spot_name ? `${t.spot_name} (removed)` : 'Spot removed')}
+        </span>
+        <span className="text-[#D2FF00] font-bold shrink-0">⚡ {t.tips_received ?? 0} DFQ</span>
+      </div>
+      {t.caption && <p className="px-3 pb-3 text-xs text-white/70">{t.caption}</p>}
+    </div>
+  ))}
+</div>
+              
         )}
       </div>
     </div>
