@@ -46,7 +46,7 @@ export default function Conversation({ currentUsername }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" style={{ height: vh }}>
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col" style={{ height: vh }}>
       <header className="flex items-center gap-3 p-3 border-b border-zinc-800 shrink-0">
         <button onClick={() => navigate("/messages")} className="text-zinc-400 text-2xl leading-none">←</button>
         <span className="font-black uppercase tracking-widest text-sm text-white">Chat</span>
