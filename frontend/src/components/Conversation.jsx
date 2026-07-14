@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {useParams, useNavigate, useLocation } from "react-router-dom";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

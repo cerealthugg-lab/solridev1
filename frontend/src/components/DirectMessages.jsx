@@ -53,7 +53,8 @@ const open = (username) =>
       <div className="border border-zinc-800 rounded divide-y divide-zinc-800">
         {convos.length === 0 && <p className="p-4 text-zinc-500 text-sm">No conversations yet.</p>}
         {convos.map((c) => (
-          <button key={c.id} onClick={() => navigate(`/messages/${c.id}, { state: { other: c.other_user}})}
+         
+              <button key={c.id} onClick={() => navigate(`/messages/${c.id}', { state: { other: c.other_user}})}
 
             className="flex items-center gap-3 w-full p-3 hover:bg-zinc-900 text-left">
             <Avatar url={c.other_photo} name={c.other_user} />
