@@ -19,6 +19,8 @@ import confetti from 'canvas-confetti';
 import ChatPage from './components/ChatPage';
 import { MessageCircle } from 'lucide-react'; 
 import SkaterProfile from './components/SkaterProfile';
+import DirectMessages from "./components/DirectMessages";
+import Conversation from "./components/Conversation";
 
 // add to lucide imports
 
@@ -665,14 +667,16 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
                   <span className="text-zinc-400">Fav Spot</span>
                   <span className="font-mono text-[#D2FF00]">{user.fav_spot || '-'}</span>
               </div>
-              {user.birth_date && (
-                <div className="flex justify-between border-b border-zinc-800 pb-2">
-                    <span className="text-zinc-400">Birth Date</span>
-                    <span className="font-mono text-[#D2FF00]">
-                      {user.birth_date} ({Math.floor((new Date() - new Date(user.birth_date)) / (365.25 * 24 * 60 * 60 * 1000))} y.o.)
-                    </span>
-                </div>
-              )}
+        
+{user.birth_date && (
+        <div className="flex justify-between items-start gap-3 border-b border-zinc-800 pb-2">
+          <span className="text-zinc-400 shrink-0">Birth Date</span>
+          <span className="font-mono text-[#D2FF00] text-right min-w-0 break-words">
+            {user.birth_date} ({Math.floor((new Date() - new Date(user.birth_date)) / (365.25 * 24 * 60 * 60 * 1000))} y.o.)
+          </span>
+        </div>
+      )}
+
               {user.self_comment && (
                 <div className="pt-3">
                     <span className="text-zinc-500 text-xs uppercase tracking-widest block mb-2">About</span>
@@ -711,11 +715,32 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
           Claim 5 DFQ
         </Button>
       ) : (
-        <Link to="/profile">
-          <Button className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-10 text-xs">
-            Fill profile →
-          </Button>
-        </Link>
+
+
+   <Link to="/profile" className="block mt-6">
+  <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
+    <CardContent className="flex items-center gap-3 p-4">
+      {user.photo_url ? (
+        <img src={user.photo_url} alt={user.username}
+          className="w-12 h-12 rounded-full object-cover border border-zinc-700 shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-lg font-black text-[#D2FF00] shrink-0">
+          {user.username?.[0]?.toUpperCase()}
+        </div>
+      )}
+      <div className="min-w-0">
+        <div className="font-black uppercase tracking-widest text-white group-hover:text-[#D2FF00] truncate">
+          {user.username}
+        </div>
+        <div className="text-xs text-zinc-500 truncate">
+          {user.deck_company || 'no deck company set'}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</Link>
+
+
       )}
       <p className="text-[10px] text-zinc-600 mt-2 text-center uppercase tracking-widest">
         ▸ Note section is optional
@@ -947,6 +972,19 @@ const ProfilePage = () => {
                 </Button>
             </div>
             
+
+<div className="space-y-2">
+  <Label className="text-xs uppercase text-zinc-500">Profile Picture</Label>
+  <Input type="file" accept="image/*"
+    onChange={async (e) => {
+      const f = e.target.files?.[0]; if (!f) return;
+      const fd = new FormData(); fd.append("photo", f);
+      try { await api.post('/users/me/photo', fd); toast.success("Photo updated"); await fetchUser(); }
+      catch { toast.error("Upload failed"); }
+    }}
+    className="text-white bg-black border-zinc-800 rounded-none file:bg-[#D2FF00] file:text-black file:font-bold file:px-4 file:py-2 file:border-0 file:cursor-pointer" />
+</div>
+
             <div className="space-y-4">
                 <div className="space-y-2">
                     <Label className="text-xs uppercase text-zinc-500">Birth Date</Label>
@@ -960,6 +998,14 @@ const ProfilePage = () => {
                     <div className="space-y-2">
                         <Label className="text-xs uppercase text-zinc-500">Deck Company</Label>
                         <Input value={formData.deck_company} onChange={e=>setFormData({...formData, deck_company: e.target.value})} className="text-white bg-black border-zinc-800 rounded-none"/>
+
+<datalist id="deck-brands">
+  <option value="Baker" /><option value="Element" /><option value="Girl" />
+  <option value="Almost" /><option value="Flip" /><option value="Zero" />
+  <option value="Toy Machine" /><option value="Anti Hero" /><option value="Real" />
+  <option value="Santa Cruz" /><option value="Powell Peralta" /><option value="Enjoi" />
+</datalist>
+
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -988,6 +1034,11 @@ const ProfilePage = () => {
                 <Button onClick={handleUpdate} className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-12 mt-4">
                     Save Changes
                 </Button>
+
+<Link to="/messages"
+  className="block mt-3 h-11 leading-[44px] text-center bg-zinc-950 border border-zinc-900 font-black uppercase tracking-widest text-xs text-white hover:border-[#D2FF00]">
+  Direct Messages →
+</Link>
             </div>
 
             {/* Help & Feedback section */}
@@ -1382,6 +1433,13 @@ const { user } = useAuth(); // use your actual context/hook
 return <TricksFeed currentUser={user} />;
 };
 
+
+
+const ConversationWrapper = () => {        
+  const { user } = useAuth();
+  return <Conversation currentUsername={user?.username} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -1401,6 +1459,12 @@ function App() {
                     <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
                  <Route path="/tricks" element={<PrivateRoute><TricksFeedWrapper /></PrivateRoute>}/>
+
+<Route path="/messages" element={<PrivateRoute><DirectMessages /></PrivateRoute>}/>
+
+<Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
+
+
               </Routes>
           </Layout>
         </RideProvider>

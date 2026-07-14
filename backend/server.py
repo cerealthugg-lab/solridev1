@@ -491,7 +491,7 @@ async def get_public_profile(username: str):
 
     res = supabase.table('users').select(
         'username, deck_size, deck_company, fav_trick, fav_spot, '
-        'self_comment, birth_date, has_first_ride, created_at'
+        'self_comment, birth_date, has_first_ride, created_at, photo_url'
     ).eq('username', username).execute()
 
     if not res.data:
@@ -1125,6 +1125,174 @@ async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_u
     return {"message": "Trick removed"}
             
             
+      # ============ PROFILES + DIRECT MESSAGES ============
+
+@api.post("/users/me/photo")
+async def upload_avatar(photo: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    data = await photo.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(400, "Image too large (max 5MB)")
+    ext = (photo.filename or "jpg").split(".")[-1].lower()
+    if ext not in ("jpg", "jpeg", "png", "webp"):
+        ext = "jpg"
+    key = f"{current_user['username']}/{uuid.uuid4().hex}.{ext}"
+    try:
+        supabase.storage.from_("avatars").upload(key, data, {"content-type": photo.content_type or f"image/{ext}"})
+    except Exception as e:
+        raise HTTPException(500, f"Upload failed: {e}")
+    url = supabase.storage.from_("avatars").get_public_url(key)
+    supabase.table('users').update({'photo_url': url}).eq('username', current_user['username']).execute()
+    return {"photo_url": url}
+
+
+@api.get("/users/search")
+async def search_users(q: str = "", current_user: dict = Depends(get_current_user)):
+    q = (q or "").strip().lower()
+    if len(q) < 2:
+        return []
+    res = supabase.table('users').select('username, photo_url, deck_company').ilike('username', f"%{q}%").limit(10).execute()
+    return [u for u in (res.data or []) if u['username'] != current_user['username']]
+
+
+def _pair(a: str, b: str):
+    a, b = a.lower(), b.lower()
+    return (a, b) if a < b else (b, a)
+
+def _is_blocked(u1: str, u2: str) -> bool:
+    r = supabase.table('blocks').select('id').or_(
+        f"and(blocker.eq.{u1},blocked.eq.{u2}),and(blocker.eq.{u2},blocked.eq.{u1})"
+    ).execute()
+    return bool(r.data)
+
+def _in_convo(cid: str, me: str) -> dict:
+    c = supabase.table('conversations').select('*').eq('id', cid).execute()
+    if not c.data:
+        raise HTTPException(404, "Conversation not found")
+    convo = c.data[0]
+    if me not in (convo['user_lo'], convo['user_hi']):
+        raise HTTPException(403, "Not your conversation")
+    return convo
+
+
+@api.get("/conversations")
+async def list_conversations(current_user: dict = Depends(get_current_user)):
+    me = current_user['username'].lower()
+    res = supabase.table('conversations').select('*').or_(
+        f"user_lo.eq.{me},user_hi.eq.{me}"
+    ).order('last_message_at', desc=True).execute()
+    out = []
+    for c in (res.data or []):
+        other = c['user_hi'] if c['user_lo'] == me else c['user_lo']
+        last = supabase.table('dm_messages').select('body, created_at')\
+            .eq('conversation_id', c['id']).order('created_at', desc=True).limit(1).execute()
+        u = supabase.table('users').select('photo_url').eq('username', other).execute()
+        out.append({
+            'id': c['id'],
+            'other_user': other,
+            'other_photo': (u.data[0]['photo_url'] if u.data else None),
+            'last_message': (last.data[0]['body'] if last.data else None),
+            'last_at': (last.data[0]['created_at'] if last.data else c['created_at']),
+        })
+    return out
+
+
+class StartConversation(BaseModel):
+    username: str
+
+@api.post("/conversations")
+async def start_conversation(data: StartConversation, current_user: dict = Depends(get_current_user)):
+    me = current_user['username'].lower()
+    other = data.username.lower().strip().lstrip('@')
+    if other == me:
+        raise HTTPException(400, "Can't message yourself")
+    if not supabase.table('users').select('username').eq('username', other).execute().data:
+        raise HTTPException(404, "User not found")
+    if _is_blocked(me, other):
+        raise HTTPException(403, "Messaging unavailable")
+    lo, hi = _pair(me, other)
+    found = supabase.table('conversations').select('*').eq('user_lo', lo).eq('user_hi', hi).execute()
+    if found.data:
+        return {"id": found.data[0]['id'], "other_user": other}
+    cid = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table('conversations').insert({
+        'id': cid, 'user_lo': lo, 'user_hi': hi, 'created_at': now, 'last_message_at': now,
+    }).execute()
+    return {"id": cid, "other_user": other}
+
+
+@api.get("/conversations/{cid}/messages")
+async def get_messages(cid: str, limit: int = 50, current_user: dict = Depends(get_current_user)):
+    me = current_user['username'].lower()
+    _in_convo(cid, me)
+    res = supabase.table('dm_messages').select('*').eq('conversation_id', cid)\
+        .order('created_at', desc=False).limit(limit).execute()
+    supabase.table('dm_messages').update({'read_at': datetime.now(timezone.utc).isoformat()})\
+        .eq('conversation_id', cid).neq('sender_id', me).is_('read_at', 'null').execute()
+    return res.data or []
+
+
+class SendMessage(BaseModel):
+    body: str
+
+@api.post("/conversations/{cid}/messages")
+async def send_message(cid: str, data: SendMessage, current_user: dict = Depends(get_current_user)):
+    me = current_user['username'].lower()
+    convo = _in_convo(cid, me)
+    other = convo['user_hi'] if convo['user_lo'] == me else convo['user_lo']
+    if _is_blocked(me, other):
+        raise HTTPException(403, "Messaging unavailable")
+    body = (data.body or "").strip()
+    if not body:
+        raise HTTPException(400, "Empty message")
+    body = body[:1000]
+    mid = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table('dm_messages').insert({
+        'id': mid, 'conversation_id': cid, 'sender_id': me, 'body': body, 'created_at': now,
+    }).execute()
+    supabase.table('conversations').update({'last_message_at': now}).eq('id', cid).execute()
+    return {"id": mid, "sender_id": me, "body": body, "created_at": now}
+
+
+class BlockUser(BaseModel):
+    username: str
+
+@api.post("/blocks")
+async def block_user(data: BlockUser, current_user: dict = Depends(get_current_user)):
+    me = current_user['username'].lower()
+    other = data.username.lower().strip().lstrip('@')
+    if other == me:
+        raise HTTPException(400, "Can't block yourself")
+    try:
+        supabase.table('blocks').insert({
+            'id': str(uuid.uuid4()), 'blocker': me, 'blocked': other,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception:
+        pass
+    return {"ok": True}
+
+
+class ReportDM(BaseModel):
+    reported_user: Optional[str] = None
+    message_id: Optional[str] = None
+    reason: Optional[str] = "inappropriate"
+
+@api.post("/dm/report")
+async def report_dm(data: ReportDM, current_user: dict = Depends(get_current_user)):
+    supabase.table('dm_reports').insert({
+        'id': str(uuid.uuid4()),
+        'reporter': current_user['username'].lower(),
+        'reported_user': (data.reported_user or '').lower() or None,
+        'message_id': data.message_id,
+        'reason': data.reason,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }).execute()
+    return {"ok": True}  
+        
+        
+        
 
     # Everything under this line is unvisible to an app.
 app.include_router(api)

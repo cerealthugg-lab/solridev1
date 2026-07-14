@@ -3,6 +3,26 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Play } from 'lucide-react';
 import TrickCard from './TrickCard';
+import {toast} from 'sonner';
+
+
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  const _auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+
+  const startDM = () =>
+    axios.post(`${BACKEND_URL}/api/conversations`, { username: profile.username }, _auth())
+      .then(r => navigate(`/messages/${r.data.id}`))
+      .catch(() => toast.error("Couldn't open chat"));
+
+  const blockUser = () =>
+    axios.post(`${BACKEND_URL}/api/blocks`, { username: profile.username }, _auth())
+      .then(() => toast("User blocked")).catch(() => {});
+
+  const reportUser = () =>
+    axios.post(`${BACKEND_URL}/api/dm/report`, { reported_user: profile.username }, _auth())
+      .then(() => toast("Reported — thanks")).catch(() => {});
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -60,6 +80,22 @@ function SkaterProfile() {
         <h1 className="text-3xl font-black uppercase tracking-widest text-white mb-1">
           {profile.username}
         </h1>
+          
+          
+          <div className="flex gap-2 mt-3 mb-4">
+  <button onClick={startDM}
+    className="flex-1 h-10 bg-[#D2FF00] text-black font-bold uppercase tracking-widest text-xs rounded">
+    Message
+  </button>
+  <button onClick={blockUser}
+    className="h-10 px-3 border border-zinc-700 text-zinc-400 text-xs uppercase rounded">Block</button>
+  <button onClick={reportUser}
+    className="h-10 px-3 border border-[#FF3366] text-[#FF3366] text-xs uppercase rounded">Report</button>
+</div>
+{profile.deck_company && (
+  <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">Deck · {profile.deck_company}</p>
+)}
+          
         <p className="text-xs text-zinc-500 uppercase tracking-widest">
           Member since {memberSince}
         </p>
