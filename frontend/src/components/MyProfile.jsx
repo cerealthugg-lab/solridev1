@@ -1,27 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { LogOut, Pencil, Camera } from "lucide-react";
 import FeedbackModal from "./FeedbackModal";
 
 const DECK_BRANDS = ["Baker","Element","Girl","Almost","Flip","Zero","Toy Machine","Anti Hero","Real","Santa Cruz","Powell Peralta","Enjoi"];
 
-const calcAge = (b) => b ? Math.floor((Date.now() - new Date(b).getTime()) / (365.25*24*60*60*1000)) : null;
+const calcAge = (b) => {
+  if (!b) return null;
+  const n = Math.floor((Date.now() - new Date(b).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  return Number.isFinite(n) ? n : null;
+};
 
 export default function MyProfile({ user, api, fetchUser, logout }) {
-  const navigate = useNavigate();
   const fileRef = useRef(null);
   const [editing, setEditing] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    full_name:"", deck_size:"", deck_company:"", fav_trick:"", fav_spot:"", self_comment:"", birth_date:"",
+    full_name: "", deck_size: "", deck_company: "", fav_trick: "", fav_spot: "", self_comment: "", birth_date: "",
   });
 
   useEffect(() => {
     if (user) setForm({
-      full_name:user.full_name||"", deck_size:user.deck_size||"", deck_company:user.deck_company||"",
-      fav_trick:user.fav_trick||"", fav_spot:user.fav_spot||"", self_comment:user.self_comment||"",
-      birth_date:user.birth_date||"",
+      full_name: user.full_name || "", deck_size: user.deck_size || "", deck_company: user.deck_company || "",
+      fav_trick: user.fav_trick || "", fav_spot: user.fav_spot || "", self_comment: user.self_comment || "",
+      birth_date: user.birth_date || "",
     });
   }, [user]);
 
@@ -46,8 +48,8 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
     ["Deck company", user.deck_company],
     ["Fav trick", user.fav_trick],
     ["Fav spot", user.fav_spot],
-    ["Birth date", user.birth_date ? `${user.birth_date}${a!=null?` · ${a} y.o.`:""}` : null],
-  ].filter(([,v]) => v);
+    ["Birth date", user.birth_date ? `${user.birth_date}${a != null ? ` · ${a} y.o.` : ""}` : null],
+  ].filter(([, v]) => v);
 
   return (
     <div className="max-w-md mx-auto p-4 text-white space-y-6">
@@ -59,7 +61,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             : <span className="text-2xl font-black text-[#D2FF00]">{user.username?.[0]?.toUpperCase()}</span>}
         </div>
         <div className="flex flex-col gap-2">
-          <button onClick={() => setEditing(v => !v)}
+          <button onClick={() => setEditing((v) => !v)}
             className="flex items-center gap-2 px-4 h-10 border border-zinc-700 hover:border-[#D2FF00] text-xs font-bold uppercase tracking-widest">
             <Pencil size={14} /> {editing ? "Close" : "Edit"}
           </button>
@@ -107,7 +109,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
               <label className="text-xs uppercase text-zinc-500">Deck company</label>
               <input list="deck-brands" value={form.deck_company} onChange={set("deck_company")}
                 className="w-full px-3 py-2 bg-black border border-zinc-800 text-white text-sm" placeholder="Baker" />
-              <datalist id="deck-brands">{DECK_BRANDS.map(b => <option key={b} value={b} />)}</datalist>
+              <datalist id="deck-brands">{DECK_BRANDS.map((b) => <option key={b} value={b} />)}</datalist>
             </div>
           </div>
           <Field label="Fav trick" value={form.fav_trick} onChange={set("fav_trick")} placeholder="Kickflip" />
@@ -135,27 +137,39 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
 
       {/* feedback + logout */}
       <div className="pt-4 border-t border-zinc-900 space-y-3">
-        <button onClick={() => setFeedbackOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-4 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 text-left">
-          <span className="text-sm font-black uppercase tracking-wider">Send feedback</span>
-          <span className="text-[#D2FF00] font-black text-lg">→</span>
-        </button>
+        <FeedbackButton />
         <button onClick={logout}
           className="w-full flex items-center justify-center gap-2 h-11 border border-[#FF3366] text-[#FF3366] text-xs font-bold uppercase tracking-widest">
           <LogOut size={14} /> Log out
         </button>
       </div>
-
-      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }
 
-function Field({ label, ...props }) {
+function Field({ label, value, onChange, ...props }) {
   return (
     <div className="space-y-2">
       <label className="text-xs uppercase text-zinc-500">{label}</label>
-      <input {...props} className="w-full px-3 py-2 bg-black border border-zinc-800 text-white text-sm" />
+      <input {...props} value={value || ""} onChange={onChange}
+        className="w-full px-3 py-2 bg-black border border-zinc-800 text-white text-sm" />
     </div>
+  );
+}
+
+function FeedbackButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-4 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 text-left">
+        <div>
+          <div className="text-sm font-black uppercase tracking-wider text-white">Send feedback</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold mt-0.5">Bug · Lag · Idea · Anything</div>
+        </div>
+        <span className="text-[#D2FF00] font-black text-lg">→</span>
+      </button>
+      <FeedbackModal open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
