@@ -44,6 +44,28 @@ function SkaterProfile() {
       .finally(() => setLoading(false));
   }, [username]);
 
+
+function SkaterProfile() {
+  // 1️⃣ ALL hooks first
+  const { username } = useParams();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [tricks, setTricks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => { /* profile fetch */ }, [username]);
+  useEffect(() => { /* tricks fetch */ }, [username]);
+
+  // 2️⃣ THEN the guard returns
+  if (loading) return (/* spinner */);
+  if (error || !profile) return (/* error */);
+
+  // 3️⃣ THEN the main render
+  return (/* profile + tricks */);
+}
+    
+    
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
