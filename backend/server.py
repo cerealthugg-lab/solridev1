@@ -63,7 +63,7 @@ class User(BaseModel):
     wallet_balance: float = 0.0
     wallet_address: Optional[str] = None
     has_card_bonus: bool = False
-        photo_url: Optional[str] = None
+    photo_url: Optional[str] = None
 
 class UserCreate(BaseModel):
     username: str
