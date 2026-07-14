@@ -21,6 +21,7 @@ import { MessageCircle } from 'lucide-react';
 import SkaterProfile from './components/SkaterProfile';
 import DirectMessages from "./components/DirectMessages";
 import Conversation from "./components/Conversation";
+import MyProfile from "./components/MyProfile";
 
 // add to lucide imports
 
