@@ -336,7 +336,10 @@ async def register(user: UserCreate):
     result = supabase.table('users').select('id').eq('username', user.username).execute()
     if result.data:
         raise HTTPException(status_code=400, detail="Username already registered")
-
+        
+if user.username.lower().strip() == 'admin':
+    raise HTTPException(status_code=400, detail="This username is reserved")
+        
     hashed_password = get_password_hash(user.password)
     user_data = {
         'id': str(uuid.uuid4()),
@@ -1292,7 +1295,129 @@ async def report_dm(data: ReportDM, current_user: dict = Depends(get_current_use
     }).execute()
     return {"ok": True}  
         
-        
+       
+            
+async def get_admin_user(current_user: dict = Depends(get_current_user)):
+    if not current_user.get('is_admin'):
+        raise HTTPException(status_code=403, detail="Admin only")
+    return current_user
+
+ @api.get("/admin/stats")
+async def admin_stats(admin: dict = Depends(get_admin_user)):
+    users = supabase.table('users').select('id', count='exact').execute()
+    spots = supabase.table('spots').select('id', count='exact').execute()
+    rides = supabase.table('rides').select('id', count='exact').eq('status', 'completed').execute()
+    messages = supabase.table('messages').select('id', count='exact').execute()
+    reports = supabase.table('message_reports').select('id', count='exact').execute()
+
+    total_dfq_row = supabase.table('users').select('wallet_balance').execute()
+    total_dfq = sum([(r.get('wallet_balance') or 0) for r in total_dfq_row.data])
+
+    return {
+        "users": users.count or 0,
+        "spots": spots.count or 0,
+        "rides": rides.count or 0,
+        "messages": messages.count or 0,
+        "reports": reports.count or 0,
+        "total_dfq": round(total_dfq, 2)
+    }
+
+
+@api.get("/admin/users")
+async def admin_list_users(admin: dict = Depends(get_admin_user)):
+    res = supabase.table('users').select(
+        'id, username, wallet_balance, is_admin, has_first_ride, created_at'
+    ).order('created_at', desc=True).limit(200).execute()
+    return res.data
+
+
+class AdminGrantDFQ(BaseModel):
+    amount: float
+    reason: Optional[str] = "admin grant"
+
+
+@api.post("/admin/users/{username}/grant-dfq")
+async def admin_grant_dfq(username: str, data: AdminGrantDFQ, admin: dict = Depends(get_admin_user)):
+    username = username.lower().strip()
+    res = supabase.table('users').select('wallet_balance').eq('username', username).execute()
+    if not res.data:
+        raise HTTPException(404, "User not found")
+
+    new_balance = (res.data[0]['wallet_balance'] or 0) + data.amount
+    supabase.table('users').update({'wallet_balance': new_balance}).eq('username', username).execute()
+
+    supabase.table('transactions').insert({
+        'id': str(uuid.uuid4()),
+        'sender_id': 'SOLRIDE_ADMIN',
+        'receiver_id': username,
+        'amount': data.amount,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'type': 'admin_grant'
+    }).execute()
+
+    return {"success": True, "new_balance": new_balance}
+
+
+class AdminBan(BaseModel):
+    hours: int = 24
+    reason: Optional[str] = "admin action"
+
+
+@api.post("/admin/users/{username}/ban-chat")
+async def admin_ban_chat(username: str, data: AdminBan, admin: dict = Depends(get_admin_user)):
+    username = username.lower().strip()
+    user_res = supabase.table('users').select('id').eq('username', username).execute()
+    if not user_res.data:
+        raise HTTPException(404, "User not found")
+
+    user_id = user_res.data[0]['id']
+    banned_until = (datetime.now(timezone.utc) + timedelta(hours=data.hours)).isoformat()
+
+    supabase.table('chat_bans').upsert({
+        'user_id': user_id,
+        'strike_count': 99,  # marks it as admin-issued
+        'banned_until': banned_until,
+        'last_offense': data.reason,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }).execute()
+
+    return {"success": True, "banned_until": banned_until}
+
+
+@api.post("/admin/users/{username}/unban-chat")
+async def admin_unban_chat(username: str, admin: dict = Depends(get_admin_user)):
+    username = username.lower().strip()
+    user_res = supabase.table('users').select('id').eq('username', username).execute()
+    if not user_res.data:
+        raise HTTPException(404, "User not found")
+    user_id = user_res.data[0]['id']
+    supabase.table('chat_bans').delete().eq('user_id', user_id).execute()
+    return {"success": True}
+
+
+@api.delete("/admin/spots/{spot_id}")
+async def admin_delete_spot(spot_id: str, admin: dict = Depends(get_admin_user)):
+    supabase.table('spots').delete().eq('id', spot_id).execute()
+    return {"success": True}
+
+
+@api.delete("/admin/messages/{message_id}")
+async def admin_delete_message(message_id: str, admin: dict = Depends(get_admin_user)):
+    supabase.table('messages').update({'hidden': True, 'flagged': True}).eq('id', message_id).execute()
+    return {"success": True}
+
+
+@api.get("/admin/reports")
+async def admin_list_reports(admin: dict = Depends(get_admin_user)):
+    reports = supabase.table('message_reports').select('*').order('created_at', desc=True).limit(100).execute()
+    # Enrich with message content
+    enriched = []
+    for r in reports.data:
+        msg_res = supabase.table('messages').select('id, username, content, hidden, flagged, created_at').eq('id', r['message_id']).execute()
+        r['message'] = msg_res.data[0] if msg_res.data else None
+        enriched.append(r)
+    return enriched
+       
         
 
     # Everything under this line is unvisible to an app.

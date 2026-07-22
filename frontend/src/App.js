@@ -15,13 +15,13 @@ import 'leaflet/dist/leaflet.css';
 import SpotsMapPage from './components/SpotsMapPage';
 import TricksFeed from './components/TricksFeed';
 import confetti from 'canvas-confetti';
-
 import ChatPage from './components/ChatPage';
 import { MessageCircle } from 'lucide-react'; 
 import SkaterProfile from './components/SkaterProfile';
 import DirectMessages from "./components/DirectMessages";
 import Conversation from "./components/Conversation";
 import MyProfile from "./components/MyProfile";
+import AdminPage from './components/AdminPage';
 
 // add to lucide imports
 
@@ -561,6 +561,20 @@ const Dashboard = () => {
       toast.error(e.response?.data?.detail || "Couldn't claim bonus");
     }
   };
+
+{user.is_admin && (
+        <Link to="/admin" className="block">
+          <Card className="bg-[#FF3366]/10 border-[#FF3366]/30 rounded-none">
+            <CardContent className="p-4 flex items-center gap-3">
+              <span className="text-[#FF3366]">⚡</span>
+              <div>
+                <span className="font-bold uppercase tracking-wider text-sm text-[#FF3366] block">Admin Panel</span>
+                <span className="text-xs text-zinc-500">Moderate app</span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}s
   
   const required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
   const filled = required.filter(f => user[f] && String(user[f]).trim() !== '').length;
@@ -1332,10 +1346,12 @@ function App() {
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
                  <Route path="/tricks" element={<PrivateRoute><TricksFeedWrapper /></PrivateRoute>}/>
 
+
 <Route path="/messages" element={<PrivateRoute><DirectMessages /></PrivateRoute>}/>
 
 <Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
 
+<Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 
               </Routes>
           </Layout>
