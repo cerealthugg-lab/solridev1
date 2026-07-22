@@ -341,7 +341,7 @@ async def register(user: UserCreate):
         raise HTTPException(status_code=400, detail="Username already registered")
         
     if user.username.lower().strip() == 'admin':
-    raise HTTPException(status_code=400, detail="This username is reserved")
+        raise HTTPException(status_code=400, detail="This username is reserved")
         
     hashed_password = get_password_hash(user.password)
     user_data = {
