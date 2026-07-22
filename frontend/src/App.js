@@ -574,7 +574,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </Link>
-      )}s
+      )}
+
   
   const required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
   const filled = required.filter(f => user[f] && String(user[f]).trim() !== '').length;
@@ -1293,15 +1294,14 @@ const FindMyToolPage = () => {
                 </CardContent>
             </Card>
 
-            <p className="text-center text-xs text-zinc-600">
-                {locationHistory.length} points tracked • {tool.id}
-            </p>
-        </div>
-    );
+<p className="text-center text-xs text-zinc-600">
+{locationHistory.length} points tracked • {tool.id}
+</p>
+</div>
+);
 };
 
 // --- App Root ---
-
 
 const ChatWrapper = () => {
   const { user } = useAuth();

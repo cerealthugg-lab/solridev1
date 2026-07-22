@@ -64,6 +64,9 @@ class User(BaseModel):
     wallet_address: Optional[str] = None
     has_card_bonus: bool = False
     photo_url: Optional[str] = None
+    is_admin: bool = False 
+    has_first_ride: bool = False
+    has_profile_bonus: bool = False
 
 class UserCreate(BaseModel):
     username: str
@@ -1302,7 +1305,7 @@ async def get_admin_user(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin only")
     return current_user
 
- @api.get("/admin/stats")
+@api.get("/admin/stats")
 async def admin_stats(admin: dict = Depends(get_admin_user)):
     users = supabase.table('users').select('id', count='exact').execute()
     spots = supabase.table('spots').select('id', count='exact').execute()
