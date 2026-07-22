@@ -340,7 +340,7 @@ async def register(user: UserCreate):
     if result.data:
         raise HTTPException(status_code=400, detail="Username already registered")
         
-if user.username.lower().strip() == 'admin':
+    if user.username.lower().strip() == 'admin':
     raise HTTPException(status_code=400, detail="This username is reserved")
         
     hashed_password = get_password_hash(user.password)
@@ -987,7 +987,8 @@ async def create_trick(
     if len(video_bytes) < 1024:
         raise HTTPException(400, "Video is empty or corrupt")
 
-# --- Transcode to browser-safe H.264/AAC MP4 (also square-crops) ---
+        
+    # --- Transcode to browser-safe H.264/AAC MP4 (also square-crops) ---
     try:
         video_bytes = transcode_to_mp4_h264(video_bytes, crop_x=crop_x, crop_y=crop_y)
     except HTTPException:
