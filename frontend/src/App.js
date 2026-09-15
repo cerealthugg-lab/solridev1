@@ -661,7 +661,8 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
 
 
 
-      <Link to="/profile" className="block mt-6">
+{/* 
+<Link to="/profile" className="block mt-6">
         <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
           <CardHeader>
               <CardTitle className="uppercase tracking-widest text-lg text-white group-hover:text-[#D2FF00] transition-colors">{user.username}</CardTitle>
@@ -702,7 +703,9 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
           </CardContent>
         </Card>
       </Link>
-   
+   */}
+
+
 {!user.has_card_bonus && (
   <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
     <CardContent className="p-4">
