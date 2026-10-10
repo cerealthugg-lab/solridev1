@@ -1317,6 +1317,11 @@ const SpotsMapWrapper = () => {
   return <SpotsMapPage currentUser={user} />;
 };
 
+const AdminWrapper = () => {
+  const { user } = useAuth();
+  return <AdminPage currentUser={user} />;
+};
+
 const TricksFeedWrapper = () => {
 const { user } = useAuth(); // use your actual context/hook
 return <TricksFeed currentUser={user} />;
@@ -1355,6 +1360,8 @@ function App() {
 <Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
 
 <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
+
+<Route path="/admin" element={<PrivateRoute><AdminWrapper /></PrivateRoute>} />
 
               </Routes>
           </Layout>
