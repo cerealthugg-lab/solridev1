@@ -217,49 +217,25 @@ if (adminStatus === 'loading') {
         </div>
       )}
 
-          {/* === USERS === */}
+{/* === USERS === */}
       {tab === 'users' && (
         <div className="space-y-2">
           {users.map(function(u) {
-            var isExpanded = selectedUser === u.username;
             return (
-              <div key={u.username} className={"bg-zinc-900 border rounded-none " + (isExpanded ? 'border-[#D2FF00]' : 'border-zinc-800')}>
-                <div className="p-3 cursor-pointer" onClick={function() { setSelectedUser(isExpanded ? null : u.username); }}>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-white">{u.username}</span>
-                        {u.is_admin && <span className="text-[8px] bg-[#FF3366] text-white px-1 py-0.5 uppercase">Admin</span>}
-                      </div>
-                      <div className="text-[10px] text-zinc-500 mt-0.5">
-                        {(u.wallet_balance || 0).toFixed(2)} DFQ | Joined {new Date(u.created_at).toLocaleDateString()}
-                      </div>
+              <a key={u.username} href={"/skater/" + u.username} className="block bg-zinc-900 border border-zinc-800 p-3 hover:border-zinc-700 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-white">{u.username}</span>
+                      {u.is_admin && <span className="text-[8px] bg-[#FF3366] text-white px-1 py-0.5 uppercase">Admin</span>}
                     </div>
-                    <span className="text-zinc-600 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                    <div className="text-[10px] text-zinc-500 mt-0.5">
+                      {(u.wallet_balance || 0).toFixed(2)} DFQ | Joined {new Date(u.created_at).toLocaleDateString()}
+                    </div>
                   </div>
+                  <span className="text-zinc-600 text-xs">→</span>
                 </div>
-                {isExpanded && (
-                  <div className="border-t border-zinc-800 p-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div className="bg-zinc-950 p-2"><span className="text-zinc-500">Deck</span><br/><span className="text-white">{u.deck_size || '-'} | {u.deck_company || '-'}</span></div>
-                      <div className="bg-zinc-950 p-2"><span className="text-zinc-500">Fav Trick</span><br/><span className="text-white">{u.fav_trick || '-'}</span></div>
-                      <div className="bg-zinc-950 p-2"><span className="text-zinc-500">Fav Spot</span><br/><span className="text-white">{u.fav_spot || '-'}</span></div>
-                      <div className="bg-zinc-950 p-2"><span className="text-zinc-500">Balance</span><br/><span className="text-[#D2FF00]">{(u.wallet_balance || 0).toFixed(2)} DFQ</span></div>
-                    </div>
-                    {u.self_comment && <p className="text-[10px] text-zinc-400">"{u.self_comment}"</p>}
-                    <div className="flex gap-1 flex-wrap">
-                      <button onClick={function(e) { e.stopPropagation(); banChat(u.username, 1); }}
-                        className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 1h</button>
-                      <button onClick={function(e) { e.stopPropagation(); banChat(u.username, 24); }}
-                        className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 24h</button>
-                      <button onClick={function(e) { e.stopPropagation(); banChat(u.username, 720); }}
-                        className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 30d</button>
-                      <button onClick={function(e) { e.stopPropagation(); unbanChat(u.username); }}
-                        className="text-[9px] text-zinc-500 hover:text-[#D2FF00] border border-zinc-800 px-2 py-1">Unban</button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              </a>
             );
           })}
         </div>
