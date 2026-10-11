@@ -46,14 +46,19 @@ function AdminPage(props) {
   var setGrantAmounts = grantState[1];
     
      // Get user from localStorage token
-  var checkAdmin = useState(false);
-  var isAdmin = checkAdmin[0];
-  var setIsAdmin = checkAdmin[1];
+var checkState = useState('loading');
+  var adminStatus = checkState[0];
+  var setAdminStatus = checkState[1];
 
   useEffect(function() {
+    setAdminStatus('loading');
     api.get('/users/me').then(function(res) {
-      setIsAdmin(res.data && res.data.is_admin === true);
-    }).catch(function() { setIsAdmin(false); });
+      if (res.data && res.data.is_admin === true) {
+        setAdminStatus('admin');
+      } else {
+        setAdminStatus('denied');
+      }
+    }).catch(function() { setAdminStatus('denied'); });
   }, []); 
     
 
@@ -142,7 +147,15 @@ function AdminPage(props) {
 
   // Access check
     
-      if (!isAdmin) {
+if (adminStatus === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-[#D2FF00] font-mono animate-pulse">Checking access...</div>
+      </div>
+    );
+  }
+
+  if (adminStatus === 'denied') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">

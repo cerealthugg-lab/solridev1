@@ -7,7 +7,7 @@ import { Toaster, toast } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Home, MapPin, Wallet, User, Play, Square, Send, LogOut, Wrench, Volume2, Navigation, Battery, Wifi, WifiOff, Radio, Crosshair, History, Zap, Lock, Flame } from 'lucide-react';
+import { Home, MapPin, Wallet, User, Play, Square, Send, LogOut, Wrench, Volume2, Navigation, Battery, Wifi, WifiOff, Radio, Crosshair, History, Zap, Lock, Flame, Shield } from 'lucide-react';
 import { Label } from "./components/ui/label";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -659,6 +659,25 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
   </Card>
 </Link>
 
+{/* Admin Panel */}
+
+{user.is_admin && (
+        <Link to="/admin" className="block mt-3">
+          <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#FF3366] transition-colors cursor-pointer group">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#FF3366] group-hover:text-white transition-colors text-[#FF3366]">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <span className="font-bold uppercase tracking-wider text-sm text-white block">Admin Panel</span>
+                  <span className="text-xs text-zinc-500">Moderate • Manage</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
 
 {/* 
