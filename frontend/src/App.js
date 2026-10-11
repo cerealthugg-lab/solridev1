@@ -818,15 +818,20 @@ const RidePage = () => {
             ) : 'Stop'}
           </button>
         ) : (
-          <button onClick={startRide} disabled={busy}
-            className="w-44 h-44 rounded-full bg-[#D2FF00] text-black text-lg font-semibold uppercase tracking-wider flex items-center justify-center shadow-[0_0_40px_rgba(210,255,0,0.3)] active:scale-95 transition-all disabled:opacity-50">
-            {isStarting ? (
-              <span className="flex flex-col items-center gap-1">
-                <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                <span className="text-sm">Starting</span>
-              </span>
-            ) : 'Ride'}
-          </button>
+         <button 
+  onClick={startRide} 
+  disabled={busy}
+  className="w-40 h-40 rounded-full bg-white/10 backdrop-blur-xl border border-white/30 text-white text-lg font-medium tracking-wide flex items-center justify-center shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] hover:bg-white/20 active:scale-95 transition-all duration-200 disabled:opacity-40"
+>
+  {isStarting ? (
+    <span className="flex flex-col items-center gap-1.5">
+      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+      <span className="text-xs text-white/70">Connecting</span>
+    </span>
+  ) : (
+    <span className="font-semibold tracking-wider">START</span>
+  )}
+</button>
         )}
         
         <p className="text-zinc-500 text-xs tracking-wider">
