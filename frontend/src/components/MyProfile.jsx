@@ -82,7 +82,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
               className="w-full h-9 rounded-xl border border-neutral-800 bg-neutral-900/40 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
             >
               <Pencil size={12} className={editing ? "text-[#FF3366]" : "text-[#D2FF00]"} />
-              {editing ? "Close Editor" : "Edit Setup"}
+              {editing ? "Close Editor" : "Edit Info"}
             </button>
             <button 
               onClick={() => fileRef.current?.click()}
@@ -111,12 +111,12 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
               )}
               {user.fav_trick && (
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
-                  Fav. trick {user.fav_trick}
+                  Fav. trick: {user.fav_trick}
                 </span>
               )}
               {user.fav_spot && (
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#D2FF00]/10 border border-[#D2FF00]/20 text-[#D2FF00] px-2.5 py-1 rounded-full">
-                  Fav. spot📍 {user.fav_spot}
+                  Fav. spot: 📍 {user.fav_spot}
                 </span>
               )}
               {a != null && (
