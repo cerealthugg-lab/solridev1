@@ -823,12 +823,18 @@ const RidePage = () => {
 <button 
   onClick={startRide} 
   disabled={busy}
-  className="w-36 h-36 rounded-full bg-[#D2FF00] text-black font-bold flex items-center justify-center shadow-md hover:scale-105 active:scale-90 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] disabled:opacity-50"
+  className="relative w-44 h-44 rounded-full bg-[#D2FF00] text-black font-bold uppercase tracking-wider flex flex-col items-center justify-center shadow-[0_0_40px_rgba(210,255,0,0.4)] transition-all duration-200 ease-out active:scale-90 disabled:opacity-50 group mx-auto before:content-[''] before:absolute before:-inset-4 before:rounded-full before:border before:border-[#D2FF00]/40 before:animate-pulse before:pointer-events-none before:scale-95 after:content-[''] after:absolute after:-inset-2 after:rounded-full after:bg-[#D2FF00]/10 after:blur-xl after:pointer-events-none"
 >
   {isStarting ? (
-    <span className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+    <div className="flex flex-col items-center gap-1.5 z-10">
+      <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+      <span className="text-[10px] font-bold tracking-tight opacity-70">LOCKING GPS</span>
+    </div>
   ) : (
-    <span className="text-lg tracking-tight font-extrabold">GO</span>
+    <div className="flex flex-col items-center z-10">
+      <span className="text-2xl font-black italic tracking-tighter">RIDE</span>
+      <span className="text-[9px] font-semibold tracking-widest opacity-60 mt-0.5">READY</span>
+    </div>
   )}
 </button>
         
