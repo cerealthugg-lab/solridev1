@@ -893,14 +893,21 @@ const WalletPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-       <div className="bg-zinc-900/50 p-4 border border-zinc-800 rounded-xl text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Lock size={14} className="text-zinc-500" />
-            <span className="text-zinc-400 text-[10px] uppercase tracking-widest">On-Chain Withdrawal</span>
-          </div>
-          <p className="text-zinc-600 text-[10px]">Solana wallet coming in Phase 2</p>
-       </div>
+
+ <div className="space-y-6">
+  <div className="bg-zinc-900/50 p-4 border border-zinc-800 rounded-xl text-center">
+    <div className="flex items-center justify-center gap-2 mb-1">
+      <Sparkles size={14} className="text-[#D2FF00]" />
+      <span className="text-[#D2FF00] text-[10px] uppercase tracking-widest font-black">EARN REPLACEMENTS</span>
+    </div>
+    <p className="text-zinc-300 text-xs font-medium max-w-xs mx-auto mb-2">
+      Trade your DFQ points for skate-stuff or discounts at local independent skate shops.
+    </p>
+    <p className="text-zinc-500 text-[10px] italic">
+      ⚡ Currently onboarding skate brands & stocking up the local vault...
+    </p>
+  </div>
+</div>
 
        <div className="bg-[#D2FF00] rounded-2xl p-6 text-center text-black">
             <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">Total Balance</p>
