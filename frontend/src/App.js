@@ -807,7 +807,7 @@ const RidePage = () => {
             </h1>
         </div>
 
-// --- Ride button ---
+{/* Ride button */}
         
 {isActive ? (
   <button 
