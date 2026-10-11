@@ -478,77 +478,77 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (busy) return;
+    setBusy(true);
     try {
       if (isLogin) await login(username, password);
       else await register(username, password);
       toast.success(isLogin ? "Welcome back!" : "Welcome to the crew!");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Something went wrong");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
-
-      <h1 className="text-6xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
-      <p className="text-zinc-500 mb-8 uppercase tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
+      <h1 className="text-5xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
+      <p className="text-zinc-500 mb-10 tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
       
-      <Card className="w-full bg-zinc-900/50 border-zinc-800 backdrop-blur-sm">
-        <CardContent className="pt-6 space-y-4">
-          <div className="space-y-2">
-            <Label className="uppercase text-xs text-zinc-500">Username</Label>
-            <Input 
-                value={username} 
-                onChange={e => setUsername(e.target.value.toLowerCase().trim())} 
-                className="text-white bg-black border-zinc-800 focus:border-[#D2FF00] rounded-none  h-12 text-lg"
-                placeholder="skater_boi"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck="false"
-                autoComplete="username"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="uppercase text-xs text-zinc-500">Password</Label>
-            <Input 
-              type="password" value={password} onChange={e => setPassword(e.target.value)} 
-              className="text-white bg-black border-zinc-800 focus:border-[#D2FF00] rounded-none h-12"
-            />
-          </div>
-          <Button onClick={handleSubmit} className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-12 text-lg mt-4">
-            {isLogin ? 'Login' : 'Join'}
-          </Button>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Username</label>
+          <input 
+            value={username} 
+            onChange={e => setUsername(e.target.value.toLowerCase().trim())} 
+            className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none transition-colors"
+            placeholder="skater_boi"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck="false"
+            autoComplete="username"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Password</label>
+          <input 
+            type="password" value={password} onChange={e => setPassword(e.target.value)} 
+            className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none transition-colors"
+            autoComplete="current-password"
+          />
+        </div>
+        <button type="submit" disabled={busy}
+          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold tracking-wider rounded-full h-12 text-base mt-2 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all disabled:opacity-50">
+          {busy ? 'Loading...' : isLogin ? 'Login' : 'Join'}
+        </button>
+      </form>
 
-          <div className="text-center mt-4">
-            <button onClick={() => setIsLogin(!isLogin)} className="text-xs text-zinc-500 hover:text-[#D2FF00] uppercase tracking-wider underline decoration-zinc-800 underline-offset-4">
-              {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-
-    <div className="mt-10 flex flex-col items-center gap-3">
-        <Link
-          to="/welcome"
-          className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-[#D2FF00] font-bold py-2 transition-colors"
-        >
-          Learn more →
-        </Link>
-        <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600 font-bold">
-          SOLRIDE © 2026
-        </span>
+      <div className="text-center mt-6">
+        <button onClick={() => setIsLogin(!isLogin)} className="text-xs text-zinc-500 hover:text-[#D2FF00] tracking-wider transition-colors">
+          {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
+        </button>
       </div>
 
+      <div className="mt-10 flex flex-col items-center gap-3">
+        <Link to="/welcome" className="text-[10px] tracking-[0.2em] uppercase text-zinc-500 hover:text-[#D2FF00] font-bold py-2 transition-colors">
+          Learn more →
+        </Link>
+        <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600">SOLRIDE © 2026</span>
+      </div>
     </div>
   );
 };
+
+
 const Dashboard = () => {
   const { user, fetchUser } = useAuth();
   
@@ -797,53 +797,40 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
 const RidePage = () => {
   const { isActive, distance, startRide, stopRide, isStarting, isStopping } = useRide();
   const busy = isStarting || isStopping;
-  const noMultiTouch = { touchAction: 'manipulation', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-10">
         <div className="relative">
-            <div className="absolute inset-0 bg-[#D2FF00] blur-[100px] opacity-20 rounded-full"></div>
-            <h1 className="text-[6rem] font-black font-mono leading-none relative z-10">
-                {distance.toFixed(0)}<span className="text-2xl text-zinc-600">m</span>
+            <div className="absolute inset-0 bg-[#D2FF00] blur-[80px] opacity-10 rounded-full"></div>
+            <h1 className="text-7xl font-light font-mono leading-none relative z-10 tracking-tight">
+                {distance.toFixed(0)}<span className="text-xl text-zinc-600 ml-1">m</span>
             </h1>
         </div>
-
+        
         {isActive ? (
-            <Button
-                data-testid="stop-ride-button"
-                onClick={stopRide}
-                disabled={busy}
-                style={noMultiTouch}
-                className="w-full max-w-xs h-24 bg-[#FF3366] hover:bg-[#ff1f55] active:scale-[0.97] disabled:opacity-80 disabled:cursor-not-allowed text-white text-2xl font-black uppercase tracking-widest rounded-none select-none transition-transform duration-75">
-                {isStopping ? (
-                  <>
-                    <span className="inline-block w-5 h-5 mr-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Stopping...
-                  </>
-                ) : (
-                  <><Square className="mr-4 fill-current" /> Stop</>
-                )}
-            </Button>
+          <button onClick={stopRide} disabled={busy}
+            className="w-44 h-44 rounded-full bg-[#FF3366] text-white text-lg font-semibold uppercase tracking-wider flex items-center justify-center shadow-[0_0_40px_rgba(255,51,102,0.3)] active:scale-95 transition-all disabled:opacity-50">
+            {isStopping ? (
+              <span className="flex flex-col items-center gap-1">
+                <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-sm">Stopping</span>
+              </span>
+            ) : 'Stop'}
+          </button>
         ) : (
-            <Button
-                data-testid="start-ride-button"
-                onClick={startRide}
-                disabled={busy}
-                style={noMultiTouch}
-                className="w-full max-w-xs h-24 bg-[#D2FF00] hover:bg-[#c2eb00] active:scale-[0.97] disabled:opacity-80 disabled:cursor-not-allowed text-black text-2xl font-black uppercase tracking-widest rounded-none select-none transition-transform duration-75">
-                {isStarting ? (
-                  <>
-                    <span className="inline-block w-5 h-5 mr-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <><Play className="mr-4 fill-current" /> Start Ride</>
-                )}
-            </Button>
+          <button onClick={startRide} disabled={busy}
+            className="w-44 h-44 rounded-full bg-[#D2FF00] text-black text-lg font-semibold uppercase tracking-wider flex items-center justify-center shadow-[0_0_40px_rgba(210,255,0,0.3)] active:scale-95 transition-all disabled:opacity-50">
+            {isStarting ? (
+              <span className="flex flex-col items-center gap-1">
+                <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-sm">Starting</span>
+              </span>
+            ) : 'Ride'}
+          </button>
         )}
-
-        <p className="text-zinc-500 text-xs uppercase tracking-widest min-h-[1rem]">
-            {isStopping ? "Saving your ride..." : isStarting ? "Loading ride..." : (isActive ? "Tracking GPS..." : "Ready to shred?")}
+        
+        <p className="text-zinc-500 text-xs tracking-wider">
+            {isStopping ? "Saving ride..." : isStarting ? "Loading..." : (isActive ? "GPS tracking" : "Tap to start")}
         </p>
     </div>
   );
@@ -867,14 +854,9 @@ const WalletPage = () => {
   useEffect(() => {
     fetchHistory();
     fetchUser();
-    
     const interval = setInterval(() => {
-      if (localStorage.getItem('token')) {
-        fetchUser();
-        fetchHistory();
-      }
+      if (localStorage.getItem('token')) { fetchUser(); fetchHistory(); }
     }, 5000);
-    
     return () => clearInterval(interval);
   }, []);
 
@@ -885,8 +867,7 @@ const WalletPage = () => {
         setReceiver('');
         setAmount('');
         fetchUser();
-        const { data } = await api.get('/wallet/history');
-        setHistory(data);
+        fetchHistory();
     } catch (e) {
         toast.error(e.response?.data?.detail || "Transfer failed");
     }
@@ -894,73 +875,70 @@ const WalletPage = () => {
 
   return (
     <div className="space-y-6">
-       <div className="bg-zinc-900/50 p-4 border border-zinc-800 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
+       <div className="bg-zinc-900/50 p-4 border border-zinc-800 rounded-xl text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <Lock size={14} className="text-zinc-500" />
-            <span className="text-zinc-400 text-xs uppercase tracking-widest font-bold">On-Chain Withdrawal</span>
+            <span className="text-zinc-400 text-[10px] uppercase tracking-widest">On-Chain Withdrawal</span>
           </div>
-          <p className="text-zinc-600 text-xs">Solana wallet integration coming in Phase 2</p>
+          <p className="text-zinc-600 text-[10px]">Solana wallet coming in Phase 2</p>
        </div>
 
-       <Card className="bg-[#D2FF00] border-none text-black">
-        <CardContent className="p-6 text-center">
-            <h2 className="text-xs uppercase tracking-widest font-bold opacity-70 mb-2">Total Balance</h2>
-            <div className="text-5xl font-black">{user.wallet_balance.toFixed(2)} DFQ</div>
-        </CardContent>
-       </Card>
+       <div className="bg-[#D2FF00] rounded-2xl p-6 text-center text-black">
+            <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">Total Balance</p>
+            <div className="text-5xl font-black">{user.wallet_balance.toFixed(2)}</div>
+            <p className="text-sm font-medium mt-1 opacity-70">DFQ</p>
+       </div>
 
-       <div className="space-y-4">
-         <h3 className="text-zinc-500 text-xs uppercase tracking-widest">Send DFQ</h3>
+       <div className="space-y-3">
+         <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Send DFQ</p>
          
          <div className="flex gap-2">
-            <Input 
+            <input 
                 type="number" 
                 placeholder="Amount" 
                 value={amount} onChange={e=>setAmount(e.target.value)}
-                className="text-white bg-black border-zinc-800 rounded-none h-12 flex-1"
+                className="flex-1 text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
             />
-            <Button onClick={()=>setAmount(String(user.wallet_balance))} className="w-16 bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-widest rounded-none h-12 text-xs">
-                MAX
-            </Button>
+            <button onClick={()=>setAmount(String(user.wallet_balance))} className="px-4 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 rounded-xl h-11 text-xs font-medium uppercase tracking-widest transition-colors">
+                Max
+            </button>
          </div>
          
-         <div className="space-y-2">
-            <Input 
-                placeholder="Username" 
-                value={receiver} onChange={e=>setReceiver(e.target.value)}
-                className="text-white bg-black border-zinc-800 rounded-none h-12"
-            />
-            <Button onClick={handleSend} className="w-full bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-widest rounded-none h-12">
-                Send <Send size={16} className="ml-2"/>
-            </Button>
-         </div>
+         <input 
+            placeholder="Username" 
+            value={receiver} onChange={e=>setReceiver(e.target.value)}
+            className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
+         />
+         <button onClick={handleSend} className="w-full bg-white text-black hover:bg-zinc-200 font-medium tracking-wider rounded-full h-11 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+            Send <Send size={16} />
+         </button>
        </div>
 
-       <div className="space-y-4">
-         <h3 className="text-zinc-500 text-xs uppercase tracking-widest">History</h3>
+       <div className="space-y-3">
+         <p className="text-zinc-500 text-[10px] uppercase tracking-widest">History</p>
          <div className="space-y-2">
             {history.map(tx => {
                 const isSender = tx.sender_id === user.username;
                 const isRide = tx.type === 'ride_earning';
                 
                 let colorClass = isSender ? 'text-[#FF3366]' : 'text-[#D2FF00]';
-                if (isRide) colorClass = 'text-purple-500';
+                if (isRide) colorClass = 'text-purple-400';
                 
                 let label = isSender ? `To: ${tx.receiver_id}` : `From: ${tx.sender_id}`;
                 if (isRide) label = "Ride Earnings";
                 
                 return (
-                <div key={tx.id} className="flex justify-between items-center bg-zinc-900/50 p-3 border border-zinc-800">
+                <div key={tx.id} className="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl">
                     <div className="flex flex-col">
-                        <span className="text-xs text-zinc-500">{new Date(tx.timestamp).toLocaleDateString()}</span>
-                        <span className="font-bold text-sm">{label}</span>
+                        <span className="text-[10px] text-zinc-600">{new Date(tx.timestamp).toLocaleDateString()}</span>
+                        <span className="font-medium text-sm">{label}</span>
                     </div>
                     <span className={`font-mono font-bold ${colorClass}`}>
                         {isSender ? '-' : '+'}{tx.amount.toFixed(2)}
                     </span>
                 </div>
             )})}
-            {history.length === 0 && <div className="text-center text-zinc-600 text-sm">No transactions yet</div>}
+            {history.length === 0 && <div className="text-center text-zinc-600 text-sm py-4">No transactions yet</div>}
          </div>
        </div>
     </div>
@@ -1377,8 +1355,6 @@ function App() {
 <Route path="/messages" element={<PrivateRoute><DirectMessages /></PrivateRoute>}/>
 
 <Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
-
-<Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
 
 <Route path="/admin" element={<PrivateRoute><AdminWrapper /></PrivateRoute>} />
 
