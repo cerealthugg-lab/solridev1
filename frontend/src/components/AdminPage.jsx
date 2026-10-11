@@ -222,8 +222,8 @@ if (adminStatus === 'loading') {
         <div className="space-y-2">
           {users.map(function(u) {
             return (
-              <a key={u.username} href={"/skater/" + u.username} className="block bg-zinc-900 border border-zinc-800 p-3 hover:border-zinc-700 transition-colors">
-                <div className="flex justify-between items-center">
+              <div key={u.username} className="bg-zinc-900 border border-zinc-800 p-3">
+                <a href={"/skater/" + u.username} className="flex justify-between items-center hover:opacity-80">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-white">{u.username}</span>
@@ -234,8 +234,14 @@ if (adminStatus === 'loading') {
                     </div>
                   </div>
                   <span className="text-zinc-600 text-xs">→</span>
+                </a>
+                <div className="flex gap-1 flex-wrap mt-2">
+                  <button onClick={function() { banChat(u.username, 1); }} className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 1h</button>
+                  <button onClick={function() { banChat(u.username, 24); }} className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 24h</button>
+                  <button onClick={function() { banChat(u.username, 720); }} className="text-[9px] text-zinc-500 hover:text-[#FF3366] border border-zinc-800 px-2 py-1">Ban 30d</button>
+                  <button onClick={function() { unbanChat(u.username); }} className="text-[9px] text-zinc-500 hover:text-[#D2FF00] border border-zinc-800 px-2 py-1">Unban</button>
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>
