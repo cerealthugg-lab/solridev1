@@ -106,17 +106,17 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             <div className="flex flex-wrap gap-1.5">
               {user.deck_company && (
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
-                  Sub: {user.deck_company} {user.deck_size ? `(${user.deck_size}")` : ''}
+                  Setup: {user.deck_company} {user.deck_size ? `(${user.deck_size}")` : ''}
                 </span>
               )}
               {user.fav_trick && (
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
-                  🎯 {user.fav_trick}
+                  Fav. trick {user.fav_trick}
                 </span>
               )}
               {user.fav_spot && (
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#D2FF00]/10 border border-[#D2FF00]/20 text-[#D2FF00] px-2.5 py-1 rounded-full">
-                  📍 {user.fav_spot}
+                  Fav. spot📍 {user.fav_spot}
                 </span>
               )}
               {a != null && (
@@ -203,7 +203,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           <FeedbackButton />
           <button onClick={logout}
             className="w-full h-11 rounded-xl border border-neutral-950 bg-neutral-950/40 text-[#FF3366] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-            <LogOut size={12} /> Safe Disconnect Session
+            <LogOut size={12} /> LOG OUT
           </button>
         </div>
       </div>
