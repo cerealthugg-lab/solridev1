@@ -108,7 +108,7 @@ export default function SkaterProfile() {
         <div className="flex flex-wrap gap-1.5 mt-4">
           {profile.deck_company && (
             <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
-              🛹 {profile.deck_company} {profile.deck_size ? `(${profile.deck_size}")` : ''}
+              🛹 {profile.deck_company} {profile.deck_size ? `(${profile.deck_size})` : ''}
             </span>
           )}
           {profile.fav_trick && (
