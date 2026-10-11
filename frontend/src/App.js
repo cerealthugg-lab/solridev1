@@ -818,21 +818,19 @@ const RidePage = () => {
             ) : 'Stop'}
           </button>
         ) : (
-         <button 
+
+
+<button 
   onClick={startRide} 
   disabled={busy}
-  className="w-40 h-40 rounded-full bg-white/10 backdrop-blur-xl border border-white/30 text-white text-lg font-medium tracking-wide flex items-center justify-center shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] hover:bg-white/20 active:scale-95 transition-all duration-200 disabled:opacity-40"
+  className="w-36 h-36 rounded-full bg-[#D2FF00] text-black font-bold flex items-center justify-center shadow-md hover:scale-105 active:scale-90 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] disabled:opacity-50"
 >
   {isStarting ? (
-    <span className="flex flex-col items-center gap-1.5">
-      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-      <span className="text-xs text-white/70">Connecting</span>
-    </span>
+    <span className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
   ) : (
-    <span className="font-semibold tracking-wider">START</span>
+    <span className="text-lg tracking-tight font-extrabold">GO</span>
   )}
 </button>
-        )}
         
         <p className="text-zinc-500 text-xs tracking-wider">
             {isStopping ? "Saving ride..." : isStarting ? "Loading..." : (isActive ? "GPS tracking" : "Tap to start")}
