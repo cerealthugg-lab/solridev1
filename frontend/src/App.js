@@ -827,16 +827,25 @@ const RidePage = () => {
   onClick={startRide} 
   disabled={busy}
   className={isStarting 
-    ? "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-bold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 bg-[#D2FF00]/10 backdrop-blur-md shadow-[0_0_60px_20px_rgba(210,255,0,0.4)] animate-[pulse_1.5s_infinite]" 
-    : "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-bold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 bg-[#D2FF00]/10 backdrop-blur-md shadow-[0_0_40px_5px_rgba(210,255,0,0.15)] hover:shadow-[0_0_50px_15px_rgba(210,255,0,0.3)] hover:bg-[#D2FF00]/20"
+    ? "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-black uppercase tracking-wider flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-40 bg-[#D2FF00]/15 backdrop-blur-xl shadow-[0_0_50px_15px_rgba(210,255,0,0.5)] animate-pulse" 
+    : "w-44 h-44 rounded-full border-2 border-[#D2FF00]/60 text-[#D2FF00] text-lg font-black uppercase tracking-wider flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-40 bg-[#D2FF00]/5 backdrop-blur-md shadow-[0_0_35px_5px_rgba(210,255,0,0.2)] animate-[pulse_3s_infinite]"
   }
 >
   {isStarting ? (
-    <span className="flex flex-col items-center gap-1">
-      <span className="inline-block w-5 h-5 border-2 border-[#D2FF00] border-t-transparent rounded-full animate-spin"></span>
-      <span className="text-xs font-bold tracking-tight mt-1">TRACKING</span>
+    <span className="flex flex-col items-center gap-2">
+      {/* Dual rotating spinner core */}
+      <span className="relative flex h-6 w-6">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D2FF00] opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-6 w-6 border-2 border-[#D2FF00] border-t-transparent animate-spin"></span>
+      </span>
+      <span className="text-[10px] font-black tracking-widest text-[#D2FF00] animate-pulse">TRACKING</span>
     </span>
-  ) : 'Ride'}
+  ) : (
+    <span className="flex flex-col items-center">
+      <span className="text-2xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(210,255,0,0.6)]">RIDE</span>
+      <span className="text-[9px] font-bold tracking-widest text-[#D2FF00]/70 mt-0.5">READY</span>
+    </span>
+  )}
 </button>
 
         )}
