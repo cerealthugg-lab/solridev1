@@ -129,7 +129,7 @@ function AdminPage(props) {
   };
 
   // Access check
-  if (!currentUser || !currentUser.is_admin) {
+ if (!currentUser || currentUser.username !== 'admin') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
