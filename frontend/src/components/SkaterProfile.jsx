@@ -55,10 +55,19 @@ export default function SkaterProfile() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-20">
-      <header className="flex items-center gap-3 p-4 border-b border-zinc-800">
-        <button onClick={() => navigate(-1)} className="text-zinc-400"><ArrowLeft size={20} /></button>
-        <span className="font-black uppercase tracking-widest text-sm">Skater Profile</span>
+          
+      {/* Immersive Social Style Header */}
+      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
+        <button onClick={() => navigate(-1)} className="p-1 text-neutral-400 active:scale-90 transition-transform">
+          <ArrowLeft size={20} />
+        </button>
+        <span className="font-black tracking-tight text-sm lowercase">@{profile.username}</span>
+        <div className="flex gap-4">
+          <button onClick={reportUser} className="text-xs font-bold text-red-500 uppercase tracking-wider">Report</button>
+          <button onClick={blockUser} className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Block</button>
+        </div>
       </header>
+
 
       <div className="p-6 border-b border-zinc-800">
         <div className="flex items-center gap-4">
