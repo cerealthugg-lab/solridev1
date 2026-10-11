@@ -44,6 +44,18 @@ function AdminPage(props) {
   var grantState = useState({});
   var grantAmounts = grantState[0];
   var setGrantAmounts = grantState[1];
+    
+     // Get user from localStorage token
+  var checkAdmin = useState(false);
+  var isAdmin = checkAdmin[0];
+  var setIsAdmin = checkAdmin[1];
+
+  useEffect(function() {
+    api.get('/users/me').then(function(res) {
+      setIsAdmin(res.data && res.data.is_admin === true);
+    }).catch(function() { setIsAdmin(false); });
+  }, []); 
+    
 
   // Fetch functions
   var fetchStats = async function() {
@@ -129,6 +141,18 @@ function AdminPage(props) {
   };
 
   // Access check
+    
+      if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Shield size={48} className="text-[#FF3366] mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white uppercase">Access Denied</h2>
+          <p className="text-zinc-500 text-sm mt-2">Admin only</p>
+        </div>
+      </div>
+    );
+  }
 
 
   var tabs = [
