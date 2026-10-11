@@ -1328,10 +1328,9 @@ async def admin_stats(admin: dict = Depends(get_admin_user)):
 @api.get("/admin/users")
 async def admin_list_users(admin: dict = Depends(get_admin_user)):
     res = supabase.table('users').select(
-        'id, username, wallet_balance, is_admin, has_first_ride, created_at'
+        'id, username, wallet_balance, is_admin, deck_size, deck_company, fav_trick, fav_spot, self_comment, birth_date, created_at'
     ).order('created_at', desc=True).limit(200).execute()
     return res.data
-
 
 class AdminGrantDFQ(BaseModel):
     amount: float
