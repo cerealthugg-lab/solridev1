@@ -37,25 +37,19 @@ export default function SkaterProfile() {
 
   if (loading) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-zinc-700 border-t-[#D2FF00] rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-neutral-800 border-t-[#D2FF00] rounded-full animate-spin" />
     </div>
   );
   if (error || !profile) return (
-    <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 text-sm uppercase tracking-widest">
+    <div className="min-h-screen bg-black flex items-center justify-center text-neutral-500 text-xs font-bold uppercase tracking-widest">
       {error || "Skater not found"}
     </div>
   );
 
   const a = calcAge(profile.birth_date);
-  const info = [
-    ["Deck size", profile.deck_size], ["Deck company", profile.deck_company],
-    ["Fav trick", profile.fav_trick], ["Fav spot", profile.fav_spot],
-    ["Birth date", profile.birth_date ? `${profile.birth_date}${a != null ? ` · ${a} y.o.` : ""}` : null],
-  ].filter(([, v]) => v);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
-          
+    <div className="min-h-screen bg-black text-white pb-24">
       {/* Immersive Social Style Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
         <button onClick={() => navigate(-1)} className="p-1 text-neutral-400 active:scale-90 transition-transform">
@@ -68,7 +62,6 @@ export default function SkaterProfile() {
         </div>
       </header>
 
-
       {/* Profile Bio Section */}
       <div className="px-4 pt-6 pb-4">
         <div className="flex items-center justify-between gap-6">
@@ -79,7 +72,9 @@ export default function SkaterProfile() {
               {profile.photo_url ? (
                 <img src={profile.photo_url} alt={profile.username} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-2xl font-black text-[#D2FF00]">{profile.username?.?.[0]?.toUpperCase()}</span>
+                <span className="text-2xl font-black text-[#D2FF00]">
+                  {profile.username ? profile.username[0].toUpperCase() : 'S'}
+                </span>
               )}
             </div>
           </div>
@@ -141,36 +136,24 @@ export default function SkaterProfile() {
         </div>
       </div>
 
-
-          
-          
-          
-      {info.length > 0 && (
-        <div className="p-6 border-b border-zinc-800 space-y-2">
-          {info.map(([label, value]) => (
-            <div key={label} className="flex justify-between gap-3 border-b border-zinc-800 pb-2">
-              <span className="text-zinc-400 text-sm shrink-0">{label}</span>
-              <span className="font-mono text-[#D2FF00] text-sm text-right min-w-0 break-words">{value}</span>
-            </div>
-          ))}
-          {profile.self_comment && <p className="text-sm text-white/80 pt-2">"{profile.self_comment}"</p>}
+      {/* Edge-to-Edge Instagram Style Clip Gallery Grid */}
+      <div className="border-t border-neutral-900 mt-4">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-900/60">
+          <Play size={12} className="text-[#D2FF00] fill-[#D2FF00]" />
+          <h2 className="text-xs font-black uppercase tracking-widest text-neutral-400">Trick Vault</h2>
         </div>
-      )}
 
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Play size={16} className="text-[#D2FF00]" />
-          <h2 className="text-sm font-black uppercase tracking-widest">Tricks</h2>
-        </div>
         {tricks.length === 0 ? (
-          <p className="text-xs text-zinc-600 uppercase tracking-widest text-center py-6">No tricks uploaded yet</p>
+          <p className="text-xs font-bold text-neutral-600 uppercase tracking-widest text-center py-12">No clips dropped yet</p>
         ) : (
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-3 gap-[2px] bg-neutral-950">
             {tricks.map((t, i) => (
-              <button key={t.id} onClick={() => setActive(i)}
-                className="relative aspect-square bg-black border border-zinc-800 overflow-hidden">
+              <button key={t.id} onClick={() => setActive(i)} className="relative aspect-square bg-neutral-900 overflow-hidden active:opacity-80 transition-opacity">
                 <video src={t.video_url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
-                <span className="absolute bottom-1 right-1 text-[10px] text-[#D2FF00] font-bold">⚡{t.tips_received ?? 0}</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <span className="absolute bottom-2 left-2 text-[9px] text-white font-black bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded">
+                  ⚡ {t.tips_received ?? 0}
+                </span>
               </button>
             ))}
           </div>
@@ -178,15 +161,6 @@ export default function SkaterProfile() {
       </div>
 
       {active !== null && <TrickFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} />}
-    </div>
-  );
-}
-
-function Stat({ n, label }) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 p-3 text-center">
-      <div className="text-2xl font-black text-[#D2FF00]">{n}</div>
-      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{label}</div>
     </div>
   );
 }
@@ -199,7 +173,7 @@ function TrickFeedViewer({ tricks, startIndex, onClose }) {
   }, [startIndex]);
   return (
     <div ref={containerRef} className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
-      <button onClick={onClose} className="fixed top-3 right-4 z-20 text-white text-4xl leading-none">×</button>
+      <button onClick={onClose} className="fixed top-4 right-4 z-20 text-white text-3xl font-light bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform">×</button>
       {tricks.map((t) => <TrickSlide key={t.id} trick={t} />)}
     </div>
   );
@@ -225,17 +199,11 @@ function TrickSlide({ trick }) {
   const up = () => { clearTimeout(holdTimer.current); if (held.current) vref.current?.play?.().catch(() => {}); else setMuted((m) => !m); };
 
   return (
-    <div className="relative h-[100dvh] w-full snap-start flex items-center justify-center select-none"
-      onPointerDown={down} onPointerUp={up} onPointerLeave={up}>
-      <video ref={vref} src={trick.video_url} loop muted={muted} playsInline className="max-h-full max-w-full object-contain" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 text-white bg-gradient-to-t from-black/80 to-transparent">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-zinc-200 truncate">
-            📍 {trick.spot_id ? (trick.spot_name || 'Spot') : (trick.spot_name ? `${trick.spot_name} (removed)` : 'Spot removed')}
-          </span>
-          <span className="text-[#D2FF00] font-bold shrink-0">⚡ {trick.tips_received ?? 0} DFQ</span>
-        </div>
-        {trick.caption && <p className="text-xs text-white/80 mt-1">{trick.caption}</p>}
+    <div onMouseDown={down} onMouseUp={up} onTouchStart={down} onTouchEnd={up} className="relative h-[100dvh] w-full snap-start snap-always bg-black flex items-center justify-center">
+      <video ref={vref} src={trick.video_url} loop muted={muted} playsInline className="w-full h-full object-cover" />
+      <div className="absolute bottom-6 left-4 right-16 z-10 pointer-events-none drop-shadow-md">
+        <p className="text-sm font-black uppercase tracking-wider text-[#D2FF00]">⚡ {trick.tips_received ?? 0} Tips</p>
+        <p className="text-xs text-white/80 mt-1">{trick.description || "Skate session upload"}</p>
       </div>
     </div>
   );
