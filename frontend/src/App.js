@@ -818,20 +818,16 @@ const RidePage = () => {
             ) : 'Stop'}
           </button>
         ) : (
-
-
-<button 
-  onClick={startRide} 
-  disabled={busy}
-  className="w-44 h-44 rounded-full bg-[#D2FF00] text-black text-lg font-semibold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-50 shadow-[0_0_50px_10px_rgba(210,255,0,0.25)] hover:shadow-[0_0_60px_15px_rgba(210,255,0,0.4)]"
->
-  {isStarting ? (
-    <span className="flex flex-col items-center gap-1">
-      <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-      <span className="text-sm">Starting</span>
-    </span>
-  ) : 'Ride'}
-</button>
+          <button onClick={startRide} disabled={busy}
+            className="w-44 h-44 rounded-full bg-[#D2FF00] text-black text-lg font-semibold uppercase tracking-wider flex items-center justify-center shadow-[0_0_40px_rgba(210,255,0,0.3)] active:scale-95 transition-all disabled:opacity-50">
+            {isStarting ? (
+              <span className="flex flex-col items-center gap-1">
+                <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-sm">Starting</span>
+              </span>
+            ) : 'Ride'}
+          </button>
+        )}
         
         <p className="text-zinc-500 text-xs tracking-wider">
             {isStopping ? "Saving ride..." : isStarting ? "Loading..." : (isActive ? "GPS tracking" : "Tap to start")}
