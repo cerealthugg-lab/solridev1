@@ -69,32 +69,82 @@ export default function SkaterProfile() {
       </header>
 
 
-      <div className="p-6 border-b border-zinc-800">
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#D2FF00] shrink-0 bg-zinc-800 flex items-center justify-center">
-            {profile.photo_url
-              ? <img src={profile.photo_url} alt={profile.username} className="w-full h-full object-cover" />
-              : <span className="text-2xl font-black text-[#D2FF00]">{profile.username?.[0]?.toUpperCase()}</span>}
+      {/* Profile Bio Section */}
+      <div className="px-4 pt-6 pb-4">
+        <div className="flex items-center justify-between gap-6">
+          {/* Instagram-style Avatar with Pulse Ring */}
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 bg-[#D2FF00] rounded-full p-[2px] animate-pulse" />
+            <div className="relative w-20 h-20 rounded-full overflow-hidden p-[2px] bg-black flex items-center justify-center">
+              {profile.photo_url ? (
+                <img src={profile.photo_url} alt={profile.username} className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <span className="text-2xl font-black text-[#D2FF00]">{profile.username?.?.[0]?.toUpperCase()}</span>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-black uppercase tracking-widest truncate">{profile.username}</h1>
-            {profile.deck_company && <p className="text-xs text-zinc-500 uppercase tracking-widest">Deck · {profile.deck_company}</p>}
+
+          {/* Social Counts Matrix */}
+          <div className="flex-1 grid grid-cols-3 gap-1 text-center">
+            <div>
+              <div className="text-xl font-black text-white">{profile.spot_count ?? 0}</div>
+              <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Spots</div>
+            </div>
+            <div>
+              <div className="text-xl font-black text-white">{profile.ride_count ?? 0}</div>
+              <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Rides</div>
+            </div>
+            <div>
+              <div className="text-xl font-black text-white">{tricks.length}</div>
+              <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mt-0.5">Tricks</div>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2 mt-4">
-          <button onClick={startDM} className="flex-1 h-10 bg-[#D2FF00] text-black font-bold uppercase tracking-widest text-xs">Message</button>
-          <button onClick={blockUser} className="h-10 px-3 border border-zinc-700 text-zinc-400 text-xs uppercase">Block</button>
-          <button onClick={reportUser} className="h-10 px-3 border border-[#FF3366] text-[#FF3366] text-xs uppercase">Report</button>
+        {/* Username & Bio Description */}
+        <div className="mt-4">
+          <h1 className="text-xl font-black tracking-tight uppercase">{profile.username}</h1>
+          {profile.self_comment && (
+            <p className="text-sm text-neutral-300 font-medium mt-1 leading-relaxed">"{profile.self_comment}"</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mt-6">
-          <Stat n={profile.spot_count ?? 0} label="Spots" />
-          <Stat n={profile.ride_count ?? 0} label="Rides" />
-          <Stat n={tricks.length} label="Tricks" />
+        {/* Skate Setup Hardware Tags */}
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {profile.deck_company && (
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
+              🛹 {profile.deck_company} {profile.deck_size ? `(${profile.deck_size}")` : ''}
+            </span>
+          )}
+          {profile.fav_trick && (
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-300 px-2.5 py-1 rounded-full">
+              🎯 {profile.fav_trick}
+            </span>
+          )}
+          {profile.fav_spot && (
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#D2FF00]/10 border border-[#D2FF00]/20 text-[#D2FF00] px-2.5 py-1 rounded-full">
+              📍 {profile.fav_spot}
+            </span>
+          )}
+          {a != null && (
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-400 px-2.5 py-1 rounded-full">
+              Age · {a}
+            </span>
+          )}
+        </div>
+
+        {/* Premium Action Button */}
+        <div className="mt-5">
+          <button onClick={startDM} className="w-full h-11 bg-[#D2FF00] text-black font-extrabold uppercase tracking-widest text-xs rounded-xl active:scale-[0.98] transition-all">
+            Message Skater
+          </button>
         </div>
       </div>
 
+
+          
+          
+          
       {info.length > 0 && (
         <div className="p-6 border-b border-zinc-800 space-y-2">
           {info.map(([label, value]) => (
