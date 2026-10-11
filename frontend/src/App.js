@@ -823,15 +823,18 @@ const RidePage = () => {
 
 // --- ride button ---
 
-      <button 
+<button 
   onClick={startRide} 
   disabled={busy}
-  className="w-44 h-44 rounded-full bg-[#D2FF00] text-black text-lg font-semibold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-50 shadow-[0_0_50px_10px_rgba(210,255,0,0.25)] hover:shadow-[0_0_60px_15px_rgba(210,255,0,0.4)]"
+  className={isStarting 
+    ? "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-bold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 bg-[#D2FF00]/10 backdrop-blur-md shadow-[0_0_60px_20px_rgba(210,255,0,0.4)] animate-[pulse_1.5s_infinite]" 
+    : "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-bold uppercase tracking-wider flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 bg-[#D2FF00]/10 backdrop-blur-md shadow-[0_0_40px_5px_rgba(210,255,0,0.15)] hover:shadow-[0_0_50px_15px_rgba(210,255,0,0.3)] hover:bg-[#D2FF00]/20"
+  }
 >
   {isStarting ? (
     <span className="flex flex-col items-center gap-1">
-      <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-      <span className="text-sm">Starting</span>
+      <span className="inline-block w-5 h-5 border-2 border-[#D2FF00] border-t-transparent rounded-full animate-spin"></span>
+      <span className="text-xs font-bold tracking-tight mt-1">TRACKING</span>
     </span>
   ) : 'Ride'}
 </button>
