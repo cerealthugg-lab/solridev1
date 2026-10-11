@@ -806,49 +806,47 @@ const RidePage = () => {
                 {distance.toFixed(0)}<span className="text-xl text-zinc-600 ml-1">m</span>
             </h1>
         </div>
+
+// --- Ride button ---
         
-        {isActive ? (
-          <button onClick={stopRide} disabled={busy}
-            className="w-44 h-44 rounded-full bg-[#FF3366] text-white text-lg font-semibold uppercase tracking-wider flex items-center justify-center shadow-[0_0_40px_rgba(255,51,102,0.3)] active:scale-95 transition-all disabled:opacity-50">
-            {isStopping ? (
-              <span className="flex flex-col items-center gap-1">
-                <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span className="text-sm">Stopping</span>
-              </span>
-            ) : 'Stop'}
-          </button>
-        ) : (
+{isActive ? (
+  <button 
+    onClick={stopRide} 
+    disabled={busy}
+    className="w-44 h-44 rounded-full border-2 border-[#FF3366] text-[#FF3366] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#FF3366]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
+  >
+    {isStopping ? (
+      <div className="flex flex-col items-center gap-1.5">
+        <span className="inline-block w-5 h-5 border-2 border-[#FF3366] border-t-transparent rounded-full animate-spin"></span>
+        <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SAVING</span>
+      </div>
+    ) : (
+      <>
+        <span className="drop-shadow-[0_0_8px_rgba(255,51,102,0.3)]">STOP</span>
+        <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">ACTIVE</span>
+      </>
+    )}
+  </button>
+) : (
+  <button 
+    onClick={startRide} 
+    disabled={busy}
+    className="w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#D2FF00]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
+  >
+    {isStarting ? (
+      <div className="flex flex-col items-center gap-1.5">
+        <span className="inline-block w-5 h-5 border-2 border-[#D2FF00] border-t-transparent rounded-full animate-spin"></span>
+        <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SYNCING</span>
+      </div>
+    ) : (
+      <>
+        <span className="drop-shadow-[0_0_8px_rgba(210,255,0,0.35)]">RIDE</span>
+        <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">READY</span>
+      </>
+    )}
+  </button>
+)}
 
-
-
-// --- ride button ---
-
-<button 
-  onClick={startRide} 
-  disabled={busy}
-  className={isStarting 
-    ? "w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-lg font-black uppercase tracking-wider flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-40 bg-[#D2FF00]/15 backdrop-blur-xl shadow-[0_0_50px_15px_rgba(210,255,0,0.5)] animate-pulse" 
-    : "w-44 h-44 rounded-full border-2 border-[#D2FF00]/60 text-[#D2FF00] text-lg font-black uppercase tracking-wider flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-40 bg-[#D2FF00]/5 backdrop-blur-md shadow-[0_0_35px_5px_rgba(210,255,0,0.2)] animate-[pulse_3s_infinite]"
-  }
->
-  {isStarting ? (
-    <span className="flex flex-col items-center gap-2">
-      {/* Dual rotating spinner core */}
-      <span className="relative flex h-6 w-6">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D2FF00] opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-6 w-6 border-2 border-[#D2FF00] border-t-transparent animate-spin"></span>
-      </span>
-      <span className="text-[10px] font-black tracking-widest text-[#D2FF00] animate-pulse">TRACKING</span>
-    </span>
-  ) : (
-    <span className="flex flex-col items-center">
-      <span className="text-2xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(210,255,0,0.6)]">RIDE</span>
-      <span className="text-[9px] font-bold tracking-widest text-[#D2FF00]/70 mt-0.5">READY</span>
-    </span>
-  )}
-</button>
-
-        )}
         
         <p className="text-zinc-500 text-xs tracking-wider">
             {isStopping ? "Saving ride..." : isStarting ? "Loading..." : (isActive ? "GPS tracking" : "Tap to start")}
