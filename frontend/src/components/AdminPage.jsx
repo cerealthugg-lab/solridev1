@@ -129,17 +129,7 @@ function AdminPage(props) {
   };
 
   // Access check
- if (!currentUser || currentUser.username !== 'admin') {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <Shield size={48} className="text-[#FF3366] mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white uppercase">Access Denied</h2>
-          <p className="text-zinc-500 text-sm mt-2">Admin only</p>
-        </div>
-      </div>
-    );
-  }
+
 
   var tabs = [
     { key: 'stats', label: 'Overview', icon: BarChart3 },
