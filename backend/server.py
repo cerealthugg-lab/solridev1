@@ -526,7 +526,7 @@ async def get_public_profile(username: str):
     user['ride_count'] = ride_count
     return user
 
-@api.post("/rides/{ride_id}/stop")
+@api.post("/rides/{ride_id}/stop/")
 async def stop_ride(ride_id: str, payload: RideFinish, current_user: dict = Depends(get_current_user)):
     result = supabase.table('rides').select('*').eq('id', ride_id).eq('user_id', current_user['username']).execute()
     if not result.data:
