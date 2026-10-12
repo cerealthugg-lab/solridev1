@@ -11,9 +11,6 @@ const calcAge = (b) => { const n = b ? Math.floor((Date.now() - new Date(b).getT
 
 export default function SkaterProfile() {
   const { username } = useParams();
-  if (currentUser && (username === currentUser.username || username === currentUser.id)) {
-    return <Navigate to="/profile" replace />; 
-  }
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [tricks, setTricks] = useState([]);
