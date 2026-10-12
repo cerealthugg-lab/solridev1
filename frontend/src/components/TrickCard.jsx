@@ -80,6 +80,10 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
     }
   };
 
+  const pressTimerRef = useRef(null);
+  const [isHolding, setIsHolding] = useState(false);
+
+
   const when = new Date(trick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
    return (
@@ -88,13 +92,57 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
       className="w-full h-full relative flex flex-col justify-end bg-black text-white select-none overflow-hidden"
     >
       
-      {/* 1. BASE LAYER: Full-Bleed HTML5 Video Stream Canvas */}
+      {/* 1. BASE LAYER: Full-Bleed Video Layer with Tap-to-Mute & Hold-to-Pause Actions */}
       <div 
-        className="absolute inset-0 w-full h-full bg-black z-0 cursor-pointer"
-        onClick={function (e) {
-          var v = videoRef.current;
+        className="absolute inset-0 w-full h-full bg-black z-0 cursor-pointer overflow-hidden"
+        
+        /* 🖱️ DESKTOP/LAPTOP MOUSE EVENTS */
+        onMouseDown={function (e) {
+          e.preventDefault();
+          const v = videoRef.current;
           if (!v) return;
-          if (v.paused) { v.play().catch(function(){}); } else { v.pause(); }
+          // Set a short 200ms delay window to separate a quick tap from a hold action
+          pressTimerRef.current = setTimeout(function () {
+            v.pause();
+            setIsHolding(true);
+          }, 200);
+        }}
+        onMouseUp={function (e) {
+          e.preventDefault();
+          clearTimeout(pressTimerRef.current);
+          const v = videoRef.current;
+          if (!v) return;
+          
+          if (isHolding) {
+            // If they were holding down, resume playing on release
+            v.play().catch(function(){});
+            setIsHolding(false);
+          } else {
+            // If it was just a fast tap, toggle the audio sound state
+            setMuted(function(m) { return !m; });
+          }
+        }}
+
+        /* 📱 MOBILE TOUCHSCREEN EVENTS (Crucial for Xcode builds) */
+        onTouchStart={function (e) {
+          const v = videoRef.current;
+          if (!v) return;
+          pressTimerRef.current = setTimeout(function () {
+            v.pause();
+            setIsHolding(true);
+          }, 200);
+        }}
+        onTouchEnd={function (e) {
+          clearTimeout(pressTimerRef.current);
+          const v = videoRef.current;
+          if (!v) return;
+          
+          if (isHolding) {
+            v.play().catch(function(){});
+            setIsHolding(false);
+          } else {
+            setMuted(function(m) { return !m; });
+          }
         }}
       >
         <video
@@ -108,9 +156,19 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
           className="w-full h-full object-cover"
         />
         
+        {/* Visual pause overlay notification text if user is holding screen */}
+        {isHolding && (
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 pointer-events-none animate-in fade-in duration-100">
+            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-zinc-800 text-xs font-black uppercase tracking-widest text-zinc-400">
+            PAUSED
+            </div>
+          </div>
+        )}
+
         {/* Soft immersive dark vignette overlay protecting readable text layers */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none z-0" />
       </div>
+
 
       {/* 2. OVERLAY LAYER: Right-Aligned Action Control Sidebar Pillar */}
       <div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 z-20">
