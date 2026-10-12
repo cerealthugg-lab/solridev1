@@ -72,12 +72,19 @@ function ChatPage(props) {
     };
   }, []);
 
-  // Auto-scroll to bottom
+  // Smart Auto-Scroll: Only snaps if the user is already near the bottom
   useEffect(function () {
     if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
+      var el = listRef.current;
+      // 150px threshold buffer allows natural reading clearance
+      var isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+      
+      if (isAtBottom) {
+        el.scrollTop = el.scrollHeight;
+      }
     }
   }, [messages]);
+
 
   // Cooldown timer
   useEffect(function () {
