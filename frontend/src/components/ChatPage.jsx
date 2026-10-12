@@ -18,10 +18,10 @@ export default function Conversation({ currentUsername }) {
   const load = useCallback(() => {
     axios.get(`${BACKEND_URL}/api/conversations/${cid}/messages`, auth())
      .then(r => {
-  const data = r.data || [];
-  setMessages(data);
-  setOther(prev => prev || data.find(m => m.sender_id !== me)?.sender_id || prev);
-}).catch(() => {});
+      const data = r.data || [];
+      setMessages(data);
+      setOther(prev => prev || data.find(m => m.sender_id !== me)?.sender_id || prev);
+    }).catch(() => {});
   }, [cid, me]);
 
   useEffect(() => {
@@ -61,14 +61,12 @@ export default function Conversation({ currentUsername }) {
   return (
     <div className="fixed left-0 right-0 z-[9999] bg-black flex flex-col"
       style={{ top: vp.top, height: vp.height }}>
-      
-      {/* Immersive Snapchat Style Header */}
-      <header className="flex items-center gap-3 p-3 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-900 shrink-0">
-        <button onClick={() => navigate("/messages")} className="text-neutral-400 text-xl font-bold active:scale-90 transition-transform">←</button>
+      <header className="flex items-center gap-3 p-3 border-b border-neutral-900 bg-neutral-950 shrink-0">
+        <button onClick={() => navigate("/messages")} className="text-neutral-400 text-2xl leading-none mr-1">←</button>
           
         {other ? (
           <button onClick={() => navigate(`/skater/${other}`)}
-            className="font-black tracking-tight text-sm text-white hover:text-[#D2FF00] transition-colors lowercase">
+            className="font-black uppercase tracking-widest text-sm text-white hover:text-[#D2FF00] transition-colors lowercase">
             @{other}
           </button>
         ) : (
@@ -76,15 +74,14 @@ export default function Conversation({ currentUsername }) {
         )}
       </header>
 
-      {/* Clean Instagram Style Chat Stream Bubble Layout */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950">
-        {messages.length === 0 && <p className="text-center text-neutral-600 text-xs font-bold uppercase tracking-widest mt-8">Say hi 👋</p>}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black">
+        {messages.length === 0 && <p className="text-center text-neutral-600 text-sm mt-8">Say hi 👋</p>}
         {messages.map((m) => (
           <div key={m.id}
-            className={`max-w-[75%] px-4 py-2 text-sm tracking-tight rounded-2xl break-words leading-relaxed font-medium ${
-              m.sender_id === me 
-                ? "ml-auto bg-[#D2FF00] text-black font-semibold rounded-tr-sm shadow-md" 
-                : "bg-neutral-900 border border-neutral-800 text-neutral-100 rounded-tl-sm"
+            className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm font-medium tracking-tight break-words leading-relaxed ${
+              (m.sender_id || "").toLowerCase() === me 
+                ? "ml-auto bg-[#D2FF00] text-black font-semibold rounded-tr-sm" 
+                : "bg-neutral-900 border border-neutral-800 text-white rounded-tl-sm"
             }`}>
             {m.body}
           </div>
@@ -92,16 +89,14 @@ export default function Conversation({ currentUsername }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Premium Docked Mobile Message Area Input Container */}
-      <div className="flex gap-2 p-3 bg-black border-t border-neutral-900 shrink-0 pb-safe">
+      <div className="flex gap-2 p-3 border-t border-neutral-900 bg-black shrink-0">
         <input value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView(), 300)}
-          placeholder="Drop a note..."
-          className="flex-1 px-4 py-2 bg-neutral-950 border border-neutral-900 rounded-xl text-sm text-white placeholder-neutral-600 focus:border-[#D2FF00]/40 focus:outline-none transition-colors" />
-        <button onClick={send} className="px-5 h-9 bg-[#D2FF00] text-black font-black uppercase tracking-widest text-[10px] rounded-xl active:scale-95 transition-transform flex items-center justify-center">Send</button>
+          placeholder="Message…"
+          className="flex-1 px-4 py-2 bg-neutral-950 border border-neutral-900 rounded-full text-sm text-white focus:outline-none focus:border-[#D2FF00]/40 transition-colors" />
+        <button onClick={send} className="px-5 bg-[#D2FF00] text-black font-black uppercase tracking-widest text-xs rounded-full active:scale-95 transition-transform">Send</button>
       </div>
-
     </div>
   );
 }
