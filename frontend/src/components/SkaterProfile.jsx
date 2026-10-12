@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft, Play, MapPin, Trash2, Coins } from 'lucide-react';
 import { toast } from 'sonner';
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const authHdr = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
@@ -10,6 +11,9 @@ const calcAge = (b) => { const n = b ? Math.floor((Date.now() - new Date(b).getT
 
 export default function SkaterProfile() {
   const { username } = useParams();
+  if (currentUser && (username === currentUser.username || username === currentUser.id)) {
+    return <Navigate to="/profile" replace />; 
+  }
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [tricks, setTricks] = useState([]);
