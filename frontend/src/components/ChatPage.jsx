@@ -305,7 +305,7 @@ function ChatPage(props) {
 
     </div>
   );
-
+}
 
 export default ChatPage;
 
