@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Flame, Loader2 } from 'lucide-react';
+import { Flame, Loader2, Sparkles, Trophy } from 'lucide-react';
 import TrickCard from './TrickCard';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -13,11 +13,7 @@ api.interceptors.request.use((config) => {
 
 const PAGE_SIZE = 20;
 
-/**
- * TricksFeed — the "IG-lite for skaters" page.
- * Props: currentUser: { username }
- */
-function TricksFeed({ currentUser }) {
+export default function TricksFeed({ currentUser }) {
   const [tricks, setTricks] = useState([]);
   const [tippedIds, setTippedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -76,63 +72,77 @@ function TricksFeed({ currentUser }) {
   };
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-            <Flame size={22} className="text-[#FF3366]" /> Tricks
-          </h1>
-          <p className="text-zinc-500 uppercase tracking-[0.2em] text-xs font-bold mt-1">
-            Land · Tip · Level up
-          </p>
+    <div className="min-h-screen bg-black text-white pb-24 selection:bg-[#D2FF00] selection:text-black">
+      {/* Immersive Social Top Navigation Header */}
+      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900/60">
+        <div className="flex items-center gap-2">
+          <Flame size={18} className="text-[#FF3366] fill-[#FF3366] animate-pulse" />
+          <h1 className="text-lg font-black uppercase tracking-tighter italic text-white">Trick Stream</h1>
+        </div>
+        <div className="flex items-center gap-1 bg-[#D2FF00]/10 border border-[#D2FF00]/20 px-2.5 py-0.5 rounded-full">
+          <Sparkles size={10} className="text-[#D2FF00]" />
+          <span className="text-[9px] font-black uppercase tracking-wider text-[#D2FF00]">M2E Live</span>
         </div>
       </header>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16 text-zinc-600 text-xs uppercase tracking-widest font-bold">
-          <Loader2 size={18} className="animate-spin mr-2" /> Loading feed...
-        </div>
-      ) : tricks.length === 0 ? (
-        <div className="border border-zinc-900 p-8 text-center">
-          <p className="text-zinc-400 text-sm">
-            No tricks yet. Open a spot on the map and drop the first clip. 🛹
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="space-y-4" data-testid="tricks-feed-list">
-            {tricks.map((t) => (
-              <TrickCard
-                key={t.id}
-                trick={t}
-                currentUsername={currentUser?.username}
-                tippedByMe={tippedIds.has(t.id)}
-                onTipped={handleTipped}
-                onDeleted={handleDeleted}
-                autoplay
-              />
-            ))}
+      {/* Main Stream Feed Container */}
+      <div className="max-w-md mx-auto pt-3">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 text-neutral-500 text-xs font-bold uppercase tracking-widest gap-2">
+            <Loader2 size={20} className="animate-spin text-[#D2FF00]" />
+            <span>Syncing Street Logs...</span>
           </div>
-
-          {!reachedEnd && (
-            <button
-              onClick={loadMore}
-              disabled={loadingMore}
-              data-testid="tricks-feed-load-more"
-              className="w-full border border-zinc-800 hover:border-[#D2FF00] hover:text-[#D2FF00] text-zinc-400 py-3 font-black uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2"
-            >
-              {loadingMore ? (<><Loader2 size={14} className="animate-spin" /> Loading...</>) : 'Load more'}
-            </button>
-          )}
-          {reachedEnd && tricks.length > 0 && (
-            <div className="text-center text-zinc-700 text-[10px] uppercase tracking-[0.25em] font-bold py-4">
-              — end of feed —
+        ) : tricks.length === 0 ? (
+          <div className="mx-4 mt-8 p-8 bg-neutral-950 border border-neutral-900 rounded-2xl text-center space-y-3">
+            <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto border border-neutral-800">
+              <Trophy size={18} className="text-neutral-600" />
             </div>
-          )}
-        </>
-      )}
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-neutral-200">No clips dropped yet</p>
+              <p className="text-xs text-neutral-500 mt-1 max-w-[200px] mx-auto leading-relaxed">Open a spot on your local radar map and drop the first session clip! 🛹</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 px-0 sm:px-2" data-testid="tricks-feed-list">
+            {/* Immersive Trick Card Feed List Container Loop */}
+            {tricks.map((t) => (
+              <div key={t.id} className="bg-neutral-950/40 border-b sm:border border-neutral-900 sm:rounded-2xl overflow-hidden pb-1">
+                <TrickCard
+                  trick={t}
+                  currentUsername={currentUser?.username}
+                  tippedByMe={tippedIds.has(t.id)}
+                  onTipped={handleTipped}
+                  onDeleted={handleDeleted}
+                  autoplay
+                />
+              </div>
+            ))}
+
+            {/* Pagination Controls Footer Container */}
+            <div className="pt-2 px-4">
+              {!reachedEnd && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  data-testid="tricks-feed-load-more"
+                  className="w-full h-11 bg-neutral-950 border border-neutral-900 rounded-xl text-neutral-400 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all hover:border-[#D2FF00]/40 hover:text-white"
+                >
+                  {loadingMore ? (
+                    <><Loader2 size={12} className="animate-spin text-[#D2FF00]" /> Fetching Sessions...</>
+                  ) : (
+                    'Load More Clips'
+                  )}
+                </button>
+              )}
+              {reachedEnd && tricks.length > 0 && (
+                <div className="text-center text-neutral-600 text-[9px] uppercase tracking-widest font-black py-6 select-none opacity-60">
+                  ⚡ Basecamp Cache Fully Caught Up ⚡
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-export default TricksFeed;
