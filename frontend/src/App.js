@@ -797,6 +797,14 @@ const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
 const RidePage = () => {
   const { isActive, distance, startRide, stopRide, isStarting, isStopping } = useRide();
   const busy = isStarting || isStopping;
+  
+  // ⚡ RESTORED SAFETY BLOCK: Keeps the app from white-screening and stops double-tap lags!
+  const noMultiTouch = { 
+    touchAction: 'manipulation', 
+    WebkitUserSelect: 'none', 
+    userSelect: 'none', 
+    WebkitTouchCallout: 'none' 
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-10">
@@ -807,48 +815,48 @@ const RidePage = () => {
             </h1>
         </div>
 
-{/* Ride button */}
-        
-{isActive ? (
-  <button 
-    onClick={stopRide} 
-    disabled={busy}
-    className="w-44 h-44 rounded-full border-2 border-[#FF3366] text-[#FF3366] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#FF3366]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
-  >
-    {isStopping ? (
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="inline-block w-5 h-5 border-2 border-[#FF3366] border-t-transparent rounded-full animate-spin"></span>
-        <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SAVING</span>
-      </div>
-    ) : (
-      <>
-        <span className="drop-shadow-[0_0_8px_rgba(255,51,102,0.3)]">STOP</span>
-        <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">ACTIVE</span>
-      </>
-    )}
-  </button>
-) : (
-  <button 
-    onClick={startRide} 
-    disabled={busy}
-    className="w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#D2FF00]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
-  >
-    {isStarting ? (
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="inline-block w-5 h-5 border-2 border-[#D2FF00] border-t-transparent rounded-full animate-spin"></span>
-        <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SYNCING</span>
-      </div>
-    ) : (
-      <>
-        <span className="drop-shadow-[0_0_8px_rgba(210,255,0,0.35)]">RIDE</span>
-        <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">READY</span>
-      </>
-    )}
-  </button>
-)}
+        {/* Ride button */}
+        {isActive ? (
+          <button 
+            onClick={function(e) { e.preventDefault(); stopRide(); }} 
+            disabled={busy}
+            style={noMultiTouch} /* Ensures mobile touch frames only fire once */
+            className="w-44 h-44 rounded-full border-2 border-[#FF3366] text-[#FF3366] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#FF3366]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto select-none"
+          >
+            {isStopping ? (
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="inline-block w-5 h-5 border-2 border-[#FF3366] border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SAVING</span>
+              </div>
+            ) : (
+              <>
+                <span className="drop-shadow-[0_0_8px_rgba(255,51,102,0.3)]">STOP</span>
+                <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">ACTIVE</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <button 
+            onClick={function(e) { e.preventDefault(); startRide(); }} 
+            disabled={busy}
+            style={noMultiTouch} /* Ensures mobile touch frames only fire once */
+            className="w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#D2FF00]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto select-none"
+          >
+            {isStarting ? (
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="inline-block w-5 h-5 border-2 border-[#D2FF00] border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-[10px] font-bold tracking-widest not-italic opacity-60">SYNCING</span>
+              </div>
+            ) : (
+              <>
+                <span className="drop-shadow-[0_0_8px_rgba(210,255,0,0.35)]">RIDE</span>
+                <span className="text-[9px] font-bold tracking-widest opacity-60 not-italic mt-0.5">READY</span>
+              </>
+            )}
+          </button>
+        )}
 
-        
-        <p className="text-zinc-500 text-xs tracking-wider">
+        <p className="text-zinc-500 text-xs tracking-wider uppercase tracking-widest font-mono">
             {isStopping ? "Saving ride..." : isStarting ? "Loading..." : (isActive ? "GPS tracking" : "Tap to start")}
         </p>
     </div>
