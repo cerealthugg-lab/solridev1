@@ -143,21 +143,56 @@ export default function SkaterProfile() {
           <h2 className="text-xs font-black uppercase tracking-widest text-neutral-400">Trick Vault</h2>
         </div>
 
-        {tricks.length === 0 ? (
-          <p className="text-xs font-bold text-neutral-600 uppercase tracking-widest text-center py-12">No clips dropped yet</p>
+                {tricks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center select-none">
+            <p className="text-xs font-black text-neutral-600 uppercase tracking-widest">
+              No clips dropped yet
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-3 gap-[2px] bg-neutral-950">
+          /* 📱 PREMIUM IMMERSIVE 3-COLUMN SOCIAL GRID */
+          <div className="grid grid-cols-3 gap-[2px] bg-neutral-950 p-[2px] rounded-2xl overflow-hidden border border-neutral-900/40 shadow-inner">
             {tricks.map((t, i) => (
-              <button key={t.id} onClick={() => setActive(i)} className="relative aspect-square bg-neutral-900 overflow-hidden active:opacity-80 transition-opacity">
-                <video src={t.video_url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                <span className="absolute bottom-2 left-2 text-[9px] text-white font-black bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded">
-                  ⚡ {t.tips_received ?? 0}
+              <button 
+                key={t.id} 
+                onClick={() => setActive(i)} 
+                className="relative aspect-square bg-neutral-900 overflow-hidden active:scale-95 transition-all duration-200 group border border-neutral-950/20"
+                title={t.description || t.trick_name || "Skate clip"}
+              >
+                {/* 🎬 Immersive Video Asset Thumbnail with Defensive Fallback Paths */}
+                <video 
+                  src={t.video_url || t.clip_url || t.url} 
+                  muted 
+                  playsInline 
+                  preload="metadata" 
+                  className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                  poster={t.thumbnail_url || t.cover_photo || ""}
+                />
+                
+                {/* Ambient dark bottom protection vignette */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none z-10" />
+                
+                {/* 🏷️ Micro Info Row Overlay: Shows Trick Title / Caption snippet if available */}
+                {(t.trick_name || t.description || t.caption) && (
+                  <div className="absolute top-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-left pointer-events-none z-20 hidden sm:block">
+                    <p className="text-[8px] font-black uppercase text-[#D2FF00] truncate tracking-tight drop-shadow-md">
+                      {t.trick_name || "Clip"}
+                    </p>
+                    <p className="text-[7px] text-white truncate max-w-full font-medium drop-shadow-sm">
+                      {t.description || t.caption}
+                    </p>
+                  </div>
+                )}
+
+                {/* 💰 Glowing M2E Token Yield Value Badge */}
+                <span className="absolute bottom-2 left-2 text-[9px] text-white font-black bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded border border-[#D2FF00]/10 flex items-center gap-1 shadow-md z-20 group-hover:border-[#D2FF00]/40 transition-colors">
+                  <span className="text-[#D2FF00]">▶</span> {t.tips_received ?? 0}
                 </span>
               </button>
             ))}
           </div>
         )}
+
       </div>
 
       {active !== null && <TrickFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} />}

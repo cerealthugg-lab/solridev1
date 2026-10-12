@@ -93,6 +93,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         </div>
 
+
         {/* Brand Meta Identifier Text */}
         <div>
           <h1 className="text-xl font-black tracking-tight uppercase">{user.username}</h1>
