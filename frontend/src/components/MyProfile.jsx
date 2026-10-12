@@ -186,6 +186,9 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         )}
 
+          
+          
+          
         {/* Instagram style Messenger Link Box */}
         <Link 
           to="/messages"
@@ -198,6 +201,57 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           <span className="text-[#D2FF00] font-black text-sm">→</span>
         </Link>
 
+          
+                  {/* 🎬 INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
+        <div className="px-5 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] font-black uppercase tracking-widest mt-6 shrink-0 select-none">
+          <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
+            My Clips ({user.tricks?.length || 0})
+          </span>
+          <span className="text-neutral-500 pb-2 cursor-pointer hover:text-white transition-colors">
+            Saved Spots
+          </span>
+        </div>
+
+        {/* 📱 TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
+        <div className="grid grid-cols-3 gap-0.5 bg-neutral-950 flex-grow p-0.5 min-h-[350px]">
+          {user.tricks && user.tricks.length > 0 ? (
+            user.tricks.map(function (trick) {
+              return (
+                <Link 
+                  to={`/tricks?focus=${trick.id}`} 
+                  key={trick.id} 
+                  className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20"
+                >
+                  {/* Immersive Video Asset Thumbnail Frame */}
+                  <video 
+                    src={trick.video_url} 
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                    preload="metadata"
+                    muted
+                    playsInline
+                  />
+                  
+                  {/* Glowing M2E In-App Token Earnings Corner Overlay Tag */}
+                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
+                    ▶ {trick.tips_received || 0}
+                  </div>
+                </Link>
+              );
+            })
+          ) : (
+            /* Empty Timeline Placeholder Container */
+            <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none">
+              <p className="text-[10px] font-black uppercase tracking-widest font-sans">No clips catalogued</p>
+              <p className="text-[11px] text-neutral-500 max-w-[180px] leading-relaxed normal-case">
+                Hit the stream or local spots map to log your first session.
+              </p>
+            </div>
+          )}
+        </div>
+
+          
+          
+          
         {/* feedback + logout */}
         <div className="pt-4 border-t border-neutral-900 space-y-3">
           <FeedbackButton />
