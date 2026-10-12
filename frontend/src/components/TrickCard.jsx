@@ -82,151 +82,172 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
 
   const when = new Date(trick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  return (
+   return (
     <article
       data-testid={`trick-card-${trick.id}`}
-      className="border border-zinc-900 bg-[#0a0a0d] overflow-hidden"
+      className="w-full h-full relative flex flex-col justify-end bg-black text-white select-none overflow-hidden"
     >
-  {/* Header — one line: "<spot> by @<user>" */}
-      <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-900">
-        <div className="min-w-0 flex items-center gap-1.5 text-sm font-black uppercase tracking-tight">
-          <MapPin size={14} className={`shrink-0 ${trick.spot_id ? 'text-[#D2FF00]' : 'text-zinc-600'}`} />
+      
+      {/* 1. BASE LAYER: Full-Bleed HTML5 Video Stream Canvas */}
+      <div 
+        className="absolute inset-0 w-full h-full bg-black z-0 cursor-pointer"
+        onClick={function (e) {
+          var v = videoRef.current;
+          if (!v) return;
+          if (v.paused) { v.play().catch(function(){}); } else { v.pause(); }
+        }}
+      >
+        <video
+          ref={videoRef}
+          src={trick.video_url}
+          controls={false}
+          loop
+          muted={muted}
+          playsInline
+          preload="metadata"
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Soft immersive dark vignette overlay protecting readable text layers */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none" />
+      </div>
+
+      {/* 2. OVERLAY LAYER: Right-Aligned Action Control Sidebar Pillar */}
+      <div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 z-20">
+        
+        {/* M2E Token Action Node */}
+        <button
+          onClick={tip}
+          disabled={tipping || tipped || isOwn}
+          data-testid={`trick-tip-${trick.id}`}
+          className={'w-12 h-12 rounded-2xl flex flex-col items-center justify-center border transition-all transform active:scale-90 ' + (
+            tipped
+              ? 'border-[#D2FF00] bg-[#D2FF00]/20 text-[#D2FF00]'
+              : isOwn
+              ? 'border-neutral-900 bg-neutral-950/40 text-neutral-700 cursor-not-allowed'
+              : 'border-neutral-800/80 bg-black/40 backdrop-blur-md text-white hover:border-[#D2FF00]'
+          )}
+          style={{ minHeight: '48px', minWidth: '48px' }}
+        >
+          <Coins size={18} className={tipping ? "animate-spin" : ""} />
+        </button>
+        <span className={'text-[10px] font-mono font-bold tracking-tight ' + (tipped ? 'text-[#D2FF00]' : 'text-zinc-400')}>
+          {tips}
+        </span>
+
+        {/* Global Inline Audio Mute Key Trigger */}
+        <button
+          type="button"
+          onClick={function (e) { e.stopPropagation(); setMuted(function(m) { return !m; }); }}
+          data-testid={`trick-mute-${trick.id}`}
+          className="w-11 h-11 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full flex items-center justify-center border border-neutral-800/80 transition-all active:scale-90"
+          style={{ minHeight: '44px', minWidth: '44px' }}
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? <VolumeX size={16} className="text-zinc-400" /> : <Volume2 size={16} className="text-[#D2FF00]" />}
+        </button>
+
+        {/* Dynamic Context Deletion Flag (Renders only for the profile creator) */}
+        {isOwn && (
+          <button
+            onClick={remove}
+            className="w-11 h-11 bg-red-950/40 backdrop-blur-md border border-red-500/30 text-red-400 rounded-xl flex items-center justify-center transition-all active:scale-90 mt-2"
+            style={{ minHeight: '44px', minWidth: '44px' }}
+            title="Remove trick segment"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* 3. OVERLAY LAYER: Bottom Screen Meta Context Panel Layout (Left-Aligned) */}
+      <div className="p-4 pb-6 z-10 max-w-[84%] text-left space-y-2 pointer-events-auto">
+        
+        {/* Header - Track Metadata Badges */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-tight">
+          <Link
+            to={`/skater/${trick.user_id}`}
+            data-testid={`trick-user-${trick.id}`}
+            className="text-white hover:text-[#D2FF00] bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-xl border border-neutral-800/40 text-xs font-black tracking-wide"
+          >
+            @{trick.user_id}
+          </Link>
+          
+          <span className="text-neutral-500 font-mono text-[9px] lowercase tracking-normal">at</span>
+
           {trick.spot_id ? (
             <Link
               to={`/spots?focus=${trick.spot_id}`}
               data-testid={`trick-spot-${trick.id}`}
-              className="text-white hover:text-[#D2FF00] truncate max-w-[45%]"
+              className="flex items-center gap-1 text-[#D2FF00] hover:underline bg-black/40 backdrop-blur-md px-2 py-1 rounded-xl border border-[#D2FF00]/10 max-w-[180px] truncate"
             >
-              {trick.spot_name || 'Unknown spot'}
+              <MapPin size={11} className="shrink-0" />
+              <span className="truncate">{trick.spot_name || 'Unknown spot'}</span>
             </Link>
-   ) : (
-            <span className="relative flex items-center gap-1.5 min-w-0">
-              {/* click name = open popup */}
+          ) : (
+            <span className="relative inline-flex items-center">
               <button
                 type="button"
-                onClick={() => setShowRemovedInfo(true)}
-                className="flex items-center gap-1 text-zinc-500 hover:text-zinc-300 truncate max-w-[45%]"
-                title="This spot was removed"
+                onClick={function () { setShowRemovedInfo(function(v) { return !v; }); }}
+                className="flex items-center gap-1 text-neutral-500 hover:text-neutral-400 bg-black/20 px-2 py-1 rounded-xl text-xs border border-neutral-900/60"
               >
-                <span className="w-2 h-2 rounded-full bg-zinc-500 inline-block shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-600 inline-block shrink-0" />
                 {trick.spot_name || 'Spot removed'}
               </button>
 
               {showRemovedInfo && (
-                <div className="absolute top-6 left-0 z-20 w-56 p-3 bg-[#0a0a0d] border border-zinc-800 rounded-lg shadow-xl text-left normal-case tracking-normal">
-                  <p className="text-xs font-bold text-white mb-1">This spot was removed</p>
+                <div className="absolute bottom-8 left-0 reconstruction-modal z-30 w-52 p-3 bg-neutral-950 border border-neutral-800 rounded-xl shadow-xl text-left normal-case tracking-normal animate-in fade-in">
+                  <p className="text-[10px] font-black uppercase text-neutral-400 mb-1">Spot History File</p>
                   {trick.spot_lat && trick.spot_lng ? (
-                    <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                      <span className="w-2 h-2 rounded-full bg-zinc-500 inline-block" />
-                      {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
+                    <p className="font-mono text-[10px] text-neutral-500">
+                      GPS: {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-zinc-500">No coordinates saved</p>
+                    <p className="text-[10px] text-neutral-600">No telemetry recorded</p>
                   )}
-                  {/* :( closes the popup */}
                   <button
                     type="button"
-                    onClick={() => setShowRemovedInfo(false)}
-                    className="mt-2 w-full py-1 text-sm font-bold text-zinc-400 hover:text-[#FF3366] border border-zinc-800 rounded"
+                    onClick={function () { setShowRemovedInfo(false); }}
+                    className="mt-2 w-full py-1 text-[11px] font-black uppercase tracking-wider text-neutral-400 bg-neutral-900 border border-neutral-800 rounded-lg hover:text-red-400"
                   >
-                    :(
+                    Close
                   </button>
                 </div>
               )}
             </span>
           )}
-          <span className="text-zinc-600 font-bold">by</span>
-          <Link
-            to={`/skater/${trick.user_id}`}
-            data-testid={`trick-user-${trick.id}`}
-            className="text-zinc-300 hover:text-[#D2FF00] truncate"
-          >
-            @{trick.user_id}
-          </Link>
         </div>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold shrink-0">
-          {when}
-        </div>
-      </header>
 
-  {/* Video */}
-      <div className="relative bg-black">
-        <video
-          ref={videoRef}
-          src={trick.video_url}
-          controls={!autoplay}
-          loop
-          muted={muted}
-          playsInline
-          preload="metadata"
-          className="w-full max-h-[70vh] object-contain bg-black"
-          onClick={(e) => e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause()}
-        />
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }}
-          data-testid={`trick-mute-${trick.id}`}
-          className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/90 text-white p-2 border border-white/10"
-          aria-label={muted ? "Unmute" : "Mute"}
-        >
-          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-        </button>
-      </div>
-
-      {/* Trick name + caption + tags */}
-      <div className="px-4 py-3 border-b border-zinc-900 space-y-2">
-        <div className="text-white text-sm font-black uppercase tracking-widest">
-          {trick.trick_name}
+        {/* Focus Header Title & Description Section */}
+        <div className="space-y-1 pl-0.5">
+          <div className="text-white text-base font-black tracking-tight uppercase drop-shadow-md">
+            {trick.trick_name}
+          </div>
+          
+          {trick.caption && (
+            <p className="text-sm text-neutral-200 font-medium leading-relaxed line-clamp-3 break-words drop-shadow">
+              {trick.caption}
+            </p>
+          )}
         </div>
-        {trick.caption && (
-          <p className="text-sm text-zinc-300 leading-snug whitespace-pre-wrap break-words">
-            {trick.caption}
-          </p>
-        )}
+
+        {/* Interconnected Skater User Handles Map Tethers */}
         {trick.tagged_users && trick.tagged_users.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {trick.tagged_users.map((u) => (
-              <Link key={u} to={`/skater/${u}`} className="text-[11px] font-bold text-[#00D2FF] hover:text-white">
-                @{u}
-              </Link>
-            ))}
+          <div className="flex flex-wrap gap-1.5 pt-0.5 pl-0.5">
+            {trick.tagged_users.map(function (u) {
+              return (
+                <Link 
+                  key={u} 
+                  to={`/skater/${u}`} 
+                  className="text-[11px] font-bold text-[#00D2FF] hover:text-[#D2FF00] transition-colors"
+                >
+                  @{u}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
-    
-
-      {/* Actions */}
-      <footer className="flex items-center justify-between px-4 py-3">
-        <button
-          onClick={tip}
-          disabled={tipping || tipped || isOwn}
-          data-testid={`trick-tip-${trick.id}`}
-          className={`flex items-center gap-2 px-3 py-2 border transition-colors font-black uppercase tracking-widest text-xs ${
-            tipped
-              ? 'border-[#D2FF00] bg-[#D2FF00]/10 text-[#D2FF00] cursor-default'
-              : isOwn
-              ? 'border-zinc-900 text-zinc-700 cursor-not-allowed'
-              : 'border-zinc-800 text-white hover:border-[#D2FF00] hover:text-[#D2FF00]'
-          }`}
-          title={isOwn ? "Can't tip your own trick" : tipped ? 'Already tipped' : 'Tip 1 DFQ'}
-        >
-          <Coins size={14} strokeWidth={2.5} />
-          {tipped ? 'Tipped' : isOwn ? '+ tips only' : 'Tip 1 DFQ'}
-          <span className="text-zinc-500">·</span>
-          <span data-testid={`trick-tip-count-${trick.id}`}>{tips.toFixed(0)}</span>
-        </button>
-
-        {isOwn && (
-          <button
-            onClick={remove}
-            data-testid={`trick-delete-${trick.id}`}
-            className="text-zinc-600 hover:text-[#FF3366] p-2"
-            aria-label="Delete trick"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
-      </footer>
     </article>
   );
 }
