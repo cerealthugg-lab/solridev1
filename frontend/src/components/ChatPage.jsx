@@ -135,12 +135,12 @@ function ChatPage(props) {
     }
   };
 
-  return (
+   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
       <div className="border-b border-zinc-800 p-4 flex items-center justify-between sticky top-0 bg-black z-20">
         <div className="flex items-center gap-3">
-          <Link to="/">
+          <Link to="/" className="flex items-center justify-center" style={{ minWidth: '44px', minHeight: '44px' }}>
             <ArrowLeft className="text-zinc-500 hover:text-white" />
           </Link>
           <div>
@@ -176,119 +176,120 @@ function ChatPage(props) {
           </p>
         )}
           
-          
-   {messages.map(function (msg) {
-  var isMine = msg.user_id === (currentUser && currentUser.username);
-  return (
-    <div key={msg.id} className={'flex flex-col ' + (isMine ? 'items-end' : 'items-start')}>
-      <div className="max-w-[78%]">
-        {!isMine && (
-          <div className="flex items-baseline gap-2 mb-1 px-2">
-            <span className="text-[10px] uppercase tracking-[0.15em] font-black text-zinc-400">
-              {msg.username}
-            </span>
-            <span className="text-[9px] text-zinc-600">{formatTime(msg.created_at)}</span>
-          </div>
-        )}
+        {messages.map(function (msg) {
+          var isMine = msg.user_id === (currentUser && currentUser.username);
+          return (
+            <div key={msg.id} className={'flex flex-col ' + (isMine ? 'items-end' : 'items-start')}>
+              <div className="max-w-[78%]">
+                {!isMine && (
+                  <div className="flex items-baseline gap-2 mb-1 px-2">
+                    <span className="text-[10px] uppercase tracking-[0.15em] font-black text-zinc-400">
+                      {msg.username}
+                    </span>
+                    <span className="text-[9px] text-zinc-600">{formatTime(msg.created_at)}</span>
+                  </div>
+                )}
 
-        {msg.reply_to_username && (
-          <div className={
-            'text-[10px] text-zinc-500 border-l-2 pl-2 mb-1 italic ' +
-            (isMine ? 'border-[#D2FF00]/40 text-right' : 'border-zinc-700')
-          }>
-            ↪ {msg.reply_to_username}: {msg.reply_to_content}
-          </div>
-        )}
+                {msg.reply_to_username && (
+                  <div className={
+                    'text-[10px] text-zinc-500 border-l-2 pl-2 mb-1 italic ' +
+                    (isMine ? 'border-[#D2FF00]/40 text-right' : 'border-zinc-700')
+                  }>
+                    ↪ {msg.reply_to_username}: {msg.reply_to_content}
+                  </div>
+                )}
 
-        <div className={
-          'px-4 py-2.5 text-sm break-words leading-relaxed shadow-sm ' +
-          (isMine
-            ? 'bg-[#D2FF00] text-black rounded-3xl rounded-br-md'
-            : 'bg-zinc-900 text-white rounded-3xl rounded-bl-md')
-        }>
-          {msg.content}
-        </div>
+                <div className={
+                  'px-4 py-2.5 text-sm break-words leading-relaxed shadow-sm ' +
+                  (isMine
+                    ? 'bg-[#D2FF00] text-black rounded-3xl rounded-br-md'
+                    : 'bg-zinc-900 text-white rounded-3xl rounded-bl-md')
+                }>
+                  {msg.content}
+                </div>
 
-        {isMine && (
-          <span className="text-[9px] text-zinc-600 mt-1 px-2 self-end">
-            {formatTime(msg.created_at)}
-          </span>
-        )}
+                {isMine && (
+                  <span className="text-[9px] text-zinc-600 mt-1 px-2 self-end">
+                    {formatTime(msg.created_at)}
+                  </span>
+                )}
 
-        {!isMine && (
-          <div className="flex gap-3 mt-1.5 px-2">
-            <button
-              onClick={function () { setReplyTo(msg); }}
-              className="text-[10px] text-zinc-600 hover:text-[#D2FF00] uppercase tracking-widest flex items-center gap-1 transition-colors"
-            >
-              <Reply size={10} /> Reply
-            </button>
-            <button
-              onClick={function () { handleReport(msg); }}
-              className="text-[10px] text-zinc-600 hover:text-[#FF3366] uppercase tracking-widest flex items-center gap-1 transition-colors"
-            >
-              <Flag size={10} /> Report
-            </button>
-          </div>
-        )}
+                {!isMine && (
+                  <div className="flex gap-3 mt-1.5 px-2">
+                    <button
+                      onClick={function () { setReplyTo(msg); }}
+                      className="text-[10px] text-zinc-600 hover:text-[#D2FF00] uppercase tracking-widest flex items-center gap-1 transition-colors h-11"
+                    >
+                      <Reply size={10} /> Reply
+                    </button>
+                    <button
+                      onClick={function () { handleReport(msg); }}
+                      className="text-[10px] text-zinc-600 hover:text-[#FF3366] uppercase tracking-widest flex items-center gap-1 transition-colors h-11"
+                    >
+                      <Flag size={10} /> Report
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-    </div>
-  );
-})}
-      </div>
 
-      {/* Reply preview */}
+      {/* Reply preview panel */}
       {replyTo && (
-        <div className="bg-zinc-900 border-t border-zinc-800 p-2 flex items-center justify-between">
-          <div className="flex-1 text-xs">
-            <span className="text-[#D2FF00] uppercase tracking-widest text-[10px]">Replying to {replyTo.username}</span>
-            <p className="text-zinc-500 truncate">{replyTo.content}</p>
+        <div className="bg-zinc-900 border-t border-zinc-800 p-3 flex items-center justify-between animate-in slide-in-from-bottom duration-150">
+          <div className="flex-1 text-xs pr-4">
+            <span className="text-[#D2FF00] uppercase tracking-widest text-[9px] font-black">Replying to @{replyTo.username}</span>
+            <p className="text-zinc-400 truncate mt-0.5 italic">"{replyTo.content}"</p>
           </div>
-          <button onClick={function () { setReplyTo(null); }}>
-            <X size={16} className="text-zinc-500 hover:text-white" />
+          <button 
+            onClick={function () { setReplyTo(null); }} 
+            className="flex items-center justify-center p-1"
+            style={{ minWidth: '44px', minHeight: '44px' }}
+          >
+            <X size={16} className="text-zinc-500 hover:text-white transition-colors" />
           </button>
         </div>
       )}
 
-      {/* Input */}
-      <div className="border-t border-zinc-900 p-3 bg-black sticky bottom-0">
-  <div className="flex gap-2 items-center">
-  <textarea
-  value={input}
-  onChange={function (e) { setInput(e.target.value); }}
-  disabled={ban || cooldown > 0}
-  placeholder={
-    ban ? 'You are banned' :
-    cooldown > 0 ? 'Wait ' + cooldown + 's...' :
-    'Drop a message...'
-  }
-  maxLength={500}
-  rows={1}
-  className="flex-1 bg-zinc-900 text-white border border-transparent rounded-3xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#D2FF00]/50 disabled:opacity-50 transition-colors resize-none leading-relaxed max-h-32 overflow-y-auto"
-      
-     onInput={function (e) {
-  e.target.style.height = 'auto';
-  e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-}}
-    
-      
-/>
+      {/* Message Action Input Box - Safe Area Optimized */}
+      <div className="border-t border-zinc-900 p-3 pb-5 bg-black sticky bottom-0 z-20 native-safe-bottom">
+        <div className="flex gap-2 items-center">
+          <textarea
+            value={input}
+            onChange={function (e) { setInput(e.target.value); }}
+            onKeyDown={function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            disabled={ban || cooldown > 0}
+            placeholder={
+              ban ? 'You are banned' :
+              cooldown > 0 ? 'Wait ' + cooldown + 's...' :
+              'Drop a message...'
+            }
+            maxLength={500}
+            rows={1}
+            className="flex-1 bg-zinc-900 text-white border border-transparent rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#D2FF00]/40 disabled:opacity-50 transition-colors resize-none leading-relaxed max-h-32 overflow-y-auto"
+            onInput={function (e) {
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+            }}
+          />
 
-      
-    <Button
-      onClick={handleSend}
-      disabled={ban || cooldown > 0 || !input.trim() || sending}
-      className="bg-[#D2FF00] text-black hover:bg-[#c2eb00] h-11 w-11 p-0 rounded-full disabled:opacity-40 transition-all hover:scale-105 active:scale-95"
-    >
-      <Send size={16} />
-    </Button>
-  </div>
-  <p className="text-[9px] text-zinc-700 mt-2 text-center uppercase tracking-[0.2em]">
-    Be respectful · auto-filter active
-  </p>
-</div>
+          <Button
+            onClick={handleSend}
+            disabled={ban || cooldown > 0 || !input.trim() || sending}
+            className="bg-[#D2FF00] text-black hover:bg-[#c2eb00] h-11 w-11 p-0 rounded-full disabled:opacity-20 disabled:bg-zinc-800 disabled:text-zinc-600 transition-all active:scale-95 shrink-0"
+          >
+            <Send size={16} className={sending ? "animate-pulse" : ""} />
+          </Button>
+        </div>
+        <p className="text-[9px] text-zinc-700 mt-2 text-center uppercase tracking-[0.2em] font-mono">
+          Be respectful · auto-filter active
+        </p>
+      </div>
     </div>
   );
 }
 
 export default ChatPage;
+
