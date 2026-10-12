@@ -813,7 +813,6 @@ const RidePage = () => {
   <button 
     onClick={stopRide} 
     disabled={busy}
-    style={noMultiTouch}
     className="w-44 h-44 rounded-full border-2 border-[#FF3366] text-[#FF3366] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#FF3366]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
   >
     {isStopping ? (
@@ -832,7 +831,6 @@ const RidePage = () => {
   <button 
     onClick={startRide} 
     disabled={busy}
-    style={noMultiTouch}
     className="w-44 h-44 rounded-full border-2 border-[#D2FF00] text-[#D2FF00] text-xl font-black uppercase italic tracking-tighter flex flex-col items-center justify-center bg-[#D2FF00]/5 backdrop-blur-md transition-all duration-300 ease-out active:scale-95 disabled:opacity-40 mx-auto"
   >
     {isStarting ? (
