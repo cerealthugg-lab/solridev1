@@ -581,16 +581,23 @@ async def stop_ride(ride_id: str, payload: RideFinish, current_user: dict = Depe
 
 @api.post("/wallet/transfer")
 async def transfer_coins(req: TransferRequest, current_user: dict = Depends(get_current_user)):
+    
+    
     if req.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
-    if req.receiver_username == current_user['username']:
+
+    # Normalize usernames as stored during registration
+    # (lowercase, trimmed, no leading @) to avoid "Receiver not found" errors
+    receiver_username = req.receiver_username.lower().strip().lstrip('@')
+
+    if receiver_username == current_user['username']:
         raise HTTPException(status_code=400, detail="Cannot send to yourself")
 
     sender_balance = current_user.get('wallet_balance') or 0
     if sender_balance < req.amount:
         raise HTTPException(status_code=400, detail="Insufficient funds")
 
-    receiver_result = supabase.table('users').select('username, wallet_balance').eq('username', req.receiver_username).execute()
+    receiver_result = supabase.table('users').select('username, wallet_balance').eq('username', receiver_username).execute()
     if not receiver_result.data:
         raise HTTPException(status_code=404, detail="Receiver not found")
 
@@ -598,11 +605,13 @@ async def transfer_coins(req: TransferRequest, current_user: dict = Depends(get_
     supabase.table('users').update({'wallet_balance': sender_balance - req.amount}).eq('username', current_user['username']).execute()
 
     receiver_balance = receiver.get('wallet_balance') or 0
-    supabase.table('users').update({'wallet_balance': receiver_balance + req.amount}).eq('username', req.receiver_username).execute()
+    supabase.table('users').update({'wallet_balance': receiver_balance + req.amount}).eq('username', receiver_username).execute()
 
     tx_data = {
         'id': str(uuid.uuid4()),
         'sender_id': current_user['username'],
+        'receiver_id': receiver_username,
+        
         'receiver_id': req.receiver_username,
         'amount': req.amount,
         'timestamp': datetime.now(timezone.utc).isoformat(),

@@ -933,7 +933,7 @@ const WalletPage = () => {
          
          <input 
             placeholder="Username" 
-            value={receiver} onChange={e=>setReceiver(e.target.value)}
+            value={receiver} onChange={e=>setReceiver(e.target.value.toLowerCase().trim().replace(/^@/, ''))}
             className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
          />
          <button onClick={handleSend} className="w-full bg-white text-black hover:bg-zinc-200 font-medium tracking-wider rounded-full h-11 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
