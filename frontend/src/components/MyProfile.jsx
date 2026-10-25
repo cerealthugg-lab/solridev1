@@ -254,6 +254,10 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             className="w-full h-11 rounded-xl border border-neutral-950 bg-neutral-950/40 text-[#FF3366] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
             <LogOut size={12} /> LOG OUT
           </button>
+            <div className="flex justify-center gap-6 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+  <Link to="/privacy" className="py-2">Privacy</Link><Link to="/terms" className="py-2">Terms</Link>
+</div>
+<DeleteAccountButton api={api} logout={logout} />
         </div>
       </div>
     </div>
@@ -286,6 +290,37 @@ function FeedbackButton() {
         <span className="text-neutral-500 font-black text-sm">→</span>
       </button>
       <FeedbackModal open={open} onClose={() => setOpen(false)} />
+    
+    function DeleteAccountButton({ api, logout }) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const confirmDelete = async () => {
+    setBusy(true); setError("");
+    try { await api.delete("/users/me", { data: { password } }); logout(); }
+    catch (e) { setError(e.response?.data?.detail || "Couldn't delete account"); }
+    finally { setBusy(false); }
+  };
+  return (<>
+    <button onClick={() => setOpen(true)} className="w-full h-11 text-[10px] font-bold uppercase tracking-widest text-neutral-600">Delete account</button>
+    {open && (
+      <div className="fixed inset-0 z-[10000] flex items-end lg:items-center justify-center">
+        <button aria-label="Close" className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
+        <div className="relative w-full max-w-md bg-neutral-950 border-t lg:border border-neutral-800 rounded-t-3xl lg:rounded-3xl p-5 space-y-4"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}>
+          <h3 className="text-sm font-black uppercase tracking-widest text-[#FF3366]">Delete account forever?</h3>
+          <p className="text-xs text-neutral-400">This removes your profile, tricks and videos, spots and photos, messages, rides and DFQ points. It can't be undone.</p>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password"
+            className="w-full h-12 px-4 bg-black border border-neutral-800 rounded-xl text-white text-base focus:outline-none" />
+          {error && <p className="text-xs text-[#FF3366]">{error}</p>}
+          <div className="flex gap-2">
+            <button onClick={() => setOpen(false)} className="flex-1 h-12 rounded-xl bg-neutral-900 text-white text-xs font-black uppercase">Cancel</button>
+            <button onClick={confirmDelete} disabled={busy || !password} className="flex-1 h-12 rounded-xl bg-[#FF3366] text-black text-xs font-black uppercase disabled:opacity-50">{busy ? "Deleting..." : "Delete"}</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }

@@ -22,6 +22,7 @@ import DirectMessages from "./components/DirectMessages";
 import Conversation from "./components/Conversation";
 import MyProfile from "./components/MyProfile";
 import AdminPage from './components/AdminPage';
+import LegalPage from './components/LegalPage';
 
 // add to lucide imports
 
@@ -89,9 +90,9 @@ const AuthProvider = ({ children }) => {
     await fetchUser();
   };
 
-  const register = async (username, password) => {
-    await api.post('/auth/register', { username, password });
-    await login(username, password);
+const register = async (username, password, email, code, accepted_terms) => {
+  await api.post('/auth/register', { username, password, email, code, accepted_terms });
+  await login(username, password);
   };
 
   const logout = () => {
@@ -505,6 +506,17 @@ const AuthPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const sendCode = async () => {
+  if (sending) return; setSending(true);
+  try { await api.post('/auth/send-code', { email }); setCodeSent(true); toast.success('Code sent, check your inbox'); }
+  catch (err) { toast.error(err.response?.data?.detail || "Couldn't send code"); }
+  finally { setSending(false); }
+  };
 
   useEffect(() => {
     if (user) navigate('/');
@@ -516,7 +528,7 @@ const AuthPage = () => {
     setBusy(true);
     try {
       if (isLogin) await login(username, password);
-      else await register(username, password);
+      else await register(username, password, email, code, accepted);
       toast.success(isLogin ? "Welcome back!" : "Welcome to the crew!");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Something went wrong");
@@ -570,7 +582,7 @@ return (
             autoComplete="current-password"
           />
         </div>
-        <button type="submit" disabled={busy}
+        <button type="submit" disabled={busy || (!isLogin && (!accepted || code.lenght !== 6))}
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold tracking-wider rounded-full h-12 text-base mt-2 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all disabled:opacity-50">
           {busy ? 'Loading...' : isLogin ? 'Login' : 'Join'}
         </button>
@@ -1319,6 +1331,10 @@ function App() {
 <Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
 
 <Route path="/admin" element={<PrivateRoute><AdminWrapper /></PrivateRoute>} />
+
+<Route path="/privacy" element={<LegalPage kind="privacy" />} />
+
+<Route path="/terms" element={<LegalPage kind="terms" />} />
 
               </Routes>
           </Layout>

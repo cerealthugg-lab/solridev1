@@ -87,14 +87,12 @@ const Welcome = () => {
             every connection made on the road.
           </p>
           <p className="mt-3">
-            Send DFQ to any rider. Trade it for anything inside the app.
-            Frictionless, peer-to-peer. Solana ecosystem integration arriving —
-            once it lands, DFQ steps fully on-chain.
+           Send DFQ to any rider as a tip, spend it on new spots and tricks. DFQ are fun in-app points: they have no cash value and can't be bought or withdrawn.
           </p>
         </Section>
 
         <Section icon={Cpu} eyebrow="The hardware" title="Smart skateboard, smart risers.">
-          We're building it: the SOLRIDE smart skateboard tool and GPS smart
+          We're building it: the SOLRIDE shuriken skateboard tool. already in prototype and GPS smart
           risers. Hardware that bridges your ride to the network — your board
           becomes the wallet, the sensor, the antenna. The final piece of the
           journey, in production.

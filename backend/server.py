@@ -12,6 +12,11 @@ from pathlib import Path
 from supabase import create_client, Client
 from better_profanity import profanity
 from datetime import timedelta
+import re, secrets, hashlib, logging, ipaddress, httpx
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
+logger = logging.getLogger(__name__)
 
 # Initialize profanity filter with custom words (English + Russian/Belarusian)
 profanity.load_censor_words()
@@ -70,7 +75,24 @@ class User(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
+    email: str
+    code: str
+    accepted_terms: bool = False
 
+class SendCode(BaseModel):
+    email: str
+
+class DeleteAccount(BaseModel):
+    password: str
+
+class ContentReport(BaseModel):
+    content_type: str          # "trick" | "spot"
+    content_id: str
+    reason: Optional[str] = "inappropriate"
+
+class ResolveReport(BaseModel):
+    action: str                # "remove" | "dismiss"
+        
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -154,6 +176,130 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user = result.data[0]
     user.pop('hashed_password', None)
     return user
+
+    async def get_optional_user(token: Optional[str] = Depends(oauth2_optional)):
+    if not token:
+        return None
+    try:
+        return await get_current_user(token)
+    except HTTPException:
+        return None
+
+def _blocked_set(username):
+    if not username:
+        return set()
+    me = username.lower()
+    r = supabase.table('blocks').select('blocker, blocked').or_(f"blocker.eq.{me},blocked.eq.{me}").execute()
+    return {b['blocked'] if b['blocker'] == me else b['blocker'] for b in (r.data or [])}
+
+def _visible(rows, blocked, owner_key='user_id'):
+    return [r for r in rows if not r.get('hidden') and r.get(owner_key) not in blocked]
+
+def _storage_key(url, bucket):
+    marker = f"/{bucket}/"
+    if url and marker in url:
+        return url.split(marker, 1)[1].split('?')[0]
+    return None
+
+def _safe(fn):
+    try:
+        return fn()
+    except Exception as e:
+        logger.warning(f"cleanup step failed: {e}")
+        return None
+
+# --- Email safety check (from the Emergent email playbook: blocks phishing-style emails) ---
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+def _host_ok(host):
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host); return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+def _same_site(shown, real):
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href"); self._text = []
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text))); self._href, self._text = None, []
+
+def _assert_safe_email(subject, html):
+    scan = _EmailScan(); scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms in email")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks for credentials: {p!r}")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError("Links must be https")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError("Bad link host")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if real:
+            for m in _HOSTISH.finditer(text):
+                if not _same_site(m.group(1).lower(), real):
+                    raise ValueError("Anchor text host mismatch")
+
+async def send_email(*, to, subject, html):
+    _assert_safe_email(subject, html)
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    if EMAIL_REPLY_TO:
+        payload["contact_email"] = EMAIL_REPLY_TO
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(f"{EMAIL_BASE_URL}/api/v1/email/send",
+                                     headers={"X-Email-Key": EMAIL_KEY}, json=payload)
+        resp.raise_for_status()
+        return resp.json().get("id")
+    except httpx.HTTPStatusError as e:
+        try:
+            code = e.response.json().get("code", "")
+        except ValueError:
+            code = ""
+        if code in ("insufficient_credits", "integration_disabled", "daily_limit_reached"):
+            logger.warning(f"Email paused: {code}")
+            raise HTTPException(503, "Email is temporarily unavailable")
+        logger.error(f"Email send failed: {e.response.status_code} {e.response.text}")
+        raise HTTPException(502, "Failed to send email")
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+USERNAME_RE = re.compile(r"^[a-z0-9_.]{3,20}$")
+CODE_TTL_MINUTES, CODE_RESEND_SECONDS, CODE_MAX_ATTEMPTS = 10, 60, 5
+
+def _code_hash(email, code):
+    return hashlib.sha256(f"{email}:{code}:{SECRET_KEY}".encode()).hexdigest()
+
+def _email_taken(email):
+    return bool(supabase.table('users').select('id').eq('email', email).execute().data)
 
 # --- Routes ---
 
@@ -327,23 +473,70 @@ async def report_message(data: ReportMessage, current_user: dict = Depends(get_c
 
     return {"ok": True}
 
+@api.post("/auth/send-code")
+async def send_signup_code(data: SendCode):
+    email = data.email.lower().strip()
+    if not EMAIL_RE.match(email) or len(email) > 254:
+        raise HTTPException(400, "Enter a valid email")
+    if _email_taken(email):
+        raise HTTPException(400, "This email is already linked to an account")
+    now = datetime.now(timezone.utc)
+    existing = supabase.table('email_codes').select('created_at').eq('email', email).execute()
+    if existing.data:
+        last = datetime.fromisoformat(existing.data[0]['created_at'].replace('Z', '+00:00'))
+        wait = CODE_RESEND_SECONDS - (now - last).total_seconds()
+        if wait > 0:
+            raise HTTPException(429, f"Wait {int(wait)}s before requesting a new code")
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    supabase.table('email_codes').upsert({
+        'email': email, 'code_hash': _code_hash(email, code),
+        'expires_at': (now + timedelta(minutes=CODE_TTL_MINUTES)).isoformat(),
+        'attempts': 0, 'created_at': now.isoformat(),
+    }).execute()
+    brand = escape(EMAIL_FROM_NAME)
+    html = ('<table role="presentation" width="100%" style="background:#09090b"><tr>'
+            '<td style="padding:32px;font-family:Arial,sans-serif;color:#EDEDED">'
+            f'<p style="font-size:22px;font-weight:900;font-style:italic;color:#D2FF00">{brand}</p>'
+            '<p>Your sign-up code is:</p>'
+            f'<p style="font-size:32px;font-weight:900;letter-spacing:8px;color:#fff">{code}</p>'
+            f'<p style="color:#a1a1aa">Type it in the app to finish creating your account. It expires in {CODE_TTL_MINUTES} minutes.</p>'
+            f'<p style="font-size:12px;color:#71717a">If you did not try to join {brand}, ignore this email. '
+            'We never ask for your password by email.</p></td></tr></table>')
+    await send_email(to=email, subject=f"{EMAIL_FROM_NAME} code: {code}", html=html)
+    return {"sent": True}
+
 @api.post("/auth/register")
 async def register(user: UserCreate):
     user.username = user.username.lower().strip()
-    result = supabase.table('users').select('id').eq('username', user.username).execute()
-    if result.data:
-        raise HTTPException(status_code=400, detail="Username already registered")
-        
-        
-    hashed_password = get_password_hash(user.password)
-    user_data = {
-        'id': str(uuid.uuid4()),
-        'username': user.username,
-        'hashed_password': hashed_password,
-        'wallet_balance': 0.0,
-        'created_at': datetime.now(timezone.utc).isoformat()
-    }
-    supabase.table('users').insert(user_data).execute()
+    email = user.email.lower().strip()
+    if not USERNAME_RE.match(user.username):
+        raise HTTPException(400, "Username: 3-20 chars, letters, numbers, _ or .")
+    if len(user.password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    if not user.accepted_terms:
+        raise HTTPException(400, "You must accept the Terms to join")
+    if supabase.table('users').select('id').eq('username', user.username).execute().data:
+        raise HTTPException(400, "Username already registered")
+    if _email_taken(email):
+        raise HTTPException(400, "This email is already linked to an account")
+    row = supabase.table('email_codes').select('*').eq('email', email).execute()
+    if not row.data:
+        raise HTTPException(400, "Request a code first")
+    rec = row.data[0]
+    expires = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
+    if expires < datetime.now(timezone.utc) or (rec.get('attempts') or 0) >= CODE_MAX_ATTEMPTS:
+        raise HTTPException(400, "Code expired, request a new one")
+    if not secrets.compare_digest(rec['code_hash'], _code_hash(email, user.code.strip())):
+        supabase.table('email_codes').update({'attempts': (rec.get('attempts') or 0) + 1}).eq('email', email).execute()
+        raise HTTPException(400, "Wrong code")
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table('users').insert({
+        'id': str(uuid.uuid4()), 'username': user.username,
+        'hashed_password': get_password_hash(user.password),
+        'email': email, 'email_verified': True, 'terms_accepted_at': now,
+        'wallet_balance': 0.0, 'created_at': now,
+    }).execute()
+    supabase.table('email_codes').delete().eq('email', email).execute()
     return {"message": "User created successfully"}
 
 @api.post("/auth/login", response_model=Token)
@@ -1297,8 +1490,84 @@ async def report_dm(data: ReportDM, current_user: dict = Depends(get_current_use
         'created_at': datetime.now(timezone.utc).isoformat(),
     }).execute()
     return {"ok": True}  
+
+REPORTABLE = {"trick": "tricks", "spot": "spots"}
+AUTO_HIDE_REPORTS = 3
+
+@api.post("/reports")
+async def report_content(data: ContentReport, current_user: dict = Depends(get_current_user)):
+    table = REPORTABLE.get(data.content_type)
+    if not table:
+        raise HTTPException(400, "Unknown content type")
+    if not supabase.table(table).select('id').eq('id', data.content_id).execute().data:
+        raise HTTPException(404, "Content not found")
+    try:
+        supabase.table('content_reports').insert({
+            'id': str(uuid.uuid4()), 'content_type': data.content_type, 'content_id': data.content_id,
+            'reporter': current_user['username'], 'reason': (data.reason or 'inappropriate')[:200],
+            'status': 'open', 'created_at': datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception:
+        raise HTTPException(400, "Already reported")
+    count = supabase.table('content_reports').select('id', count='exact').eq('content_type', data.content_type)\
+        .eq('content_id', data.content_id).eq('status', 'open').execute()
+    if (count.count or 0) >= AUTO_HIDE_REPORTS:
+        supabase.table(table).update({'hidden': True}).eq('id', data.content_id).execute()
+    return {"ok": True}
+
+def _delete_trick_fully(trick_id):
+    res = supabase.table('tricks').select('video_url').eq('id', trick_id).execute()
+    if res.data:
+        key = _storage_key(res.data[0].get('video_url', ''), 'tricks')
+        if key:
+            _safe(lambda: supabase.storage.from_("tricks").remove([key]))
+    _safe(lambda: supabase.table('trick_tips').delete().eq('trick_id', trick_id).execute())
+    supabase.table('tricks').delete().eq('id', trick_id).execute()
+
+def _delete_spot_fully(spot_id):
+    res = supabase.table('spots').select('photos').eq('id', spot_id).execute()
+    if res.data:
+        keys = [k for k in (_storage_key(p, 'spot-photos') for p in (res.data[0].get('photos') or [])) if k]
+        if keys:
+            _safe(lambda: supabase.storage.from_("spot-photos").remove(keys))
+    _safe(lambda: supabase.table('tricks').update({'spot_status': 'removed'}).eq('spot_id', spot_id).execute())
+    supabase.table('spots').delete().eq('id', spot_id).execute()
+
+@api.delete("/users/me")
+async def delete_my_account(data: DeleteAccount, current_user: dict = Depends(get_current_user)):
+    me, uid = current_user['username'], current_user['id']
+    row = supabase.table('users').select('hashed_password').eq('username', me).execute()
+    if not row.data or not verify_password(data.password, row.data[0]['hashed_password']):
+        raise HTTPException(400, "Wrong password")
+    t = _safe(lambda: supabase.table('tricks').select('id').eq('user_id', me).execute())
+    for x in ((t and t.data) or []):
+        _safe(lambda tid=x['id']: _delete_trick_fully(tid))
+    _safe(lambda: supabase.table('trick_tips').delete().eq('tipper_id', me).execute())
+    s = _safe(lambda: supabase.table('spots').select('id').eq('user_id', me).execute())
+    for x in ((s and s.data) or []):
+        _safe(lambda sid=x['id']: _delete_spot_fully(sid))
+    for bucket in ("tricks", "avatars"):
+        files = _safe(lambda b=bucket: supabase.storage.from_(b).list(me)) or []
+        keys = [f"{me}/{f['name']}" for f in files if f.get('name')]
+        if keys:
+            _safe(lambda b=bucket, k=keys: supabase.storage.from_(b).remove(k))
+    _safe(lambda: supabase.table('message_reports').delete().eq('reporter_id', uid).execute())
+    _safe(lambda: supabase.table('messages').delete().eq('user_id', uid).execute())
+    c = _safe(lambda: supabase.table('conversations').select('id').or_(f"user_lo.eq.{me},user_hi.eq.{me}").execute())
+    cids = [x['id'] for x in ((c and c.data) or [])]
+    if cids:
+        _safe(lambda: supabase.table('dm_messages').delete().in_('conversation_id', cids).execute())
+        _safe(lambda: supabase.table('conversations').delete().in_('id', cids).execute())
+    _safe(lambda: supabase.table('dm_reports').delete().eq('reporter', me).execute())
+    _safe(lambda: supabase.table('blocks').delete().or_(f"blocker.eq.{me},blocked.eq.{me}").execute())
+    _safe(lambda: supabase.table('content_reports').delete().eq('reporter', me).execute())
+    _safe(lambda: supabase.table('rides').delete().eq('user_id', me).execute())
+    _safe(lambda: supabase.table('rider_locations').delete().eq('username', me).execute())
+    _safe(lambda: supabase.table('chat_bans').delete().eq('user_id', uid).execute())
+    _safe(lambda: supabase.table('transactions').delete().or_(f"sender_id.eq.{me},receiver_id.eq.{me}").execute())
+    supabase.table('users').delete().eq('username', me).execute()
+    return {"deleted": True}
         
-       
             
 async def get_admin_user(current_user: dict = Depends(get_current_user)):
     if not current_user.get('is_admin'):
@@ -1419,8 +1688,36 @@ async def admin_list_reports(admin: dict = Depends(get_admin_user)):
         r['message'] = msg_res.data[0] if msg_res.data else None
         enriched.append(r)
     return enriched
+
+@api.get("/admin/content-reports")
+async def admin_content_reports(admin: dict = Depends(get_admin_user)):
+    reps = supabase.table('content_reports').select('*').eq('status', 'open').order('created_at', desc=True).limit(100).execute()
+    out = []
+    for r in (reps.data or []):
+        if r['content_type'] == 'trick':
+            c = supabase.table('tricks').select('id, user_id, trick_name, video_url, hidden').eq('id', r['content_id']).execute()
+        else:
+            c = supabase.table('spots').select('id, user_id, name, hidden').eq('id', r['content_id']).execute()
+        r['content'] = c.data[0] if c.data else None
+        out.append(r)
+    return out
+
+@api.post("/admin/content-reports/{report_id}/resolve")
+async def admin_resolve_content_report(report_id: str, data: ResolveReport, admin: dict = Depends(get_admin_user)):
+    rep = supabase.table('content_reports').select('*').eq('id', report_id).execute()
+    if not rep.data:
+        raise HTTPException(404, "Report not found")
+    r = rep.data[0]
+    if data.action == 'remove':
+        (_delete_trick_fully if r['content_type'] == 'trick' else _delete_spot_fully)(r['content_id'])
+    elif data.action == 'dismiss':
+        _safe(lambda: supabase.table(REPORTABLE[r['content_type']]).update({'hidden': False}).eq('id', r['content_id']).execute())
+    else:
+        raise HTTPException(400, "action must be remove or dismiss")
+    supabase.table('content_reports').update({'status': 'resolved'}).eq('content_type', r['content_type'])\
+        .eq('content_id', r['content_id']).execute()
+    return {"ok": True}
        
-        
 
     # Everything under this line is unvisible to an app.
 app.include_router(api)

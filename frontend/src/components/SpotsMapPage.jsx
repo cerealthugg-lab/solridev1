@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Plus, X, Camera, Navigation, Users, Trash2 } from 'lucide-react';
+import { MapPin, Plus, X, Camera, Navigation, Users, Trash2, Play, Video, Flag } from 'lucide-react';
 import { toast } from "./ui/sonner";
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TrickUploadModal from './TrickUploadModal';
-import { Video, Play } from 'lucide-react';   // Play is already imported if you kept the original
+// Play is already imported if you kept the original
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -109,6 +109,8 @@ var SpotDetailCard = function(props) {
   var onDelete = props.onDelete;
   var canDelete = props.canDelete;
   var userLocation = props.userLocation;
+  var [reportOpen, setReportOpen] = useState(false);
+    
 
   var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
   var dist = userLocation ? getDistanceKm(userLocation.lat, userLocation.lng, spot.lat, spot.lng) : null;
@@ -189,6 +191,14 @@ var SpotDetailCard = function(props) {
           >
             <Navigation size={15} className="text-[#D2FF00]" /> Navigate
           </button>
+            
+            {!canDelete && (
+  <button onClick={function() { setReportOpen(true); }}
+    className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 text-sm font-semibold">
+    <Flag size={15} className="text-[#FF3366]" /> Report
+  </button>
+)}
+                  
           {canDelete && (
             <button
               data-testid="spot-delete-btn"
@@ -630,6 +640,8 @@ var SpotsMapPage = function(props) {
           </div>
         )}
       </div>
+          <ReportBlockSheet open={reportOpen} onClose={function() { setReportOpen(false); }} contentType="spot"
+  contentId={spot.id} ownerUsername={spot.user_id} onHidden={onClose} />
     </div>
   );
 };

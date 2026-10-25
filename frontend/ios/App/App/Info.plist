@@ -6,11 +6,16 @@
     <key>NSLocationWhenInUseUsageDescription</key>
 <string>Solride uses your location to track rides, drop spots on the map, and let other riders see you in real time.</string>
 
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>Solride keeps tracking your ride and broadcasting your location while the app is in the background, so your DFQ keeps counting.</string>
-
 <key>NSCameraUsageDescription</key>
-<string>Take a photo of the spot you're adding to the map.</string>
+<string>Film your tricks and snap photos of skate spots.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>Record sound with your trick clips.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Pick trick clips and spot photos to share.</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>Save photos of spots you've added.</string>
+<key>ITSAppUsesNonExemptEncryption</key>
+<false/>
 
 <key>NSPhotoLibraryUsageDescription</key>
 <string>Pick a photo of the spot you're adding to the map from your library.</string>
@@ -44,7 +49,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
