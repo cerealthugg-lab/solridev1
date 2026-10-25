@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Form, File, UploadFile
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 import os
 import uuid
@@ -10,7 +10,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from dotenv import load_dotenv
 from pathlib import Path
 from supabase import create_client, Client
-
 from better_profanity import profanity
 from datetime import timedelta
 
@@ -157,11 +156,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # --- Routes ---
-
-
-
-from better_profanity import profanity
-from datetime import timedelta
 
 # Initialize profanity filter with custom words (English + Russian/Belarusian)
 profanity.load_censor_words()
@@ -611,8 +605,6 @@ async def transfer_coins(req: TransferRequest, current_user: dict = Depends(get_
         'id': str(uuid.uuid4()),
         'sender_id': current_user['username'],
         'receiver_id': receiver_username,
-        
-        'receiver_id': req.receiver_username,
         'amount': req.amount,
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'type': 'transfer'
@@ -1237,7 +1229,7 @@ async def start_conversation(data: StartConversation, current_user: dict = Depen
 
 
 @api.get("/conversations/{cid}/messages")
-async def get_messages(cid: str, limit: int = 50, current_user: dict = Depends(get_current_user)):
+async def get_dm_messages(cid: str, limit: int = 50, current_user: dict = Depends(get_current_user)):
     me = current_user['username'].lower()
     _in_convo(cid, me)
     res = supabase.table('dm_messages').select('*').eq('conversation_id', cid)\
@@ -1251,7 +1243,7 @@ class SendMessage(BaseModel):
     body: str
 
 @api.post("/conversations/{cid}/messages")
-async def send_message(cid: str, data: SendMessage, current_user: dict = Depends(get_current_user)):
+async def send_dm_message(cid: str, data: SendMessage, current_user: dict = Depends(get_current_user)):
     me = current_user['username'].lower()
     convo = _in_convo(cid, me)
     other = convo['user_hi'] if convo['user_lo'] == me else convo['user_lo']
