@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Card, CardContent } from "./ui/card";
-import { MapPin, Plus, X, Camera, Navigation, Users, Filter, Trash2 } from 'lucide-react';
+import { MapPin, Plus, X, Camera, Navigation, Users, Trash2 } from 'lucide-react';
 import { toast } from "./ui/sonner";
 import axios from 'axios';
 import { Link } from 'react-router-dom';
@@ -117,83 +114,64 @@ var SpotDetailCard = function(props) {
   var dist = userLocation ? getDistanceKm(userLocation.lat, userLocation.lng, spot.lat, spot.lng) : null;
 
   return (
-    <Card className="bg-zinc-900 border-2 rounded-none overflow-hidden" style={{ borderColor: typeInfo.color }}>
+      <div data-testid="spot-detail-card" className="relative bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden">
+      <div className="h-1 w-full" style={{ backgroundColor: typeInfo.color }}></div>
       {spot.photos && spot.photos.length > 0 && (
-        <div className="flex overflow-x-auto gap-2 snap-x p-2">
+        <div className="flex overflow-x-auto gap-2 snap-x p-3 pb-0">
           {spot.photos.map(function(photo, i) {
-            return <img key={i} src={photo} alt={spot.name} className="w-64 h-64 object-cover flex-shrink-0 snap-center rounded border border-zinc-700" />;
+            return <img key={i} src={photo} alt={spot.name} className="w-56 h-56 object-cover flex-shrink-0 snap-center rounded-xl" />;
           })}
         </div>
       )}
-      <CardContent className="p-4 space-y-3">
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-lg font-bold text-white">{spot.name}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5" style={{ backgroundColor: typeInfo.color, color: '#000' }}>{typeInfo.label}</span>
-              {dist !== null && (
-                <span className="text-xs font-mono text-zinc-400">{formatDist(dist)} away</span>
-              )}
+      <div className="p-4 space-y-4">
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-white truncate">{spot.name}</h2>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full" style={{ backgroundColor: typeInfo.color + '22', color: typeInfo.color }}>{typeInfo.label}</span>
+              {dist !== null && <span className="text-xs text-neutral-400">{formatDist(dist)} away</span>}
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white p-1">
-            <X size={18} />
+          <button data-testid="spot-detail-close" onClick={onClose} className="w-8 h-8 shrink-0 rounded-full bg-neutral-900 text-neutral-400 hover:text-white flex items-center justify-center active:scale-90 transition-transform">
+            <X size={16} />
           </button>
         </div>
 
-        {spot.description && (
-          <p className="text-sm text-zinc-400 leading-relaxed">{spot.description}</p>
-        )}
+        {spot.description && <p className="text-sm text-neutral-400 leading-relaxed">{spot.description}</p>}
 
-     <div className="flex items-center justify-between text-xs text-zinc-500">
-  <span>
-    Added by{' '}
-    <Link
-      to={"/skater/" + spot.user_id}
-      onClick={function(e) { e.stopPropagation(); }}
-      className="text-[#D2FF00] hover:underline font-bold"
-    >
-      {spot.user_id}
-    </Link>
-  </span>
-  <span className="font-mono">{new Date(spot.created_at).toLocaleDateString()}</span>
-</div>
-          
-          {/* Tricks landed at this spot */}
-        <div className="border-t border-zinc-800 pt-3 mt-1">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-bold">
-              Tricks landed · {props.spotTricks ? props.spotTricks.length : 0}
+        <div className="flex items-center justify-between text-xs text-neutral-500">
+          <span>
+            Added by{' '}
+            <Link to={"/skater/" + spot.user_id} onClick={function(e) { e.stopPropagation(); }} className="text-[#D2FF00] hover:underline font-semibold">
+              @{spot.user_id}
+            </Link>
+          </span>
+          <span>{new Date(spot.created_at).toLocaleDateString()}</span>
+        </div>
+
+        <div className="border-t border-neutral-900 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-semibold text-neutral-300">
+              Tricks landed <span className="text-neutral-500">· {props.spotTricks ? props.spotTricks.length : 0}</span>
             </div>
             <button
               onClick={function() { if (props.onOpenTrickModal) props.onOpenTrickModal(); }}
               data-testid="add-trick-btn"
-              className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#D2FF00] hover:text-white flex items-center gap-1"
+              className="text-[11px] font-semibold text-black bg-[#D2FF00] px-3 py-1.5 rounded-full flex items-center gap-1.5 active:scale-95 transition-transform"
             >
               <Video size={12} /> Add trick · +5 DFQ
             </button>
           </div>
           {props.spotTricks && props.spotTricks.length > 0 && (
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden">
               {props.spotTricks.slice(0, 6).map(function(t) {
                 return (
-                  <a
-                    key={t.id}
-                    href={"/tricks#" + t.id}
-                    className="relative aspect-square bg-black border border-zinc-800 overflow-hidden group"
-                    title={t.trick_name + " by " + t.user_id}
-                  >
-                    <video
-                      src={t.video_url}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20 transition-colors">
-                      <Play size={20} className="text-white" fill="white" />
+                  <a key={t.id} href={"/tricks#" + t.id} className="relative aspect-square bg-black overflow-hidden group" title={t.trick_name + " by " + t.user_id}>
+                    <video src={t.video_url} muted playsInline preload="metadata" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors">
+                      <Play size={18} className="text-white" fill="white" />
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[8px] font-black uppercase tracking-wider px-1 py-0.5 truncate">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent text-white text-[9px] font-bold px-1.5 pt-3 pb-1 truncate">
                       {t.trick_name}
                     </div>
                   </a>
@@ -202,28 +180,27 @@ var SpotDetailCard = function(props) {
             </div>
           )}
         </div>
-          
-          
+
         <div className="flex gap-2">
           <button
-            onClick={function() {
-              window.open('https://www.google.com/maps/dir/?api=1&destination=' + spot.lat + ',' + spot.lng, '_blank');
-            }}
-            className="flex-1 flex items-center justify-center gap-2 h-10 border border-[#D2FF00] text-[#D2FF00] text-xs font-bold uppercase tracking-widest hover:bg-[#D2FF00]/10 transition-colors"
+            data-testid="spot-navigate-btn"
+            onClick={function() { window.open('https://www.google.com/maps/dir/?api=1&destination=' + spot.lat + ',' + spot.lng, '_blank'); }}
+            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-full bg-neutral-900 border border-neutral-800 text-white text-sm font-semibold hover:bg-neutral-800 active:scale-[0.98] transition-all"
           >
-            <Navigation size={14} /> Navigate
+            <Navigation size={15} className="text-[#D2FF00]" /> Navigate
           </button>
           {canDelete && (
             <button
+              data-testid="spot-delete-btn"
               onClick={function() { onDelete(spot.id); onClose(); }}
-              className="flex items-center justify-center gap-2 h-10 px-4 border border-[#FF3366] text-[#FF3366] text-xs font-bold uppercase tracking-widest hover:bg-[#FF3366]/10 transition-colors"
+              className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-[#FF3366]/10 text-[#FF3366] text-sm font-semibold hover:bg-[#FF3366]/20 active:scale-[0.98] transition-all"
             >
-              <Trash2 size={14} /> Remove
+              <Trash2 size={15} /> Remove
             </button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -412,291 +389,238 @@ var SpotsMapPage = function(props) {
   var mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : [52.2297, 21.0122];
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold uppercase flex items-center gap-2">
-          <MapPin className="text-[#D2FF00]" size={20} /> Spots Map
-        </h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={function() { setShowRiders(!showRiders); }}
-            className={"p-2 rounded-full transition-colors " + (showRiders ? 'bg-[#D2FF00]/20 text-[#D2FF00]' : 'bg-zinc-800 text-zinc-500')}
-          >
-            <Users size={16} />
-          </button>
-          <span className="text-[10px] text-zinc-500 font-mono">{riders.length} riding</span>
+      <div className="space-y-4" data-testid="spots-map-page">
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-white">Spots</h1>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            <span className="text-[#D2FF00] font-semibold">{riders.length}</span> riding now · {filteredSpots.length} spots on the map
+          </p>
         </div>
+        <button
+          data-testid="toggle-riders-btn"
+          onClick={function() { setShowRiders(!showRiders); }}
+          className={"flex items-center gap-2 px-3.5 h-9 rounded-full text-xs font-semibold transition-colors " + (showRiders ? 'bg-[#D2FF00] text-black' : 'bg-neutral-900 text-neutral-400 border border-neutral-800')}
+        >
+          <Users size={14} /> {showRiders ? 'Riders on' : 'Show riders'}
+        </button>
       </div>
 
-      <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Users size={18} className="text-[#D2FF00]" />
-            {riders.length > 0 && <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#D2FF00] rounded-full animate-pulse"></div>}
-          </div>
-          <div>
-            <span className="text-2xl font-black text-[#D2FF00] font-mono">{riders.length}</span>
-            <span className="text-xs text-zinc-500 ml-2 uppercase tracking-widest">riders online</span>
-          </div>
-        </div>
-        <div className="text-right">
-          <span className="text-lg font-bold text-white font-mono">{nearbySpots.length}</span>
-          <span className="text-xs text-zinc-500 ml-1 uppercase tracking-widest">nearest spots</span>
-        </div>
-      </div>
-
-      <Card className="bg-zinc-900 border-zinc-800 rounded-none overflow-hidden">
-        <div className="h-72 relative">
-          <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="CARTO" />
+      <div className="relative rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950">
+        <div className="h-80 lg:h-[460px] relative">
+          <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%', background: '#0a0a0a' }} zoomControl={false}>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" className="dark-tiles" />
             <MapClickHandler onMapClick={handleMapClick} isAdding={isAdding} />
-              
-              
-              
+            {userLocation && <FlyToLocation position={[userLocation.lat, userLocation.lng]} trigger={centerTrigger} />}
             {userLocation && (
-  <FlyToLocation
-    position={[userLocation.lat, userLocation.lng]}
-    trigger={centerTrigger}
-  />
-)}
-              
-              {userLocation && (
-  <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-    <Popup>
-      <div className="text-black text-xs">
-        <strong>You</strong>
-        <div className="text-zinc-500">You are here</div>
-      </div>
-    </Popup>
-  </Marker>
-)}
-
-
+              <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
+                <Popup><div className="text-black text-xs"><strong>You</strong><div className="text-zinc-500">You are here</div></div></Popup>
+              </Marker>
+            )}
             {filteredSpots.map(function(spot) {
               var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
               var isSel = selectedSpot && selectedSpot.id === spot.id;
               return (
-                <Marker
-                  key={spot.id}
-                  position={[spot.lat, spot.lng]}
-                  icon={createSpotIcon(isSel ? '#FFFFFF' : typeInfo.color)}
-                  eventHandlers={{ click: function() { setSelectedSpot(isSel ? null : spot); } }}
-                />
+                <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={createSpotIcon(isSel ? '#FFFFFF' : typeInfo.color)}
+                  eventHandlers={{ click: function() { setSelectedSpot(isSel ? null : spot); } }} />
               );
             })}
-
             {showRiders && riders.map(function(rider) {
               return (
                 <Marker key={rider.username} position={[rider.lat, rider.lng]} icon={riderIcon}>
-                  <Popup>
-                    <div className="text-black text-xs">
-                      <strong>{rider.username}</strong>
-                      <div className="text-zinc-500">Riding now</div>
-                    </div>
-                  </Popup>
+                  <Popup><div className="text-black text-xs"><strong>{rider.username}</strong><div className="text-zinc-500">Riding now</div></div></Popup>
                 </Marker>
               );
             })}
-
             {newPin && (
-              <Marker position={[newPin.lat, newPin.lng]} icon={newPinIcon}>
-                <Popup>New spot here</Popup>
-              </Marker>
+              <Marker position={[newPin.lat, newPin.lng]} icon={newPinIcon}><Popup>New spot here</Popup></Marker>
             )}
           </MapContainer>
 
+          {/* Filter chips floating over the map */}
+          <div className="absolute top-3 left-3 right-3 z-[1000] flex gap-2 overflow-x-auto no-scrollbar" data-testid="spot-filters">
+            {[{ value: 'all', label: 'All', color: '#D2FF00' }].concat(SPOT_TYPES).map(function(t) {
+              var active = filterType === t.value;
+              return (
+                <button
+                  key={t.value}
+                  data-testid={'spot-filter-' + t.value}
+                  onClick={function() { setFilterType(t.value); }}
+                  className={"flex items-center gap-1.5 px-3 h-8 rounded-full text-xs font-semibold whitespace-nowrap backdrop-blur-md transition-colors " + (active ? 'text-black' : 'bg-black/60 text-neutral-300 border border-white/10')}
+                  style={active ? { backgroundColor: t.color } : {}}
+                >
+                  {!active && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color }}></span>}
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
           {isAdding && !showForm && (
-            <div className="absolute top-2 left-2 right-2 z-[1000] bg-[#FF3366]/90 px-3 py-2 rounded text-center">
-              <span className="text-white text-xs font-bold uppercase tracking-widest">Tap the map to drop a pin</span>
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-[1000] bg-[#FF3366] px-4 py-2 rounded-full shadow-lg shadow-[#FF3366]/30">
+              <span className="text-white text-xs font-semibold whitespace-nowrap">Tap the map to drop a pin</span>
             </div>
           )}
 
-          <div className="absolute bottom-2 left-2 z-[1000] bg-black/80 px-2 py-1 rounded">
-            <span className="text-[10px] text-zinc-400 font-mono">{filteredSpots.length} spots</span>
-          </div>
+          <button
+            data-testid="center-on-me-btn"
+            onClick={function() { shareLocation(); setCenterTrigger(function(prev) { return prev + 1; }); toast.success("Centering..."); }}
+            className="absolute bottom-3 right-3 z-[1000] w-11 h-11 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[#D2FF00] flex items-center justify-center active:scale-90 transition-transform"
+            title="Center on me"
+          >
+            <Navigation size={18} />
+          </button>
         </div>
-      </Card>
-
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          onClick={function() { setFilterType('all'); }}
-          className={"px-3 py-1 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap border transition-colors " + (filterType === 'all' ? 'bg-[#D2FF00] text-black border-[#D2FF00]' : 'bg-transparent text-zinc-500 border-zinc-800')}
-        >All</button>
-        {SPOT_TYPES.map(function(t) {
-          return (
-            <button
-              key={t.value}
-              onClick={function() { setFilterType(t.value); }}
-              className={"px-3 py-1 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap border transition-colors " + (filterType === t.value ? 'text-black' : 'bg-transparent text-zinc-500 border-zinc-800')}
-              style={filterType === t.value ? { backgroundColor: t.color, borderColor: t.color } : {}}
-            >{t.label}</button>
-          );
-        })}
       </div>
 
       {!isAdding && !showForm ? (
-        <Button
+        <button
+          data-testid="add-spot-btn"
           onClick={function() { setIsAdding(true); }}
-          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-bold uppercase tracking-widest rounded-none h-12"
+          className="w-full flex items-center justify-center gap-2 bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold rounded-full h-12 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all"
         >
-          <Plus size={18} className="mr-2" /> Add Spot <span className="ml-2 text-[10px] opacity-70">- 1 DFQ</span>
-        </Button>
+          <Plus size={18} /> Add a spot <span className="text-xs opacity-60 font-medium">· 1 DFQ</span>
+        </button>
       ) : showForm ? (
-        <Card className="bg-zinc-900 border-zinc-800 rounded-none">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-white">New Spot</h3>
-              <button onClick={cancelAdd} className="text-zinc-500 hover:text-white"><X size={18} /></button>
-            </div>
-            <Input
-              placeholder="Spot name"
-              value={formData.name}
-              onChange={function(e) { setFormData(Object.assign({}, formData, { name: e.target.value })); }}
-              className="text-white bg-black border-zinc-800 rounded-none h-10"
-            />
-            <textarea
-              placeholder="Description (optional)"
-              value={formData.description}
-              onChange={function(e) { setFormData(Object.assign({}, formData, { description: e.target.value })); }}
-              className="w-full bg-black text-white border border-zinc-800 rounded-none p-2 text-sm resize-none h-16 focus:outline-none focus:border-[#D2FF00]"
-            />
-            <div className="flex gap-2 flex-wrap">
-              {SPOT_TYPES.map(function(t) {
+        <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-4" data-testid="new-spot-form">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-white">New spot</h3>
+            <button data-testid="cancel-spot-btn" onClick={cancelAdd} className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-400 hover:text-white flex items-center justify-center"><X size={16} /></button>
+          </div>
+          <input
+            data-testid="spot-name-input"
+            placeholder="Spot name"
+            value={formData.name}
+            onChange={function(e) { setFormData(Object.assign({}, formData, { name: e.target.value })); }}
+            className="w-full text-white bg-neutral-900 border border-neutral-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
+          />
+          <textarea
+            data-testid="spot-description-input"
+            placeholder="Description (optional)"
+            value={formData.description}
+            onChange={function(e) { setFormData(Object.assign({}, formData, { description: e.target.value })); }}
+            className="w-full bg-neutral-900 text-white border border-neutral-800 focus:border-[#D2FF00]/50 rounded-xl p-3 text-base resize-none h-20 outline-none transition-colors"
+          />
+          <div className="flex gap-2 flex-wrap">
+            {SPOT_TYPES.map(function(t) {
+              var active = formData.spot_type === t.value;
+              return (
+                <button
+                  key={t.value}
+                  data-testid={'spot-type-' + t.value}
+                  onClick={function() { setFormData(Object.assign({}, formData, { spot_type: t.value })); }}
+                  className={"px-3.5 h-8 rounded-full text-xs font-semibold transition-colors " + (active ? 'text-black' : 'bg-neutral-900 text-neutral-400 border border-neutral-800')}
+                  style={active ? { backgroundColor: t.color } : {}}
+                >{t.label}</button>
+              );
+            })}
+          </div>
+          <div className="space-y-2">
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoSelect} className="hidden" />
+            <span className="text-xs text-neutral-500">Photos ({photos.length}/5)</span>
+            <div className="grid grid-cols-5 gap-2">
+              {photos.map(function(p, i) {
                 return (
-                  <button
-                    key={t.value}
-                    onClick={function() { setFormData(Object.assign({}, formData, { spot_type: t.value })); }}
-                    className={"px-3 py-1 text-[10px] font-bold uppercase tracking-widest border transition-colors " + (formData.spot_type === t.value ? 'text-black' : 'bg-transparent text-zinc-500 border-zinc-800')}
-                    style={formData.spot_type === t.value ? { backgroundColor: t.color, borderColor: t.color } : {}}
-                  >{t.label}</button>
+                  <div key={i} className="relative aspect-square">
+                    <img src={p} alt="" className="w-full h-full object-cover rounded-lg" />
+                    <button
+                      onClick={function() { setPhotos(function(prev) { return prev.filter(function(_, idx) { return idx !== i; }); }); }}
+                      className="absolute -top-1.5 -right-1.5 bg-[#FF3366] rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      <X size={12} className="text-white" />
+                    </button>
+                  </div>
                 );
               })}
-            </div>
-            <div className="space-y-2">
-              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoSelect} className="hidden" />
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500">
-                  Photos ({photos.length}/5)
-                </span>
-                
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {photos.map(function(p, i) {
-                  return (
-                    <div key={i} className="relative aspect-square">
-                      <img src={p} alt="" className="w-full h-full object-cover border border-zinc-800" />
-                      <button
-                        onClick={function() { setPhotos(function(prev) { return prev.filter(function(_, idx) { return idx !== i; }); }); }}
-                        className="absolute -top-1 -right-1 bg-[#FF3366] rounded-full w-5 h-5 flex items-center justify-center"
-                      >
-                        <X size={12} className="text-white" />
-                      </button>
-                    </div>
-                  );
-                })}
-                {photos.length < 5 && (
-                  <button
-                    onClick={function() { if (fileInputRef.current) fileInputRef.current.click(); }}
-                    className="aspect-square border-2 border-dashed border-zinc-700 hover:border-[#D2FF00] flex flex-col items-center justify-center gap-1 transition-colors group"
-                  >
-                    <Camera size={20} className="text-zinc-600 group-hover:text-[#D2FF00] transition-colors" />
-                    <span className="text-[8px] uppercase tracking-widest text-zinc-600 group-hover:text-[#D2FF00] transition-colors">
-                      {photos.length === 0 ? 'Add' : '+'}
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-            <Button
-              onClick={handleSubmitSpot}
-              disabled={isSubmitting}
-              className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-bold uppercase tracking-widest rounded-none h-10 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </span>
-              ) : (
-                'Save Spot'
+              {photos.length < 5 && (
+                <button
+                  data-testid="add-spot-photo-btn"
+                  onClick={function() { if (fileInputRef.current) fileInputRef.current.click(); }}
+                  className="aspect-square rounded-lg border border-dashed border-neutral-700 hover:border-[#D2FF00] flex items-center justify-center transition-colors group"
+                >
+                  <Camera size={18} className="text-neutral-600 group-hover:text-[#D2FF00] transition-colors" />
+                </button>
               )}
-            </Button>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+          <button
+            data-testid="save-spot-btn"
+            onClick={handleSubmitSpot}
+            disabled={isSubmitting}
+            className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold rounded-full h-11 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" /> Saving...
+              </span>
+            ) : 'Save spot'}
+          </button>
+        </div>
       ) : (
-        <Button onClick={cancelAdd} variant="outline" className="w-full border-[#FF3366] text-[#FF3366] hover:bg-[#FF3366]/10 rounded-none h-10">
-          <X size={16} className="mr-2" /> Cancel
-        </Button>
+        <button data-testid="cancel-pin-btn" onClick={cancelAdd} className="w-full flex items-center justify-center gap-2 rounded-full h-11 bg-[#FF3366]/10 text-[#FF3366] text-sm font-semibold">
+          <X size={16} /> Cancel
+        </button>
       )}
 
-      <button
-        onClick={function() {
-  shareLocation();
-  setCenterTrigger(function(prev) { return prev + 1; });
-  toast.success("Centering...");
-}}
-        className="w-full flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-[#D2FF00] uppercase tracking-widest py-2"
-      >
-        <Navigation size={14} /> Center on me
-      </button>
+      {selectedSpot && (
+        <SpotDetailCard
+          spot={selectedSpot}
+          onClose={function() { setSelectedSpot(null); }}
+          onDelete={handleDeleteSpot}
+          canDelete={currentUser && selectedSpot.user_id === currentUser.username}
+          userLocation={userLocation}
+          spotTricks={spotTricks}
+          onOpenTrickModal={function() { setTrickModalOpen(true); }}
+        />
+      )}
 
-     {selectedSpot && (
-  <SpotDetailCard
-    spot={selectedSpot}
-    onClose={function() { setSelectedSpot(null); }}
-    onDelete={handleDeleteSpot}
-    canDelete={currentUser && selectedSpot.user_id === currentUser.username}
-    userLocation={userLocation}
-    spotTricks={spotTricks}
-    onOpenTrickModal={function() { setTrickModalOpen(true); }}
-  />
-)}
+      {selectedSpot && (
+        <TrickUploadModal
+          open={trickModalOpen}
+          onClose={function() { setTrickModalOpen(false); }}
+          spot={selectedSpot}
+          onUploaded={function(newTrick) { setSpotTricks(function(prev) { return [newTrick].concat(prev); }); }}
+        />
+      )}
 
-{selectedSpot && (
-  <TrickUploadModal
-    open={trickModalOpen}
-    onClose={function() { setTrickModalOpen(false); }}
-    spot={selectedSpot}
-    onUploaded={function(newTrick) {
-      setSpotTricks(function(prev) { return [newTrick].concat(prev); });
-    }}
-  />
-)}
-
-      <div className="space-y-2" ref={listRef}>
-        <h3 className="text-zinc-500 text-xs uppercase tracking-widest flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            Nearest Spots
-            <span className="w-1.5 h-1.5 bg-[#D2FF00] rounded-full animate-pulse"></span>
-            <span className="text-[8px] text-[#D2FF00] font-mono">LIVE</span>
-          </span>
-          <span className="text-[#D2FF00] font-mono">{nearbySpots.length}</span>
-        </h3>
+      <div className="space-y-3 pt-2" ref={listRef}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            Nearest spots
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-[#D2FF00] bg-[#D2FF00]/10 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 bg-[#D2FF00] rounded-full animate-pulse"></span> Live
+            </span>
+          </h3>
+          <span className="text-xs text-neutral-500">{nearbySpots.length}</span>
+        </div>
         {nearbySpots.length === 0 ? (
-          <div className="text-center py-6 text-zinc-600 text-sm">No spots yet — be the first to add one!</div>
+          <div className="text-center py-10 rounded-2xl border border-dashed border-neutral-800 text-neutral-500 text-sm">No spots yet. Be the first to add one!</div>
         ) : (
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+          <div className="space-y-2 max-h-96 overflow-y-auto" data-testid="nearest-spots-list">
             {nearbySpots.map(function(spot) {
               var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
               var isSel = selectedSpot && selectedSpot.id === spot.id;
+              var thumb = spot.photos && spot.photos.length > 0 ? spot.photos[0] : null;
               return (
                 <div
                   key={spot.id}
+                  data-testid={'nearest-spot-' + spot.id}
                   onClick={function() { setSelectedSpot(isSel ? null : spot); }}
-                  className={"flex items-center gap-3 p-3 cursor-pointer transition-all duration-200 " + (isSel ? 'bg-zinc-800 border-l-2 border-r border-t border-b border-zinc-700' : 'bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700')}
-                  style={isSel ? { borderLeftColor: typeInfo.color } : {}}
+                  className={"flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-colors " + (isSel ? 'bg-neutral-900 ring-1 ring-neutral-700' : 'bg-neutral-950 hover:bg-neutral-900')}
                 >
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: typeInfo.color }}></div>
+                  <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ backgroundColor: typeInfo.color + '1f' }}>
+                    {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <MapPin size={18} style={{ color: typeInfo.color }} />}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-sm text-white truncate">{spot.name}</span>
-                      <span className="text-[10px] font-mono text-zinc-500 flex-shrink-0">{formatDist(spot.distance)}</span>
+                      <span className="font-semibold text-sm text-white truncate">{spot.name}</span>
+                      <span className="text-xs text-neutral-500 flex-shrink-0">{formatDist(spot.distance)}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] uppercase tracking-widest" style={{ color: typeInfo.color }}>{typeInfo.label}</span>
-                      <span className="text-[10px] text-zinc-600">by {spot.user_id}</span>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs">
+                      <span className="font-medium" style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                      <span className="text-neutral-600">by @{spot.user_id}</span>
                       {spot.photos && spot.photos.length > 0 && (
-                        <span className="text-[10px] text-zinc-600"><Camera size={10} className="inline" /> {spot.photos.length}</span>
+                        <span className="text-neutral-600 flex items-center gap-0.5"><Camera size={11} /> {spot.photos.length}</span>
                       )}
                     </div>
                   </div>

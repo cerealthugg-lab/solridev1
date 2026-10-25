@@ -60,7 +60,7 @@ export default function Conversation({ currentUsername }) {
   };
 
   return (
-    <div className="fixed left-0 right-0 z-[9999] bg-black flex flex-col selection:bg-[#D2FF00] selection:text-black" style={{ top: vp.top, height: vp.height }}>
+    <div className="fixed left-0 right-0 lg:left-64 tight-0 z-[9999] bg-black flex flex-col selection:bg-[#D2FF00] selection:text-black" style={{ top: vp.top, height: vp.height }}>
       {/* Immersive Social Chat Room Titlebar Header */}
       <header className="flex items-center gap-3 px-4 py-3 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-900 shrink-0">
         <button onClick={() => navigate("/messages")} className="p-1 text-neutral-400 active:scale-90 transition-transform">

@@ -433,30 +433,55 @@ const Layout = ({ children }) => {
     { path: '/profile', icon: User, label: 'Profile' },
 ];
 
-  return (
-    <div className="bg-black min-h-screen">
-      <FirstRideCelebration />
-      <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 max-w-md mx-auto relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50"></div>
+const OnlineBadge = ({ className = '' }) => (
+    <div className={`flex items-center gap-2 px-3 py-1 bg-black/70 backdrop-blur-md border border-zinc-800 rounded-full w-fit ${className}`}>
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-[#D2FF00] opacity-75 animate-ping"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D2FF00]"></span>
+      </span>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+        <span className="text-[#D2FF00]">{onlineCount}</span> rider{onlineCount === 1 ? '' : 's'} online
+      </span>
+    </div>
+  );
 
-        {/* X RIDERS ONLINE badge - visible on every authed page */}
-        <div
-          data-testid="online-riders-badge"
-          className="fixed top-2 left-1/2 -translate-x-1/2 z-50 max-w-md w-fit pointer-events-none"
-        >
-          <div className="flex items-center gap-2 px-3 py-1 bg-black/70 backdrop-blur-md border border-zinc-800 rounded-full">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-[#D2FF00] opacity-75 animate-ping"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D2FF00]"></span>
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
-              <span className="text-[#D2FF00]">{onlineCount}</span> rider{onlineCount === 1 ? '' : 's'} online
-            </span>
-          </div>
+  return (
+    <div className="bg-black min-h-screen lg:flex">
+      <FirstRideCelebration />
+
+      {/* Desktop sidebar (lg and up only) */}
+      <aside data-testid="desktop-sidebar" className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col bg-neutral-950 border-r border-neutral-900 px-5 py-8 z-50">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366]"></div>
+        <Link to="/" className="text-3xl font-black italic tracking-tighter bg-gradient-to-br from-[#D2FF00] to-white bg-clip-text text-transparent pr-2 mb-1">SOLRIDE</Link>
+        <p className="text-[10px] tracking-[0.25em] uppercase text-neutral-600 mb-10">Ride. Track. Earn.</p>
+        <nav className="flex flex-col gap-1">
+          {navItems.map(({ path, icon: Icon, label }) => {
+            const active = location.pathname === path;
+            return (
+              <Link key={path} to={path} data-testid={`sidebar-${label.toLowerCase()}`}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${active ? 'bg-[#D2FF00]/10 text-[#D2FF00]' : 'text-neutral-400 hover:bg-neutral-900 hover:text-white'}`}>
+                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                <span className="text-sm font-semibold tracking-wide">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mt-auto space-y-4">
+          <OnlineBadge />
+          <p className="text-xs text-neutral-500 truncate">@{user.username}</p>
+        </div>
+      </aside>
+
+      <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 lg:pb-8 max-w-md lg:max-w-none mx-auto lg:ml-64 lg:mr-0 lg:flex-1 relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900 lg:border-x-0">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50 lg:hidden"></div>
+
+        {/* X RIDERS ONLINE badge - mobile only, desktop shows it in the sidebar */}
+        <div data-testid="online-riders-badge" className="fixed top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none lg:hidden">
+          <OnlineBadge />
         </div>
 
-        <main className="p-4 pt-8">{children}</main>
-        <nav className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
+        <main className="p-4 pt-8 lg:p-10 lg:max-w-2xl lg:mx-auto">{children}</main>
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
           {navItems.map(({ path, icon: Icon, label }) => (
             <Link key={path} to={path} className={`flex flex-col items-center gap-1 transition-all ${location.pathname === path ? 'text-[#D2FF00] scale-110' : 'text-zinc-500 hover:text-white'}`}>
               <Icon size={24} strokeWidth={location.pathname === path ? 2.5 : 2} />
@@ -468,7 +493,7 @@ const Layout = ({ children }) => {
     </div>
   );
 };
-
+  
 
 // --- Pages ---
 
@@ -498,9 +523,27 @@ const AuthPage = () => {
       setBusy(false);
     }
   };
+return (
+    <div className="lg:grid lg:grid-cols-2 lg:min-h-screen">
+    {/* Desktop brand panel (lg and up only) */}
+    <section data-testid="auth-desktop-hero" className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-neutral-950 border-r border-neutral-900 p-14">
+      <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-[#D2FF00]/10 blur-3xl"></div>
+      <div className="absolute -bottom-40 -right-32 w-[420px] h-[420px] rounded-full bg-[#FF3366]/10 blur-3xl"></div>
+      <span className="relative text-xs tracking-[0.3em] uppercase text-neutral-500 font-bold">Solride</span>
+      <div className="relative space-y-6">
+        <h2 className="text-6xl xl:text-7xl font-black italic tracking-tighter leading-[0.9] text-white">Ride more.<br /><span className="text-[#D2FF00]">Stack DFQ.</span></h2>
+        <p className="text-neutral-400 max-w-md text-base leading-relaxed">Track your rides, drop tricks, find spots and link up with skaters near you.</p>
+        <div className="flex flex-wrap gap-3 pt-2">
+          {['Live spots map', 'Trick feed', 'DFQ wallet', 'Rider chat'].map(t => (
+            <span key={t} className="px-4 py-2 rounded-full bg-neutral-900/80 backdrop-blur-md border border-neutral-800 text-xs font-semibold text-neutral-300">{t}</span>
+          ))}
+        </div>
+      </div>
+      <span className="relative text-[10px] tracking-[0.25em] uppercase text-neutral-600">SOLRIDE © 2026</span>
+    </section>
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] lg:min-h-screen px-6">
+
       <h1 className="text-5xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
       <p className="text-zinc-500 mb-10 tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
       
@@ -543,255 +586,139 @@ const AuthPage = () => {
           Learn more →
         </Link>
         <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600">SOLRIDE © 2026</span>
+        </div>
       </div>
     </div>
   );
 };
 
-
 const Dashboard = () => {
   const { user, fetchUser } = useAuth();
-  
+
   const handleClaimCardBonus = async () => {
     try {
       const { data } = await api.post('/users/claim-card-bonus');
-      toast.success(`🎉 +${data.bonus} DFQ claimed!`);
+      toast.success(`+${data.bonus} DFQ claimed!`);
       fetchUser();
     } catch (e) {
       toast.error(e.response?.data?.detail || "Couldn't claim bonus");
     }
   };
 
-{user.is_admin && (
-        <Link to="/admin" className="block">
-          <Card className="bg-[#FF3366]/10 border-[#FF3366]/30 rounded-none">
-            <CardContent className="p-4 flex items-center gap-3">
-              <span className="text-[#FF3366]">⚡</span>
-              <div>
-                <span className="font-bold uppercase tracking-wider text-sm text-[#FF3366] block">Admin Panel</span>
-                <span className="text-xs text-zinc-500">Moderate app</span>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      )}
-
-  
   const required = ['deck_size', 'deck_company', 'fav_trick', 'fav_spot', 'birth_date'];
   const filled = required.filter(f => user[f] && String(user[f]).trim() !== '').length;
   const total = required.length;
   const percent = Math.round((filled / total) * 100);
   const isComplete = filled === total;
-  
-const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
+  const missing = required.filter(f => !user[f] || String(user[f]).trim() === '');
+
+  const quickLinks = [
+    { to: '/spots', icon: MapPin, title: 'Spots Map', sub: 'Find spots · Live riders', color: '#00D2FF', tag: 'New', id: 'spots' },
+    { to: '/chat', icon: MessageCircle, title: 'Global Chat', sub: 'Talk to skaters worldwide', color: '#D2FF00', tag: 'Live', id: 'chat' },
+    ...(user.is_admin ? [{ to: '/admin', icon: Shield, title: 'Admin Panel', sub: 'Moderate · Manage', color: '#FF3366', id: 'admin' }] : []),
+  ];
 
   return (
-    <div className="space-y-6">
-   <div className="flex justify-between items-end">
-        <div>
-            <h2 className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Balance</h2>
-            <div className="text-3xl font-black text-[#D2FF00]">{user.wallet_balance.toFixed(2)} <span className="text-sm text-white">DFQ</span></div>
+    <div className="space-y-5" data-testid="dashboard">
+      {/* Greeting */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="min-w-0">
+          <p className="text-xs text-neutral-500">Welcome back</p>
+          <h1 className="text-2xl font-black tracking-tight text-white truncate">@{user.username}</h1>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-
-
-{/* Ride now big Button */}
-         <Link to="/ride">
-          <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-             <CardContent className="p-6 flex flex-col items-center justify-center gap-2 aspect-square">
-                <div className="p-3 bg-zinc-950 rounded-full group-hover:bg-[#D2FF00] group-hover:text-black transition-colors text-white">
-                  <Play size={24} className="ml-1" />
-                </div>
-                <span className="font-bold uppercase tracking-wider text-sm text-white">Ride Now</span>
-             </CardContent>
-          </Card>
-         </Link>
-
-{/* Wallet big Button */}
-         <Link to="/wallet">
-          <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-             <CardContent className="p-6 flex flex-col items-center justify-center gap-2 aspect-square">
-                <div className="p-3 bg-zinc-950 rounded-full group-hover:bg-[#D2FF00] group-hover:text-black transition-colors text-white">
-                  <Send size={24} />
-                </div>
-                <span className="font-bold uppercase tracking-wider text-sm text-white">Wallet</span>
-             </CardContent>
-          </Card>
-         </Link>
-      </div>
-
-      
-{/* Spots Map Button */}
-      <Link to="/spots" className="block mt-3">
-        <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#00D2FF] transition-colors cursor-pointer group">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#00D2FF] group-hover:text-black transition-colors text-white">
-                <MapPin size={20} />
-              </div>
-              <div>
-                <span className="font-bold uppercase tracking-wider text-sm text-white block">Spots Map</span>
-                <span className="text-xs text-zinc-500">Find spots • Live riders</span>
-              </div>
+        <Link to="/profile" data-testid="dashboard-avatar-link" className="shrink-0">
+          {user.photo_url ? (
+            <img src={user.photo_url} alt={user.username} className="w-11 h-11 rounded-full object-cover ring-2 ring-[#D2FF00]/60 ring-offset-2 ring-offset-[#09090b]" />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-neutral-900 ring-2 ring-[#D2FF00]/60 ring-offset-2 ring-offset-[#09090b] flex items-center justify-center text-lg font-black text-[#D2FF00]">
+              {user.username?.[0]?.toUpperCase()}
             </div>
-            <div className="text-xs text-[#00D2FF] font-mono uppercase">NEW</div>
-          </CardContent>
-        </Card>
-      </Link>
-
-{/* Chat button */}
-<Link to="/chat" className="block mt-3">
-  <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-    <CardContent className="p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#D2FF00] group-hover:text-black transition-colors text-white">
-          <MessageCircle size={20} />
-        </div>
-        <div>
-          <span className="font-bold uppercase tracking-wider text-sm text-white block">Global Chat</span>
-          <span className="text-xs text-zinc-500">Talk to skaters worldwide</span>
-        </div>
-      </div>
-      <div className="text-xs text-[#D2FF00] font-mono uppercase">Live</div>
-    </CardContent>
-  </Card>
-</Link>
-
-{/* Admin Panel */}
-
-{user.is_admin && (
-        <Link to="/admin" className="block mt-3">
-          <Card className="bg-zinc-900/50 border-zinc-800 hover:border-[#FF3366] transition-colors cursor-pointer group">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-zinc-950 rounded-full group-hover:bg-[#FF3366] group-hover:text-white transition-colors text-[#FF3366]">
-                  <Shield size={20} />
-                </div>
-                <div>
-                  <span className="font-bold uppercase tracking-wider text-sm text-white block">Admin Panel</span>
-                  <span className="text-xs text-zinc-500">Moderate • Manage</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          )}
         </Link>
-      )}
+      </div>
 
-
-{/* 
-<Link to="/profile" className="block mt-6">
-        <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-          <CardHeader>
-              <CardTitle className="uppercase tracking-widest text-lg text-white group-hover:text-[#D2FF00] transition-colors">{user.username}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Deck Size</span>
-                  <span className="font-mono text-[#D2FF00]">{user.deck_size || '-'}</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Deck Company</span>
-                  <span className="font-mono text-[#D2FF00]">{user.deck_company || '-'}</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Fav Trick</span>
-                  <span className="font-mono text-[#D2FF00]">{user.fav_trick || '-'}</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400">Fav Spot</span>
-                  <span className="font-mono text-[#D2FF00]">{user.fav_spot || '-'}</span>
-              </div>
-        
-{user.birth_date && (
-        <div className="flex justify-between items-start gap-3 border-b border-zinc-800 pb-2">
-          <span className="text-zinc-400 shrink-0">Birth Date</span>
-          <span className="font-mono text-[#D2FF00] text-right min-w-0 break-words">
-            {user.birth_date} ({Math.floor((new Date() - new Date(user.birth_date)) / (365.25 * 24 * 60 * 60 * 1000))} y.o.)
+      {/* Balance card */}
+      <Link to="/wallet" data-testid="dashboard-balance-card" className="block relative overflow-hidden rounded-2xl bg-neutral-950 border border-neutral-800 p-5 group">
+        <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-[#D2FF00]/15 blur-3xl group-hover:bg-[#D2FF00]/25 transition-colors"></div>
+        <p className="relative text-xs text-neutral-500">Your balance</p>
+        <div className="relative flex items-end justify-between mt-1">
+          <div className="text-4xl font-black text-white tracking-tight" data-testid="dashboard-balance">
+            {user.wallet_balance.toFixed(2)} <span className="text-base font-bold text-[#D2FF00]">DFQ</span>
+          </div>
+          <span className="text-xs font-semibold text-neutral-400 group-hover:text-[#D2FF00] transition-colors flex items-center gap-1">
+            Wallet <Send size={12} />
           </span>
         </div>
-      )}
-
-              {user.self_comment && (
-                <div className="pt-3">
-                    <span className="text-zinc-500 text-xs uppercase tracking-widest block mb-2">About</span>
-                    <p className="text-sm text-white/80 leading-relaxed">"{user.self_comment}"</p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
       </Link>
-   */}
 
-
-{!user.has_card_bonus && (
-  <Card className="bg-gradient-to-r from-[#D2FF00]/10 to-transparent border-[#D2FF00]/30 rounded-none">
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <p className="text-white font-bold uppercase tracking-wider text-sm">
-            {isComplete ? '🎉 Profile Complete!' : 'Complete your profile'}
-          </p>
-         <p className="text-xs text-zinc-500">
-  {isComplete ? 'Claim your reward' : `${filled}/${total} · missing: ${missing.join(', ').replace(/_/g, ' ')}`}
-</p>
-        </div>
-        <span className="text-[#D2FF00] font-black text-lg">+5 DFQ</span>
+      {/* Main actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link to="/ride" data-testid="dashboard-ride-btn" className="relative overflow-hidden rounded-2xl bg-[#D2FF00] text-black p-5 aspect-square lg:aspect-auto lg:h-44 flex flex-col justify-between active:scale-[0.98] transition-transform">
+          <div className="w-11 h-11 rounded-full bg-black/10 flex items-center justify-center">
+            <Play size={20} className="ml-0.5" fill="black" />
+          </div>
+          <div>
+            <span className="block text-lg font-black leading-tight">Ride now</span>
+            <span className="block text-xs font-medium opacity-60">Track & earn DFQ</span>
+          </div>
+        </Link>
+        <Link to="/tricks" data-testid="dashboard-tricks-btn" className="relative overflow-hidden rounded-2xl bg-neutral-950 border border-neutral-800 p-5 aspect-square lg:aspect-auto lg:h-44 flex flex-col justify-between hover:border-neutral-700 active:scale-[0.98] transition-all">
+          <div className="w-11 h-11 rounded-full bg-[#FF3366]/15 flex items-center justify-center text-[#FF3366]">
+            <Flame size={20} />
+          </div>
+          <div>
+            <span className="block text-lg font-black leading-tight text-white">Tricks</span>
+            <span className="block text-xs text-neutral-500">Watch the feed</span>
+          </div>
+        </Link>
       </div>
-      <div className="h-1 bg-zinc-800 mb-3">
-        <div
-          className="h-full bg-[#D2FF00] transition-all duration-500"
-          style={{ width: `${percent}%` }}
-        />
+
+      {/* Quick links */}
+      <div className="rounded-2xl bg-neutral-950 border border-neutral-800 divide-y divide-neutral-900 overflow-hidden">
+        {quickLinks.map(({ to, icon: Icon, title, sub, color, tag, id }) => (
+          <Link key={to} to={to} data-testid={`dashboard-link-${id}`} className="flex items-center gap-3 p-4 hover:bg-neutral-900 transition-colors">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: color + '1f', color }}>
+              <Icon size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-white">{title}</span>
+              <span className="block text-xs text-neutral-500 truncate">{sub}</span>
+            </div>
+            {tag && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: color + '1f', color }}>{tag}</span>}
+          </Link>
+        ))}
       </div>
-      {isComplete ? (
-        <Button
-          onClick={handleClaimCardBonus}
-          className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-black uppercase tracking-widest rounded-none h-10 text-xs"
-        >
-          Claim 5 DFQ
-        </Button>
-      ) : (
 
-
-   <Link to="/profile" className="block mt-6">
-  <Card className="bg-gradient-to-br from-zinc-900 to-black border-zinc-800 hover:border-[#D2FF00] transition-colors cursor-pointer group">
-    <CardContent className="flex items-center gap-3 p-4">
-      {user.photo_url ? (
-        <img src={user.photo_url} alt={user.username}
-          className="w-12 h-12 rounded-full object-cover border border-zinc-700 shrink-0" />
-      ) : (
-        <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-lg font-black text-[#D2FF00] shrink-0">
-          {user.username?.[0]?.toUpperCase()}
+      {/* Profile completion bonus */}
+      {!user.has_card_bonus && (
+        <div data-testid="profile-bonus-card" className="rounded-2xl border border-[#D2FF00]/20 bg-gradient-to-br from-[#D2FF00]/10 to-transparent p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white">{isComplete ? 'Profile complete!' : 'Complete your profile'}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                {isComplete ? 'Claim your reward' : `${filled}/${total} · missing: ${missing.join(', ').replace(/_/g, ' ')}`}
+              </p>
+            </div>
+            <span className="text-[#D2FF00] font-black text-lg shrink-0">+5 DFQ</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+            <div className="h-full rounded-full bg-[#D2FF00] transition-all duration-500" style={{ width: `${percent}%` }} />
+          </div>
+          {isComplete ? (
+            <button data-testid="claim-bonus-btn" onClick={handleClaimCardBonus} className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold rounded-full h-11 text-sm active:scale-[0.98] transition-all">
+              Claim 5 DFQ
+            </button>
+          ) : (
+            <Link to="/profile" data-testid="finish-profile-btn" className="w-full flex items-center justify-center bg-neutral-900 border border-neutral-800 text-white font-semibold rounded-full h-11 text-sm hover:bg-neutral-800 transition-colors">
+              Finish profile
+            </Link>
+          )}
+          <p className="text-[11px] text-neutral-600 text-center">The note section is optional</p>
         </div>
       )}
-      <div className="min-w-0">
-        <div className="font-black uppercase tracking-widest text-white group-hover:text-[#D2FF00] truncate">
-          {user.username}
-        </div>
-        <div className="text-xs text-zinc-500 truncate">
-          {user.deck_company || 'no deck company set'}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-</Link>
-
-
-      )}
-      <p className="text-[10px] text-zinc-600 mt-2 text-center uppercase tracking-widest">
-        ▸ Note section is optional
-      </p>
-    </CardContent>
-  </Card>
-)} 
-
-
-</div>
+    </div>
   );
 };
-
 
 
 const RidePage = () => {
@@ -901,76 +828,83 @@ const WalletPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-       <div className="bg-zinc-900/50 p-4 border border-zinc-800 rounded-xl text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Sparkles size={14} className="text-zinc-500" />
-            <span className="text-zinc-400 text-[10px] uppercase tracking-widest">Work in progress..</span>
-          </div>
-          <p className="text-zinc-600 text-[10px]">Use your earned DFQ points to claim street accessories, physical skate gear, or custom gear vouchers.</p>
-       </div>
+    <div className="space-y-6" data-testid="wallet-page">
+      <h1 className="text-2xl font-black tracking-tight text-white pt-2">Wallet</h1>
 
-       <div className="bg-[#D2FF00] rounded-2xl p-6 text-center text-black">
-            <p className="text-[10px] uppercase tracking-widest opacity-60 mb-1">Total Balance</p>
-            <div className="text-5xl font-black">{user.wallet_balance.toFixed(2)}</div>
-            <p className="text-sm font-medium mt-1 opacity-70">DFQ</p>
-       </div>
+      <div className="relative overflow-hidden rounded-2xl bg-[#D2FF00] p-6 text-black">
+        <div className="absolute -bottom-16 -right-12 w-48 h-48 rounded-full bg-white/30 blur-2xl"></div>
+        <p className="relative text-xs font-semibold opacity-60">Total balance</p>
+        <div className="relative text-5xl font-black tracking-tight mt-1" data-testid="wallet-balance">{user.wallet_balance.toFixed(2)}</div>
+        <p className="relative text-sm font-bold mt-1 opacity-70">DFQ</p>
+      </div>
 
-       <div className="space-y-3">
-         <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Send DFQ</p>
-         
-         <div className="flex gap-2">
-            <input 
-                type="number" 
-                placeholder="Amount" 
-                value={amount} onChange={e=>setAmount(e.target.value)}
-                className="flex-1 text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
-            />
-            <button onClick={()=>setAmount(String(user.wallet_balance))} className="px-4 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 rounded-xl h-11 text-xs font-medium uppercase tracking-widest transition-colors">
-                Max
-            </button>
-         </div>
-         
-         <input 
-            placeholder="Username" 
-            value={receiver} onChange={e=>setReceiver(e.target.value.toLowerCase().trim().replace(/^@/, ''))}
-            className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
-         />
-         <button onClick={handleSend} className="w-full bg-white text-black hover:bg-zinc-200 font-medium tracking-wider rounded-full h-11 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
-            Send <Send size={16} />
-         </button>
-       </div>
+      <div className="flex items-start gap-3 rounded-2xl bg-neutral-950 border border-neutral-800 p-4">
+        <div className="w-9 h-9 rounded-full bg-neutral-900 flex items-center justify-center shrink-0">
+          <Sparkles size={15} className="text-[#D2FF00]" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">Rewards store coming soon</p>
+          <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">Use your earned DFQ to claim street accessories, skate gear or custom vouchers.</p>
+        </div>
+      </div>
 
-       <div className="space-y-3">
-         <p className="text-zinc-500 text-[10px] uppercase tracking-widest">History</p>
-         <div className="space-y-2">
-            {history.map(tx => {
-                const isSender = tx.sender_id === user.username;
-                const isRide = tx.type === 'ride_earning';
-                
-                let colorClass = isSender ? 'text-[#FF3366]' : 'text-[#D2FF00]';
-                if (isRide) colorClass = 'text-purple-400';
-                
-                let label = isSender ? `To: ${tx.receiver_id}` : `From: ${tx.sender_id}`;
-                if (isRide) label = "Ride Earnings";
-                
-                return (
-                <div key={tx.id} className="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] text-zinc-600">{new Date(tx.timestamp).toLocaleDateString()}</span>
-                        <span className="font-medium text-sm">{label}</span>
-                    </div>
-                    <span className={`font-mono font-bold ${colorClass}`}>
-                        {isSender ? '-' : '+'}{tx.amount.toFixed(2)}
-                    </span>
+      <div className="rounded-2xl bg-neutral-950 border border-neutral-800 p-4 space-y-3">
+        <p className="text-sm font-bold text-white">Send DFQ</p>
+        <input
+          data-testid="wallet-receiver-input"
+          placeholder="@username"
+          value={receiver} onChange={e => setReceiver(e.target.value.toLowerCase().trim().replace(/^@/, ''))}
+          autoCapitalize="off" autoCorrect="off" spellCheck="false"
+          className="w-full text-white bg-neutral-900 border border-neutral-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
+        />
+        <div className="flex gap-2">
+          <input
+            data-testid="wallet-amount-input"
+            type="number" inputMode="decimal" placeholder="Amount"
+            value={amount} onChange={e => setAmount(e.target.value)}
+            className="flex-1 min-w-0 text-white bg-neutral-900 border border-neutral-800 focus:border-[#D2FF00]/50 rounded-xl h-11 px-4 text-base outline-none transition-colors"
+          />
+          <button data-testid="wallet-max-btn" onClick={() => setAmount(String(user.wallet_balance))} className="px-4 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800 rounded-xl h-11 text-xs font-semibold transition-colors">
+            Max
+          </button>
+        </div>
+        <button data-testid="wallet-send-btn" onClick={handleSend} className="w-full bg-white text-black hover:bg-neutral-200 font-semibold rounded-full h-11 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+          Send <Send size={16} />
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-bold text-white">History</p>
+        <div className="rounded-2xl bg-neutral-950 border border-neutral-800 divide-y divide-neutral-900 overflow-hidden" data-testid="wallet-history">
+          {history.map(tx => {
+            const isSender = tx.sender_id === user.username;
+            const isRide = tx.type === 'ride_earning';
+            let color = isSender ? '#FF3366' : '#D2FF00';
+            if (isRide) color = '#c084fc';
+            let label = isSender ? `To @${tx.receiver_id}` : `From @${tx.sender_id}`;
+            if (isRide) label = 'Ride earnings';
+            const Icon = isRide ? Zap : Send;
+            return (
+              <div key={tx.id} className="flex items-center gap-3 p-3.5">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: color + '1f', color }}>
+                  <Icon size={15} className={!isRide && !isSender ? 'rotate-180' : ''} />
                 </div>
-            )})}
-            {history.length === 0 && <div className="text-center text-zinc-600 text-sm py-4">No transactions yet</div>}
-         </div>
-       </div>
+                <div className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold text-white truncate">{label}</span>
+                  <span className="block text-xs text-neutral-500">{new Date(tx.timestamp).toLocaleDateString()}</span>
+                </div>
+                <span className="font-bold text-sm" style={{ color }}>
+                  {isSender ? '-' : '+'}{tx.amount.toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+          {history.length === 0 && <div className="text-center text-neutral-500 text-sm py-8">No transactions yet</div>}
+        </div>
+      </div>
     </div>
   );
-};
+}; 
 
 const ProfilePage = () => {
   const { user, fetchUser, logout } = useAuth();
