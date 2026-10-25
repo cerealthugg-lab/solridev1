@@ -3,9 +3,8 @@
 <plist version="1.0">
 <dict>
     
-    <key>NSLocationWhenInUseUsageDescription</key>
+<key>NSLocationWhenInUseUsageDescription</key>
 <string>Solride uses your location to track rides, drop spots on the map, and let other riders see you in real time.</string>
-
 <key>NSCameraUsageDescription</key>
 <string>Film your tricks and snap photos of skate spots.</string>
 <key>NSMicrophoneUsageDescription</key>
@@ -16,10 +15,6 @@
 <string>Save photos of spots you've added.</string>
 <key>ITSAppUsesNonExemptEncryption</key>
 <false/>
-
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Pick a photo of the spot you're adding to the map from your library.</string>
-
 <key>NSPhotoLibraryAddUsageDescription</key>
 <string>Save photos of spots you've added.</string>
     

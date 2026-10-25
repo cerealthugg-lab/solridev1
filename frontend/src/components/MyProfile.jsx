@@ -290,6 +290,9 @@ function FeedbackButton() {
         <span className="text-neutral-500 font-black text-sm">→</span>
       </button>
       <FeedbackModal open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
     
     function DeleteAccountButton({ api, logout }) {
   const [open, setOpen] = useState(false);

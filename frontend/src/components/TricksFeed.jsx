@@ -3,8 +3,6 @@ import axios from 'axios';
 import { Flame, Loader2, Sparkles, Trophy, Flag } from 'lucide-react';
 import TrickCard from './TrickCard';
 import ReportBlockSheet from './ReportBlockSheet';
-
-const [reportOpen, setReportOpen] = useState(false);
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 api.interceptors.request.use((config) => {

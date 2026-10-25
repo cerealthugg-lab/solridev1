@@ -50,6 +50,14 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Auth Tools
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+oauth2_optional = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
+
+# Email sign-up codes. If EMAIL_KEY is not set, sign-up works without a code.
+EMAIL_KEY = os.environ.get('EMAIL_KEY', '')
+EMAIL_BASE_URL = os.environ.get('EMAIL_BASE_URL', '')
+EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'SOLRIDE')
+EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
+EMAIL_ENABLED = bool(EMAIL_KEY and EMAIL_BASE_URL)
 
 app = FastAPI()
 api = APIRouter(prefix="/api")
@@ -76,7 +84,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
     email: str
-    code: str
+    code: str ""
     accepted_terms: bool = False
 
 class SendCode(BaseModel):
@@ -177,7 +185,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user.pop('hashed_password', None)
     return user
 
-    async def get_optional_user(token: Optional[str] = Depends(oauth2_optional)):
+async def get_optional_user(token: Optional[str] = Depends(oauth2_optional)):
     if not token:
         return None
     try:
@@ -361,7 +369,9 @@ async def get_messages(current_user: dict = Depends(get_current_user)):
         'hidden', False
     ).order('created_at', desc=True).limit(100).execute()
     # return oldest first for chat display
-    return list(reversed(res.data))
+    blocked = _blocked_set(current_user['username'])
+    rows = [m for m in (res.data or []) if (m.get('username') or '').lower() not in blocked]
+    return list(reversed(rows))
 
 
 @api.get("/chat/ban-status")
@@ -517,7 +527,7 @@ async def register(user: UserCreate):
         raise HTTPException(400, "You must accept the Terms to join")
     if supabase.table('users').select('id').eq('username', user.username).execute().data:
         raise HTTPException(400, "Username already registered")
-    if _email_taken(email):
+    if return list(recersed(email):
         raise HTTPException(400, "This email is already linked to an account")
     row = supabase.table('email_codes').select('*').eq('email', email).execute()
     if not row.data:
