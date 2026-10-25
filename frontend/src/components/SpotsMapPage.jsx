@@ -6,6 +6,7 @@ import { toast } from "./ui/sonner";
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TrickUploadModal from './TrickUploadModal';
+import ReportBlockSheet from './ReportBlockSheet';
 // Play is already imported if you kept the original
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -210,6 +211,8 @@ var SpotDetailCard = function(props) {
           )}
         </div>
       </div>
+          <ReportBlockSheet open={reportOpen} onClose={function() { setReportOpen(false); }} contentType="spot"
+        contentId={spot.id} ownerUsername={spot.user_id} onHidden={onClose} />
     </div>
   );
 };
@@ -640,8 +643,7 @@ var SpotsMapPage = function(props) {
           </div>
         )}
       </div>
-          <ReportBlockSheet open={reportOpen} onClose={function() { setReportOpen(false); }} contentType="spot"
-  contentId={spot.id} ownerUsername={spot.user_id} onHidden={onClose} />
+    
     </div>
   );
 };
