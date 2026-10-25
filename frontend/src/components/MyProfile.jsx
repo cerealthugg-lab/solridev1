@@ -45,14 +45,16 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const a = calcAge(user.birth_date);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 selection:bg-[#D2FF00] selection:text-black">
-      {/* Immersive Social Top Navigation Bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
+    <div className="min-h-screen bg-black text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
+      {/* Immersive Social Top Navigation Bar (phone only) */}
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
         <span className="font-black tracking-tight text-sm lowercase">@{user.username}</span>
         <span className="font-extrabold text-[10px] uppercase tracking-widest text-neutral-500">My Basecamp</span>
       </header>
 
-      <div className="px-4 pt-6 pb-4 space-y-6 max-w-md mx-auto">
+      <div className="px-4 pt-6 pb-4 space-y-6 max-w-md mx-auto lg:max-w-none lg:p-0 lg:space-y-0 lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-x-10 lg:gap-y-6 lg:items-start">
+        {/* Left column on laptop: profile info */}
+        <aside className="space-y-6 lg:col-start-1 lg:row-start-1 lg:bg-neutral-950 lg:border lg:border-neutral-900 lg:rounded-2xl lg:p-6" data-testid="profile-info-panel">
         {/* Profile Avatar Card Grid */}
         <div className="flex items-center justify-between gap-6">
           {/* Brand Core Animated Pulsing Profile Border */}
@@ -60,7 +62,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             <div className="absolute inset-0 bg-gradient-to-tr from-[#D2FF00] to-yellow-300 rounded-full p-[2px] animate-pulse" />
             <button 
               onClick={() => fileRef.current?.click()} 
-              className="relative w-20 h-20 rounded-full overflow-hidden p-[2px] bg-black flex items-center justify-center active:opacity-80 transition-opacity"
+              className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden p-[2px] bg-black flex items-center justify-center active:opacity-80 transition-opacity"
             >
               {user.photo_url ? (
                 <img src={user.photo_url} alt={user.username} className="w-full h-full object-cover rounded-full" />
@@ -92,7 +94,6 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             </button>
           </div>
         </div>
-
 
         {/* Brand Meta Identifier Text */}
         <div>
@@ -187,74 +188,67 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         )}
 
-          
-          
-          
         {/* Instagram style Messenger Link Box */}
         <Link 
           to="/messages"
           className="flex items-center justify-between px-4 h-14 bg-[#D2FF00]/5 border border-[#D2FF00]/20 rounded-xl active:bg-[#D2FF00]/10 transition-colors"
         >
-                      <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <MessageCircle size={16} className="text-[#D2FF00]" />
             <span className="font-extrabold uppercase tracking-widest text-xs text-[#D2FF00]">Direct Messages Inbox</span>
           </div>
           <span className="text-[#D2FF00] font-black text-sm">→</span>
         </Link>
+        </aside>
 
-          
-                  {/* 🎬 INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
-        <div className="px-5 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] font-black uppercase tracking-widest mt-6 shrink-0 select-none">
-          <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
-            My Clips ({user.tricks?.length || 0})
-          </span>
-          <span className="text-neutral-500 pb-2 cursor-pointer hover:text-white transition-colors">
-            Saved Spots
-          </span>
-        </div>
+        {/* Right column on laptop: clips */}
+        <section className="lg:col-start-2 lg:row-start-1 lg:row-span-2" data-testid="profile-clips-section">
+          {/* INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
+          <div className="px-5 lg:px-1 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] lg:text-xs font-black uppercase tracking-widest mt-6 lg:mt-0 shrink-0 select-none">
+            <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
+              My Clips ({user.tricks?.length || 0})
+            </span>
+            <span className="text-neutral-500 pb-2 cursor-pointer hover:text-white transition-colors">
+              Saved Spots
+            </span>
+          </div>
 
-        {/* 📱 TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
-        <div className="grid grid-cols-3 gap-0.5 bg-neutral-950 flex-grow p-0.5 min-h-[350px]">
-          {user.tricks && user.tricks.length > 0 ? (
-            user.tricks.map(function (trick) {
-              return (
-                <Link 
-                  to={`/tricks?focus=${trick.id}`} 
-                  key={trick.id} 
-                  className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20"
-                >
-                  {/* Immersive Video Asset Thumbnail Frame */}
-                  <video 
-                    src={trick.video_url} 
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
-                    preload="metadata"
-                    muted
-                    playsInline
-                  />
-                  
-                  {/* Glowing M2E In-App Token Earnings Corner Overlay Tag */}
-                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
-                    ▶ {trick.tips_received || 0}
-                  </div>
-                </Link>
-              );
-            })
-          ) : (
-            /* Empty Timeline Placeholder Container */
-            <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none">
-              <p className="text-[10px] font-black uppercase tracking-widest font-sans">No clips catalogued</p>
-              <p className="text-[11px] text-neutral-500 max-w-[180px] leading-relaxed normal-case">
-                Hit the stream or local spots map to log your first session.
-              </p>
-            </div>
-          )}
-        </div>
+          {/* TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
+          <div className="grid grid-cols-3 gap-0.5 lg:gap-1.5 bg-neutral-950 lg:bg-transparent flex-grow p-0.5 lg:p-0 lg:pt-4 min-h-[350px]">
+            {user.tricks && user.tricks.length > 0 ? (
+              user.tricks.map(function (trick) {
+                return (
+                  <Link 
+                    to={`/tricks?focus=${trick.id}`} 
+                    key={trick.id} 
+                    className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl"
+                  >
+                    <video 
+                      src={trick.video_url} 
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                      preload="metadata"
+                      muted
+                      playsInline
+                    />
+                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
+                      ▶ {trick.tips_received || 0}
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none lg:rounded-2xl lg:border lg:border-dashed lg:border-neutral-800">
+                <p className="text-[10px] font-black uppercase tracking-widest font-sans">No clips catalogued</p>
+                <p className="text-[11px] text-neutral-500 max-w-[180px] leading-relaxed normal-case">
+                  Hit the stream or local spots map to log your first session.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
 
-          
-          
-          
         {/* feedback + logout */}
-        <div className="pt-4 border-t border-neutral-900 space-y-3">
+        <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
           <FeedbackButton />
           <button onClick={logout}
             className="w-full h-11 rounded-xl border border-neutral-950 bg-neutral-950/40 text-[#FF3366] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
@@ -295,4 +289,3 @@ function FeedbackButton() {
     </>
   );
 }
-
