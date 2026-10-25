@@ -84,7 +84,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
     email: str
-    code: str ""
+    code: str = ""
     accepted_terms: bool = False
 
 class SendCode(BaseModel):
@@ -527,7 +527,7 @@ async def register(user: UserCreate):
         raise HTTPException(400, "You must accept the Terms to join")
     if supabase.table('users').select('id').eq('username', user.username).execute().data:
         raise HTTPException(400, "Username already registered")
-    if return list(recersed(email):
+    if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
     row = supabase.table('email_codes').select('*').eq('email', email).execute()
     if not row.data:

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Trash2, Coins, Volume2, VolumeX } from 'lucide-react';
 import axios from 'axios';
 import { toast } from './ui/sonner';
 import { MapPin, Trash2, Coins, Volume2, VolumeX, Flag } from 'lucide-react';
@@ -85,7 +84,6 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
 
   const pressTimerRef = useRef(null);
   const [isHolding, setIsHolding] = useState(false);
-
 
   const when = new Date(trick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -218,6 +216,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
           >
             <Trash2 size={16} />
           </button>
+)}
         {!isOwn && (
           <button onClick={() => setReportOpen(true)} aria-label="Report or block"
             className="w-11 h-11 bg-black/40 backdrop-blur-md border border-neutral-800/80 text-neutral-300 rounded-full flex items-center justify-center active:scale-90 mt-2">
