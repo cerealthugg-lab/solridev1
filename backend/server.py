@@ -485,7 +485,7 @@ async def send_signup_code(data: SendCode):
         raise HTTPException(400, "Enter a valid email")
     if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
-        if not EMAIL_ENABLED:
+    if not EMAIL_ENABLED:
         return {"sent": False, "email_verification": False}
     now = datetime.now(timezone.utc)
     existing = supabase.table('email_codes').select('created_at').eq('email', email).execute()
@@ -556,7 +556,7 @@ async def register(user: UserCreate):
         'email': email, 'email_verified': EMAIL_ENABLED, 'terms_accepted_at': now,
         'wallet_balance': 0.0, 'created_at': now,
     }).execute()
-        if EMAIL_ENABLED:
+    if EMAIL_ENABLED:
         supabase.table('email_codes').delete().eq('email', email).execute()
     return {"message": "User created successfully"}
 
