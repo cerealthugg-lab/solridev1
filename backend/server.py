@@ -52,13 +52,13 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 oauth2_optional = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
-# Email sign-up codes. If EMAIL_KEY is not set, sign-up works without a code.
-EMAIL_KEY = os.environ.get('EMAIL_KEY', '')
-EMAIL_BASE_URL = os.environ.get('EMAIL_BASE_URL', '')
-EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'SOLRIDE')
+# Email sign-up codes (Resend). If RESEND_API_KEY is empty, sign-up works without a code.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+RESEND_API_URL = os.environ.get('RESEND_API_URL', 'https://api.resend.com')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', 'SOLRIDE <onboarding@resend.dev>')
+EMAIL_FROM_NAME = 'SOLRIDE'
 EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
-EMAIL_ENABLED = bool(EMAIL_KEY and EMAIL_BASE_URL)
-
+EMAIL_ENABLED = bool(RESEND_API_KEY)
 app = FastAPI()
 api = APIRouter(prefix="/api")
 
@@ -279,25 +279,20 @@ def _assert_safe_email(subject, html):
 
 async def send_email(*, to, subject, html):
     _assert_safe_email(subject, html)
-    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    payload = {"from": EMAIL_FROM, "to": [to], "subject": subject, "html": html}
     if EMAIL_REPLY_TO:
-        payload["contact_email"] = EMAIL_REPLY_TO
+        payload["reply_to"] = EMAIL_REPLY_TO
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(f"{EMAIL_BASE_URL}/api/v1/email/send",
-                                     headers={"X-Email-Key": EMAIL_KEY}, json=payload)
-        resp.raise_for_status()
-        return resp.json().get("id")
-    except httpx.HTTPStatusError as e:
-        try:
-            code = e.response.json().get("code", "")
-        except ValueError:
-            code = ""
-        if code in ("insufficient_credits", "integration_disabled", "daily_limit_reached"):
-            logger.warning(f"Email paused: {code}")
-            raise HTTPException(503, "Email is temporarily unavailable")
-        logger.error(f"Email send failed: {e.response.status_code} {e.response.text}")
-        raise HTTPException(502, "Failed to send email")
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(f"{RESEND_API_URL}/emails",
+                                     headers={"Authorization": f"Bearer {RESEND_API_KEY}"}, json=payload)
+    except httpx.HTTPError as e:
+        logger.error(f"Resend unreachable: {e}")
+        raise HTTPException(502, "Couldn't send the email, try again in a minute")
+    if resp.status_code >= 400:
+        logger.error(f"Resend failed: {resp.status_code} {resp.text[:300]}")
+        raise HTTPException(502, "Couldn't send the email, try again in a minute")
+    return resp.json().get("id")
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 USERNAME_RE = re.compile(r"^[a-z0-9_.]{3,20}$")
@@ -490,13 +485,15 @@ async def send_signup_code(data: SendCode):
         raise HTTPException(400, "Enter a valid email")
     if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
+        if not EMAIL_ENABLED:
+        return {"sent": False, "email_verification": False}
     now = datetime.now(timezone.utc)
     existing = supabase.table('email_codes').select('created_at').eq('email', email).execute()
     if existing.data:
         last = datetime.fromisoformat(existing.data[0]['created_at'].replace('Z', '+00:00'))
         wait = CODE_RESEND_SECONDS - (now - last).total_seconds()
         if wait > 0:
-            raise HTTPException(429, f"Wait {int(wait)}s before requesting a new code")
+            raise HTTPException(429, f"Wait {int(wait) + 1}s before requesting a new code")
     code = f"{secrets.randbelow(1_000_000):06d}"
     supabase.table('email_codes').upsert({
         'email': email, 'code_hash': _code_hash(email, code),
@@ -512,8 +509,15 @@ async def send_signup_code(data: SendCode):
             f'<p style="color:#a1a1aa">Type it in the app to finish creating your account. It expires in {CODE_TTL_MINUTES} minutes.</p>'
             f'<p style="font-size:12px;color:#71717a">If you did not try to join {brand}, ignore this email. '
             'We never ask for your password by email.</p></td></tr></table>')
-    await send_email(to=email, subject=f"{EMAIL_FROM_NAME} code: {code}", html=html)
-    return {"sent": True}
+    
+    
+    try:
+        await send_email(to=email, subject=f"{EMAIL_FROM_NAME} code: {code}", html=html)
+    except HTTPException:
+        supabase.table('email_codes').delete().eq('email', email).execute()  # let them retry right away
+        raise
+    return {"sent": True, "email_verification": True}
+
 
 @api.post("/auth/register")
 async def register(user: UserCreate):
@@ -527,26 +531,33 @@ async def register(user: UserCreate):
         raise HTTPException(400, "You must accept the Terms to join")
     if supabase.table('users').select('id').eq('username', user.username).execute().data:
         raise HTTPException(400, "Username already registered")
+        
+    if not EMAIL_RE.match(email) or len(email) > 254:
+        raise HTTPException(400, "Enter a valid email")
     if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
-    row = supabase.table('email_codes').select('*').eq('email', email).execute()
-    if not row.data:
-        raise HTTPException(400, "Request a code first")
-    rec = row.data[0]
-    expires = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
-    if expires < datetime.now(timezone.utc) or (rec.get('attempts') or 0) >= CODE_MAX_ATTEMPTS:
-        raise HTTPException(400, "Code expired, request a new one")
-    if not secrets.compare_digest(rec['code_hash'], _code_hash(email, user.code.strip())):
-        supabase.table('email_codes').update({'attempts': (rec.get('attempts') or 0) + 1}).eq('email', email).execute()
-        raise HTTPException(400, "Wrong code")
+    if EMAIL_ENABLED:
+        row = supabase.table('email_codes').select('*').eq('email', email).execute()
+        if not row.data:
+            raise HTTPException(400, "Request a code first")
+        rec = row.data[0]
+        expires = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
+        if expires < datetime.now(timezone.utc) or (rec.get('attempts') or 0) >= CODE_MAX_ATTEMPTS:
+            raise HTTPException(400, "Code expired, request a new one")
+        if not secrets.compare_digest(rec['code_hash'], _code_hash(email, user.code.strip())):
+            supabase.table('email_codes').update({'attempts': (rec.get('attempts') or 0) + 1}).eq('email', email).execute()
+            raise HTTPException(400, "Wrong code")
+    
+    
     now = datetime.now(timezone.utc).isoformat()
     supabase.table('users').insert({
         'id': str(uuid.uuid4()), 'username': user.username,
         'hashed_password': get_password_hash(user.password),
-        'email': email, 'email_verified': True, 'terms_accepted_at': now,
+        'email': email, 'email_verified': EMAIL_ENABLED, 'terms_accepted_at': now,
         'wallet_balance': 0.0, 'created_at': now,
     }).execute()
-    supabase.table('email_codes').delete().eq('email', email).execute()
+        if EMAIL_ENABLED:
+        supabase.table('email_codes').delete().eq('email', email).execute()
     return {"message": "User created successfully"}
 
 @api.post("/auth/login", response_model=Token)
