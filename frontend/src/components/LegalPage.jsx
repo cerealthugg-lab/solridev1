@@ -2,9 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-const CONTACT_EMAIL = 'YOUR_SUPPORT_EMAIL@example.com';
-const OWNER = 'SOLRIDE (operated by YOUR NAME)';
-const COUNTRY = 'YOUR COUNTRY';
+const CONTACT_EMAIL = 'solrideapp@gmai.com';
+const OWNER = 'Artsiom Karazei';
+const COUNTRY = 'Belarus';
 
 const PRIVACY = [
   ['Who we are', `${OWNER} runs the SOLRIDE app. Questions: ${CONTACT_EMAIL}.`],

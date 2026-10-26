@@ -582,6 +582,7 @@ return (
             autoComplete="current-password"
           />
         </div>
+
         <button type="submit" disabled={busy || (!isLogin && (!accepted || code.lenght !== 6))}
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold tracking-wider rounded-full h-12 text-base mt-2 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all disabled:opacity-50">
           {busy ? 'Loading...' : isLogin ? 'Login' : 'Join'}
