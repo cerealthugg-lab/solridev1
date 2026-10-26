@@ -617,36 +617,7 @@ return (
             </label>
           </>
         )}
-      {!isLogin && (
-          <>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Email</label>
-              <div className="flex gap-2">
-                <input type="email" value={email}
-                  onChange={e => { setEmail(e.target.value.trim()); setCodeSent(false); setCode(''); }}
-                  className="flex-1 min-w-0 text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none"
-                  placeholder="you@email.com" autoCapitalize="off" autoCorrect="off" autoComplete="email" />
-                <button type="button" onClick={sendCode} disabled={sending || !email}
-                  className="px-4 h-12 rounded-xl bg-zinc-800 text-[#D2FF00] text-xs font-bold uppercase disabled:opacity-50">
-                  {sending ? '...' : codeSent ? 'Resend' : 'Send code'}
-                </button>
-              </div>
-            </div>
-            {codeSent && (
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase text-zinc-500 tracking-widest">6-digit code</label>
-                <input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-                  className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base tracking-[0.5em] outline-none" />
-              </div>
-            )}
-            <label className="flex items-start gap-3 text-xs text-zinc-400 py-2">
-              <input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}
-                className="mt-0.5 w-5 h-5 accent-[#D2FF00]" />
-              <span>I'm 13 or older and agree to the <Link to="/terms" className="text-[#D2FF00] underline">Terms</Link> and <Link to="/privacy" className="text-[#D2FF00] underline">Privacy Policy</Link>. No tolerance for abusive content or users.</span>
-            </label>
-          </>
-        )}
+      
         <button type="submit" disabled={busy || (!isLogin && (!accepted || !email || (codeSent && code.length !== 6)))}
 
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold tracking-wider rounded-full h-12 text-base mt-2 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all disabled:opacity-50">
