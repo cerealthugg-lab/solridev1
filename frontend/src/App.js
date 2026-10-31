@@ -502,7 +502,7 @@ const OnlineBadge = ({ className = '' }) => (
 const AuthPage = () => {
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(new URLSearchParams(window.location.search).get('mode') !== 'register');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
