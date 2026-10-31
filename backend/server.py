@@ -52,13 +52,17 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 oauth2_optional = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
-# Email sign-up codes (Resend). If RESEND_API_KEY is empty, sign-up works without a code.
+# Email sign-up codes (Resend). Sign-up stays CLOSED until RESEND_API_KEY and EMAIL_FROM are set.
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 RESEND_API_URL = os.environ.get('RESEND_API_URL', 'https://api.resend.com')
-EMAIL_FROM = os.environ.get('EMAIL_FROM', 'SOLRIDE <onboarding@resend.dev>')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', '')  # e.g. "SOLRIDE <noreply@yourdomain.com>"
 EMAIL_FROM_NAME = 'SOLRIDE'
 EMAIL_REPLY_TO = os.environ.get('EMAIL_REPLY_TO', '')
-EMAIL_ENABLED = bool(RESEND_API_KEY)
+EMAIL_ENABLED = bool(RESEND_API_KEY and EMAIL_FROM)
+if not EMAIL_ENABLED:
+    logger.warning("RESEND_API_KEY / EMAIL_FROM missing: new sign-ups are blocked until they are set")
+
+
 app = FastAPI()
 api = APIRouter(prefix="/api")
 
@@ -483,10 +487,10 @@ async def send_signup_code(data: SendCode):
     email = data.email.lower().strip()
     if not EMAIL_RE.match(email) or len(email) > 254:
         raise HTTPException(400, "Enter a valid email")
+    if not EMAIL_ENABLED:
+        raise HTTPException(503, "Sign-up is paused right now, try again later")
     if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
-    if not EMAIL_ENABLED:
-        return {"sent": False, "email_verification": False}
     now = datetime.now(timezone.utc)
     existing = supabase.table('email_codes').select('created_at').eq('email', email).execute()
     if existing.data:
@@ -509,55 +513,61 @@ async def send_signup_code(data: SendCode):
             f'<p style="color:#a1a1aa">Type it in the app to finish creating your account. It expires in {CODE_TTL_MINUTES} minutes.</p>'
             f'<p style="font-size:12px;color:#71717a">If you did not try to join {brand}, ignore this email. '
             'We never ask for your password by email.</p></td></tr></table>')
-    
-    
     try:
         await send_email(to=email, subject=f"{EMAIL_FROM_NAME} code: {code}", html=html)
     except HTTPException:
-        supabase.table('email_codes').delete().eq('email', email).execute()  # let them retry right away
+        supabase.table('email_codes').delete().eq('email', email).execute()
         raise
-    return {"sent": True, "email_verification": True}
+    return {"sent": True, "resend_in": CODE_RESEND_SECONDS, "expires_in_minutes": CODE_TTL_MINUTES}
 
 
 @api.post("/auth/register")
 async def register(user: UserCreate):
+    if not EMAIL_ENABLED:
+        raise HTTPException(503, "Sign-up is paused right now, try again later")
     user.username = user.username.lower().strip()
     email = user.email.lower().strip()
+    code = user.code.strip()
     if not USERNAME_RE.match(user.username):
         raise HTTPException(400, "Username: 3-20 chars, letters, numbers, _ or .")
     if len(user.password) < 6:
         raise HTTPException(400, "Password must be at least 6 characters")
     if not user.accepted_terms:
         raise HTTPException(400, "You must accept the Terms to join")
-    if supabase.table('users').select('id').eq('username', user.username).execute().data:
-        raise HTTPException(400, "Username already registered")
-        
     if not EMAIL_RE.match(email) or len(email) > 254:
         raise HTTPException(400, "Enter a valid email")
+    if not re.fullmatch(r"\d{6}", code):
+        raise HTTPException(400, "Enter the 6-digit code from your email")
+    if supabase.table('users').select('id').eq('username', user.username).execute().data:
+        raise HTTPException(400, "Username already registered")
     if _email_taken(email):
         raise HTTPException(400, "This email is already linked to an account")
-    if EMAIL_ENABLED:
-        row = supabase.table('email_codes').select('*').eq('email', email).execute()
-        if not row.data:
-            raise HTTPException(400, "Request a code first")
-        rec = row.data[0]
-        expires = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
-        if expires < datetime.now(timezone.utc) or (rec.get('attempts') or 0) >= CODE_MAX_ATTEMPTS:
-            raise HTTPException(400, "Code expired, request a new one")
-        if not secrets.compare_digest(rec['code_hash'], _code_hash(email, user.code.strip())):
-            supabase.table('email_codes').update({'attempts': (rec.get('attempts') or 0) + 1}).eq('email', email).execute()
-            raise HTTPException(400, "Wrong code")
-    
-    
+
+    row = supabase.table('email_codes').select('*').eq('email', email).execute()
+    if not row.data:
+        raise HTTPException(400, "Request a code first")
+    rec = row.data[0]
+    attempts = rec.get('attempts') or 0
+    expires = datetime.fromisoformat(rec['expires_at'].replace('Z', '+00:00'))
+    if expires < datetime.now(timezone.utc) or attempts >= CODE_MAX_ATTEMPTS:
+        raise HTTPException(400, "Code expired, request a new one")
+    if not secrets.compare_digest(rec['code_hash'], _code_hash(email, code)):
+        supabase.table('email_codes').update({'attempts': attempts + 1}).eq('email', email).execute()
+        left = CODE_MAX_ATTEMPTS - attempts - 1
+        raise HTTPException(400, f"Wrong code, {left} tries left" if left > 0 else "Too many tries, request a new code")
+
     now = datetime.now(timezone.utc).isoformat()
-    supabase.table('users').insert({
-        'id': str(uuid.uuid4()), 'username': user.username,
-        'hashed_password': get_password_hash(user.password),
-        'email': email, 'email_verified': EMAIL_ENABLED, 'terms_accepted_at': now,
-        'wallet_balance': 0.0, 'created_at': now,
-    }).execute()
-    if EMAIL_ENABLED:
-        supabase.table('email_codes').delete().eq('email', email).execute()
+    try:
+        supabase.table('users').insert({
+            'id': str(uuid.uuid4()), 'username': user.username,
+            'hashed_password': get_password_hash(user.password),
+            'email': email, 'email_verified': True, 'terms_accepted_at': now,
+            'wallet_balance': 0.0, 'created_at': now,
+        }).execute()
+    except Exception as e:
+        logger.warning(f"register insert failed: {e}")
+        raise HTTPException(400, "Username or email already registered")
+    supabase.table('email_codes').delete().eq('email', email).execute()
     return {"message": "User created successfully"}
 
 @api.post("/auth/login", response_model=Token)

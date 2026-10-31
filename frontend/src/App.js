@@ -510,37 +510,66 @@ const AuthPage = () => {
   const [code, setCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [accepted, setAccepted] = useState(false);
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
   const sendCode = async () => {
-  if (sending) return; setSending(true);
-  try {
-    const { data } = await api.post('/auth/send-code', { email });
-    if (data.email_verification === false) toast.success('No code needed right now, just tap Join');
-    else { setCodeSent(true); toast.success('Code sent, check your inbox'); }
-  }
-  catch (err) { toast.error(err.response?.data?.detail || "Couldn't send code"); }
-  finally { setSending(false); }
+    if (sending || cooldown > 0 || !emailValid) return;
+    setSending(true);
+    try {
+      const { data } = await api.post('/auth/send-code', { email });
+      setCodeSent(true);
+      setCode('');
+      setCooldown(data.resend_in || 60);
+      toast.success(`Code sent to ${email}, check inbox and spam`);
+    } catch (err) {
+      const detail = err.response?.data?.detail || "Couldn't send code";
+      const wait = /Wait (\d+)s/.exec(detail);
+      if (wait) setCooldown(Number(wait[1]));
+      toast.error(detail);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setCode('');
+    setCodeSent(false);
   };
 
   useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
 
+  const canJoin = accepted && emailValid && codeSent && code.length === 6 && username && password.length >= 6;
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (busy) return;
+    if (!isLogin && !canJoin) return;
     setBusy(true);
     try {
       if (isLogin) await login(username, password);
       else await register(username, password, email, code, accepted);
-      toast.success(isLogin ? "Welcome back!" : "Welcome to the crew!");
+      toast.success(isLogin ? "Welcome back!" : "Email verified, welcome to the crew!");
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Something went wrong");
+      const detail = err.response?.data?.detail || "Something went wrong";
+      if (/expired|Too many tries|Request a code/.test(detail)) { setCodeSent(false); setCode(''); setCooldown(0); }
+      toast.error(detail);
     } finally {
       setBusy(false);
     }
   };
-return (
+
+  return (
     <div className="lg:grid lg:grid-cols-2 lg:min-h-screen">
     {/* Desktop brand panel (lg and up only) */}
     <section data-testid="auth-desktop-hero" className="hidden lg:flex relative flex-col justify-between overflow-hidden bg-neutral-950 border-r border-neutral-900 p-14">
@@ -563,13 +592,14 @@ return (
 
       <h1 className="text-5xl font-black italic tracking-tighter mb-2 bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent pr-3">SOLRIDE</h1>
       <p className="text-zinc-500 mb-10 tracking-[0.2em] text-xs">Ride. Track. Earn.</p>
-      
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4" data-testid="auth-form">
         <div className="space-y-2">
           <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Username</label>
-          <input 
-            value={username} 
-            onChange={e => setUsername(e.target.value.toLowerCase().trim())} 
+          <input
+            data-testid="auth-username-input"
+            value={username}
+            onChange={e => setUsername(e.target.value.toLowerCase().trim())}
             className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none transition-colors"
             placeholder="skater_boi"
             autoCapitalize="off"
@@ -580,25 +610,30 @@ return (
         </div>
         <div className="space-y-2">
           <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Password</label>
-          <input 
-            type="password" value={password} onChange={e => setPassword(e.target.value)} 
+          <input
+            data-testid="auth-password-input"
+            type="password" value={password} onChange={e => setPassword(e.target.value)}
             className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none transition-colors"
-            autoComplete="current-password"
+            autoComplete={isLogin ? "current-password" : "new-password"}
           />
+          {!isLogin && password.length > 0 && password.length < 6 && (
+            <p className="text-[11px] text-[#FF3366]">At least 6 characters</p>
+          )}
         </div>
 
-     {!isLogin && (
+        {!isLogin && (
           <>
             <div className="space-y-2">
               <label className="text-[10px] uppercase text-zinc-500 tracking-widest">Email</label>
               <div className="flex gap-2">
-                <input type="email" value={email}
+                <input type="email" value={email} data-testid="auth-email-input"
                   onChange={e => { setEmail(e.target.value.trim()); setCodeSent(false); setCode(''); }}
                   className="flex-1 min-w-0 text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base outline-none"
-                  placeholder="you@email.com" autoCapitalize="off" autoCorrect="off" autoComplete="email" />
-                <button type="button" onClick={sendCode} disabled={sending || !email}
-                  className="px-4 h-12 rounded-xl bg-zinc-800 text-[#D2FF00] text-xs font-bold uppercase disabled:opacity-50">
-                  {sending ? '...' : codeSent ? 'Resend' : 'Send code'}
+                  placeholder="you@email.com" autoCapitalize="off" autoCorrect="off" autoComplete="email" inputMode="email" />
+                <button type="button" onClick={sendCode} disabled={sending || !emailValid || cooldown > 0}
+                  data-testid="auth-send-code-button"
+                  className="px-4 h-12 rounded-xl bg-zinc-800 text-[#D2FF00] text-xs font-bold uppercase whitespace-nowrap disabled:opacity-50">
+                  {sending ? '...' : cooldown > 0 ? `${cooldown}s` : codeSent ? 'Resend' : 'Send code'}
                 </button>
               </div>
             </div>
@@ -606,27 +641,29 @@ return (
               <div className="space-y-2">
                 <label className="text-[10px] uppercase text-zinc-500 tracking-widest">6-digit code</label>
                 <input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                  data-testid="auth-code-input"
+                  inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="------"
                   className="w-full text-white bg-zinc-900/80 border border-zinc-800 focus:border-[#D2FF00]/50 rounded-xl h-12 px-4 text-base tracking-[0.5em] outline-none" />
+                <p className="text-[11px] text-zinc-500" data-testid="auth-code-hint">Sent to {email}. Not there? Check spam.</p>
               </div>
             )}
             <label className="flex items-start gap-3 text-xs text-zinc-400 py-2">
               <input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}
+                data-testid="auth-terms-checkbox"
                 className="mt-0.5 w-5 h-5 accent-[#D2FF00]" />
               <span>I'm 13 or older and agree to the <Link to="/terms" className="text-[#D2FF00] underline">Terms</Link> and <Link to="/privacy" className="text-[#D2FF00] underline">Privacy Policy</Link>. No tolerance for abusive content or users.</span>
             </label>
           </>
         )}
-      
-        <button type="submit" disabled={busy || (!isLogin && (!accepted || !email || (codeSent && code.length !== 6)))}
 
+        <button type="submit" data-testid="auth-submit-button" disabled={busy || (!isLogin && !canJoin)}
           className="w-full bg-[#D2FF00] text-black hover:bg-[#c2eb00] font-semibold tracking-wider rounded-full h-12 text-base mt-2 shadow-[0_0_20px_rgba(210,255,0,0.15)] active:scale-[0.98] transition-all disabled:opacity-50">
-          {busy ? 'Loading...' : isLogin ? 'Login' : 'Join'}
+          {busy ? 'Loading...' : isLogin ? 'Login' : 'Verify & Join'}
         </button>
       </form>
 
       <div className="text-center mt-6">
-        <button onClick={() => setIsLogin(!isLogin)} className="text-xs text-zinc-500 hover:text-[#D2FF00] tracking-wider transition-colors">
+        <button onClick={switchMode} data-testid="auth-switch-mode-button" className="text-xs text-zinc-500 hover:text-[#D2FF00] tracking-wider transition-colors">
           {isLogin ? 'Need an account? Register' : 'Have an account? Login'}
         </button>
       </div>
@@ -636,8 +673,8 @@ return (
           Learn more →
         </Link>
         <span className="text-[10px] tracking-[0.25em] uppercase text-zinc-600">SOLRIDE © 2026</span>
-        </div>
       </div>
+    </div>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-const CONTACT_EMAIL = 'solrideapp@gmai.com';
+const CONTACT_EMAIL = 'solrideapp@gmail.com';
 const OWNER = 'Artsiom Karazei';
 const COUNTRY = 'Belarus';
 
