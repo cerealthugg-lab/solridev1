@@ -332,7 +332,7 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
     document.body
   );
 }
