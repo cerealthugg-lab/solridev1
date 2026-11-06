@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from './ui/sonner';
-import { MapPin, Trash2, Coins, Volume2, VolumeX, Flag } from 'lucide-react';
+import { MapPin, Trash2, Volume2, VolumeX, Flag, MessageCircle, Bookmark, MoreHorizontal, Flame, Loader2 } from 'lucide-react';
 import ReportBlockSheet from './ReportBlockSheet';
+import TrickComments, { timeAgo } from './TrickComments';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -13,43 +14,38 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/**
- * TrickCard — displays a single trick clip.
- * Props:
- *   trick: { id, user_id, spot_id, spot_name, trick_name, caption, video_url,
- *            duration_seconds, tagged_users, tips_received, created_at }
- *   currentUsername: string (for own-trick affordances)
- *   tippedByMe: boolean
- *   onTipped: (trickId) => void
- *   onDeleted: (trickId) => void
- *   autoplay: boolean (feed context)
- */
-function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, autoplay = true }) {
-  const [showRemovedInfo, setShowRemovedInfo] = useState(false);
+// Instagram-style post: header, square clip, action row, then meta + comments under the video.
+function TrickCard({ trick, currentUsername, tippedByMe, savedByMe, onTipped, onSaved, onDeleted, rank, periodLabel }) {
   const [tips, setTips] = useState(Number(trick.tips_received) || 0);
   const [tipped, setTipped] = useState(tippedByMe);
   const [tipping, setTipping] = useState(false);
+  const [saved, setSaved] = useState(savedByMe);
+  const [saving, setSaving] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(trick.comments_count || 0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [holding, setHolding] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [burst, setBurst] = useState(false);
   const videoRef = useRef(null);
+  const pressTimer = useRef(null);
+  const held = useRef(false);
 
   useEffect(() => { setTipped(tippedByMe); }, [tippedByMe]);
+  useEffect(() => { setSaved(savedByMe); }, [savedByMe]);
 
-  // Autoplay when in viewport (TikTok-style)
+  // Play only while on screen
   useEffect(() => {
-    if (!autoplay) return;
     const v = videoRef.current;
     if (!v) return;
     const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) v.play().catch(() => {});
-        else v.pause();
-      },
+      ([entry]) => { if (entry.isIntersecting) v.play().catch(() => {}); else v.pause(); },
       { threshold: 0.6 }
     );
     io.observe(v);
     return () => io.disconnect();
-  }, [autoplay]);
+  }, []);
 
   const isOwn = currentUsername && currentUsername === trick.user_id;
 
@@ -60,10 +56,12 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
       const res = await api.post(`/tricks/${trick.id}/tip`);
       setTips(res.data.new_tips_total);
       setTipped(true);
+      setBurst(true);
+      setTimeout(() => setBurst(false), 700);
       onTipped?.(trick.id);
-      toast.success('Tipped 1 DFQ 🛹');
+      toast.success('Hyped +1 DFQ 🔥');
     } catch (e) {
-      const msg = e.response?.data?.detail || 'Tip failed';
+      const msg = e.response?.data?.detail || 'Hype failed';
       if (String(msg).toLowerCase().includes('already')) setTipped(true);
       toast.error(msg);
     } finally {
@@ -71,7 +69,23 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
     }
   };
 
+  const toggleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const res = await api.post(`/tricks/${trick.id}/save`);
+      setSaved(res.data.saved);
+      onSaved?.(trick.id, res.data.saved);
+      toast.success(res.data.saved ? 'Saved' : 'Removed from saved');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const remove = async () => {
+    setMenuOpen(false);
     if (!window.confirm('Delete this trick?')) return;
     try {
       await api.delete(`/tricks/${trick.id}`);
@@ -82,237 +96,160 @@ function TrickCard({ trick, currentUsername, tippedByMe, onTipped, onDeleted, au
     }
   };
 
-  const pressTimerRef = useRef(null);
-  const [isHolding, setIsHolding] = useState(false);
+  // Tap = mute/unmute, hold = pause (pointer events: one handler for touch + mouse)
+  const onPressStart = () => {
+    held.current = false;
+    pressTimer.current = setTimeout(() => {
+      held.current = true;
+      videoRef.current?.pause();
+      setHolding(true);
+    }, 200);
+  };
+  const onPressEnd = () => {
+    clearTimeout(pressTimer.current);
+    if (held.current) {
+      videoRef.current?.play().catch(() => {});
+      setHolding(false);
+      held.current = false;
+    } else {
+      setMuted((m) => !m);
+    }
+  };
+  const onPressCancel = () => {
+    clearTimeout(pressTimer.current);
+    if (held.current) {
+      videoRef.current?.play().catch(() => {});
+      setHolding(false);
+      held.current = false;
+    }
+  };
 
-  const when = new Date(trick.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-   return (
-    <article
-      data-testid={`trick-card-${trick.id}`}
-      className="w-full h-full relative flex flex-col justify-end bg-black text-white select-none overflow-hidden"
-    >
-      
-      {/* 1. BASE LAYER: Full-Bleed Video Layer with Tap-to-Mute & Hold-to-Pause Actions */}
-      <div 
-        className="absolute inset-0 w-full h-full bg-black z-0 cursor-pointer overflow-hidden"
-        
-        /* 🖱️ DESKTOP/LAPTOP MOUSE EVENTS */
-        onMouseDown={function (e) {
-          e.preventDefault();
-          const v = videoRef.current;
-          if (!v) return;
-          // Set a short 200ms delay window to separate a quick tap from a hold action
-          pressTimerRef.current = setTimeout(function () {
-            v.pause();
-            setIsHolding(true);
-          }, 200);
-        }}
-        onMouseUp={function (e) {
-          e.preventDefault();
-          clearTimeout(pressTimerRef.current);
-          const v = videoRef.current;
-          if (!v) return;
-          
-          if (isHolding) {
-            // If they were holding down, resume playing on release
-            v.play().catch(function(){});
-            setIsHolding(false);
-          } else {
-            // If it was just a fast tap, toggle the audio sound state
-            setMuted(function(m) { return !m; });
-          }
-        }}
-
-        /* 📱 MOBILE TOUCHSCREEN EVENTS (Crucial for Xcode builds) */
-        onTouchStart={function (e) {
-          const v = videoRef.current;
-          if (!v) return;
-          pressTimerRef.current = setTimeout(function () {
-            v.pause();
-            setIsHolding(true);
-          }, 200);
-        }}
-        onTouchEnd={function (e) {
-          clearTimeout(pressTimerRef.current);
-          const v = videoRef.current;
-          if (!v) return;
-          
-          if (isHolding) {
-            v.play().catch(function(){});
-            setIsHolding(false);
-          } else {
-            setMuted(function(m) { return !m; });
-          }
-        }}
-      >
-        <video
-          ref={videoRef}
-          src={trick.video_url}
-          controls={false}
-          loop
-          muted={muted}
-          playsInline
-          preload="metadata"
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Visual pause overlay notification text if user is holding screen */}
-        {isHolding && (
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 pointer-events-none animate-in fade-in duration-100">
-            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-zinc-800 text-xs font-black uppercase tracking-widest text-zinc-400">
-            PAUSED
-            </div>
+  return (
+    <article data-testid={`trick-card-${trick.id}`} className="bg-black border-b border-neutral-900 pb-4">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link to={`/skater/${trick.user_id}`} className="shrink-0 p-[2px] rounded-full bg-gradient-to-tr from-[#D2FF00] to-[#FF3366]">
+            <span className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-xs font-black uppercase text-white">
+              {trick.user_id?.[0]}
+            </span>
+          </Link>
+          <div className="min-w-0 leading-tight">
+            <Link to={`/skater/${trick.user_id}`} data-testid={`trick-user-${trick.id}`} className="block text-sm font-bold text-white truncate">
+              {trick.user_id}
+            </Link>
+            {trick.spot_id && !trick.spot_removed ? (
+              <Link to={`/spots?focus=${trick.spot_id}`} data-testid={`trick-spot-${trick.id}`} className="flex items-center gap-1 text-[11px] text-[#D2FF00] truncate">
+                <MapPin size={10} className="shrink-0" /> <span className="truncate">{trick.spot_name || 'Unknown spot'}</span>
+              </Link>
+            ) : (
+              <span className="text-[11px] text-neutral-500">{trick.spot_name || 'Spot removed'}</span>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Soft immersive dark vignette overlay protecting readable text layers */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none z-0" />
+        <div className="flex items-center gap-1 relative">
+          {rank && (
+            <span data-testid={`trick-rank-${trick.id}`} className={`px-2 h-6 inline-flex items-center rounded-full text-[11px] font-black ${rank <= 3 ? 'bg-[#D2FF00] text-black' : 'bg-neutral-900 text-neutral-400'}`}>
+              #{rank}
+            </span>
+          )}
+          <button onClick={() => setMenuOpen((o) => !o)} data-testid={`trick-menu-${trick.id}`} aria-label="More"
+            className="w-10 h-10 flex items-center justify-center text-neutral-400 hover:text-white">
+            <MoreHorizontal size={20} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-10 z-30 w-44 bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden shadow-xl">
+              {isOwn ? (
+                <button onClick={remove} data-testid={`trick-delete-${trick.id}`} className="w-full flex items-center gap-2 px-4 h-11 text-sm text-[#FF3366] hover:bg-neutral-900">
+                  <Trash2 size={14} /> Delete trick
+                </button>
+              ) : (
+                <button onClick={() => { setMenuOpen(false); setReportOpen(true); }} data-testid={`trick-report-${trick.id}`} className="w-full flex items-center gap-2 px-4 h-11 text-sm text-neutral-200 hover:bg-neutral-900">
+                  <Flag size={14} /> Report or block
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Video */}
+      <div
+        className="relative w-full aspect-square bg-neutral-950 overflow-hidden select-none"
+        style={{ touchAction: 'manipulation', WebkitTouchCallout: 'none' }}
+        onPointerDown={onPressStart}
+        onPointerUp={onPressEnd}
+        onPointerLeave={onPressCancel}
+        onPointerCancel={onPressCancel}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <video ref={videoRef} src={trick.video_url} loop muted={muted} playsInline preload="metadata" className="w-full h-full object-cover" />
+        {holding && (
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+            <span className="bg-black/60 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-neutral-300">Paused</span>
+          </div>
+        )}
+        {burst && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Flame size={96} className="text-[#D2FF00] fill-[#D2FF00] animate-ping" />
+          </div>
+        )}
+        <span className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center pointer-events-none">
+          {muted ? <VolumeX size={14} className="text-neutral-300" /> : <Volume2 size={14} className="text-[#D2FF00]" />}
+        </span>
+      </div>
 
-      {/* 2. OVERLAY LAYER: Right-Aligned Action Control Sidebar Pillar */}
-      <div className="absolute right-3 bottom-24 flex flex-col items-center gap-4 z-20">
-        
-        {/* M2E Token Action Node */}
+      {/* Action row */}
+      <div className="flex items-center gap-1 px-1.5 pt-1.5">
         <button
           onClick={tip}
           disabled={tipping || tipped || isOwn}
           data-testid={`trick-tip-${trick.id}`}
-          className={'w-12 h-12 rounded-2xl flex flex-col items-center justify-center border transition-all transform active:scale-90 ' + (
-            tipped
-              ? 'border-[#D2FF00] bg-[#D2FF00]/20 text-[#D2FF00]'
-              : isOwn
-              ? 'border-neutral-900 bg-neutral-950/40 text-neutral-700 cursor-not-allowed'
-              : 'border-neutral-800/80 bg-black/40 backdrop-blur-md text-white hover:border-[#D2FF00]'
-          )}
-          style={{ minHeight: '48px', minWidth: '48px' }}
+          aria-label="Hype with 1 DFQ"
+          className={`h-11 px-2.5 flex items-center gap-1.5 rounded-full active:scale-90 transition-transform ${tipped ? 'text-[#D2FF00]' : isOwn ? 'text-neutral-700' : 'text-white'}`}
         >
-          <Coins size={18} className={tipping ? "animate-spin" : ""} />
+          {tipping ? <Loader2 size={24} className="animate-spin" /> : <Flame size={24} className={tipped ? 'fill-[#D2FF00]' : ''} />}
+          {!tipped && !isOwn && <span className="text-[11px] font-bold text-neutral-400">1 DFQ</span>}
         </button>
-        <span className={'text-[10px] font-mono font-bold tracking-tight ' + (tipped ? 'text-[#D2FF00]' : 'text-zinc-400')}>
-          {tips}
-        </span>
-
-        {/* Global Inline Audio Mute Key Trigger */}
-        <button
-          type="button"
-          onClick={function (e) { e.stopPropagation(); setMuted(function(m) { return !m; }); }}
-          data-testid={`trick-mute-${trick.id}`}
-          className="w-11 h-11 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full flex items-center justify-center border border-neutral-800/80 transition-all active:scale-90"
-          style={{ minHeight: '44px', minWidth: '44px' }}
-          aria-label={muted ? "Unmute" : "Mute"}
-        >
-          {muted ? <VolumeX size={16} className="text-zinc-400" /> : <Volume2 size={16} className="text-[#D2FF00]" />}
+        <button onClick={() => setCommentsOpen(true)} data-testid={`trick-comments-${trick.id}`} aria-label="Comments"
+          className="w-11 h-11 flex items-center justify-center text-white active:scale-90 transition-transform">
+          <MessageCircle size={24} />
         </button>
-
-        {/* Dynamic Context Deletion Flag (Renders only for the profile creator) */}
-        {isOwn && (
-          <button
-            onClick={remove}
-            className="w-11 h-11 bg-red-950/40 backdrop-blur-md border border-red-500/30 text-red-400 rounded-xl flex items-center justify-center transition-all active:scale-90 mt-2"
-            style={{ minHeight: '44px', minWidth: '44px' }}
-            title="Remove trick segment"
-          >
-            <Trash2 size={16} />
-          </button>
-)}
-        {!isOwn && (
-          <button onClick={() => setReportOpen(true)} aria-label="Report or block"
-            className="w-11 h-11 bg-black/40 backdrop-blur-md border border-neutral-800/80 text-neutral-300 rounded-full flex items-center justify-center active:scale-90 mt-2">
-            <Flag size={16} />
-          </button>
-        )}
+        <button onClick={toggleSave} disabled={saving} data-testid={`trick-save-${trick.id}`} aria-label={saved ? 'Unsave' : 'Save'}
+          className={`ml-auto w-11 h-11 flex items-center justify-center active:scale-90 transition-transform ${saved ? 'text-[#D2FF00]' : 'text-white'}`}>
+          <Bookmark size={24} className={saved ? 'fill-[#D2FF00]' : ''} />
+        </button>
       </div>
 
-      {/* 3. OVERLAY LAYER: Bottom Screen Meta Context Panel Layout (Left-Aligned) */}
-      <div className="p-4 pb-6 z-10 max-w-[84%] text-left space-y-2 pointer-events-auto">
-        
-        {/* Header - Track Metadata Badges */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-tight">
-          <Link
-            to={`/skater/${trick.user_id}`}
-            data-testid={`trick-user-${trick.id}`}
-            className="text-white hover:text-[#D2FF00] bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-xl border border-neutral-800/40 text-xs font-black tracking-wide"
-          >
-            @{trick.user_id}
-          </Link>
-          
-          <span className="text-neutral-500 font-mono text-[9px] lowercase tracking-normal">at</span>
-
-          {trick.spot_id ? (
-            <Link
-              to={`/spots?focus=${trick.spot_id}`}
-              data-testid={`trick-spot-${trick.id}`}
-              className="flex items-center gap-1 text-[#D2FF00] hover:underline bg-black/40 backdrop-blur-md px-2 py-1 rounded-xl border border-[#D2FF00]/10 max-w-[180px] truncate"
-            >
-              <MapPin size={11} className="shrink-0" />
-              <span className="truncate">{trick.spot_name || 'Unknown spot'}</span>
-            </Link>
-          ) : (
-            <span className="relative inline-flex items-center">
-              <button
-                type="button"
-                onClick={function () { setShowRemovedInfo(function(v) { return !v; }); }}
-                className="flex items-center gap-1 text-neutral-500 hover:text-neutral-400 bg-black/20 px-2 py-1 rounded-xl text-xs border border-neutral-900/60"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-neutral-600 inline-block shrink-0" />
-                {trick.spot_name || 'Spot removed'}
-              </button>
-
-              {showRemovedInfo && (
-                <div className="absolute bottom-8 left-0 reconstruction-modal z-30 w-52 p-3 bg-neutral-950 border border-neutral-800 rounded-xl shadow-xl text-left normal-case tracking-normal animate-in fade-in">
-                  <p className="text-[10px] font-black uppercase text-neutral-400 mb-1">Spot History File</p>
-                  {trick.spot_lat && trick.spot_lng ? (
-                    <p className="font-mono text-[10px] text-neutral-500">
-                      GPS: {Number(trick.spot_lat).toFixed(4)}, {Number(trick.spot_lng).toFixed(4)}
-                    </p>
-                  ) : (
-                    <p className="text-[10px] text-neutral-600">No telemetry recorded</p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={function () { setShowRemovedInfo(false); }}
-                    className="mt-2 w-full py-1 text-[11px] font-black uppercase tracking-wider text-neutral-400 bg-neutral-900 border border-neutral-800 rounded-lg hover:text-red-400"
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </span>
+      {/* Meta */}
+      <div className="px-3 space-y-1">
+        <p data-testid={`trick-tips-total-${trick.id}`} className="text-sm font-bold text-white">
+          {tips} DFQ hype
+          {periodLabel && trick.period_tips > 0 && (
+            <span className="ml-2 text-[11px] font-bold text-[#D2FF00]">+{trick.period_tips} {periodLabel}</span>
           )}
-        </div>
-
-        {/* Focus Header Title & Description Section */}
-        <div className="space-y-1 pl-0.5">
-          <div className="text-white text-base font-black tracking-tight uppercase drop-shadow-md">
-            {trick.trick_name}
-          </div>
-          
-          {trick.caption && (
-            <p className="text-sm text-neutral-200 font-medium leading-relaxed line-clamp-3 break-words drop-shadow">
-              {trick.caption}
-            </p>
-          )}
-        </div>
-
-        {/* Interconnected Skater User Handles Map Tethers */}
-        {trick.tagged_users && trick.tagged_users.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5 pl-0.5">
-            {trick.tagged_users.map(function (u) {
-              return (
-                <Link 
-                  key={u} 
-                  to={`/skater/${u}`} 
-                  className="text-[11px] font-bold text-[#00D2FF] hover:text-[#D2FF00] transition-colors"
-                >
-                  @{u}
-                </Link>
-              );
-            })}
+        </p>
+        <p className="text-sm text-neutral-200 break-words">
+          <Link to={`/skater/${trick.user_id}`} className="font-bold text-white mr-1.5">{trick.user_id}</Link>
+          <span className="font-black uppercase tracking-tight text-[#D2FF00] mr-1.5">{trick.trick_name}</span>
+          {trick.caption}
+        </p>
+        {trick.tagged_users?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {trick.tagged_users.map((u) => (
+              <Link key={u} to={`/skater/${u}`} className="text-xs font-bold text-[#00D2FF]">@{u}</Link>
+            ))}
           </div>
         )}
+        <button onClick={() => setCommentsOpen(true)} data-testid={`trick-view-comments-${trick.id}`} className="block text-sm text-neutral-500">
+          {commentsCount > 0 ? `View all ${commentsCount} comment${commentsCount === 1 ? '' : 's'}` : 'Add a comment...'}
+        </button>
+        <span className="block text-[10px] uppercase tracking-wider text-neutral-600">{timeAgo(trick.created_at)}</span>
       </div>
+
+      <TrickComments open={commentsOpen} onClose={() => setCommentsOpen(false)} trick={trick}
+        currentUsername={currentUsername} onCountChange={setCommentsCount} />
       <ReportBlockSheet open={reportOpen} onClose={() => setReportOpen(false)}
         contentType="trick" contentId={trick.id} ownerUsername={trick.user_id}
         onHidden={() => onDeleted?.(trick.id)} />

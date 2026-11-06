@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Video, Loader2, AtSign, Trash2, MapPin, Move } from 'lucide-react';
 import axios from 'axios';
 import { toast } from './ui/sonner';
+import { createPortal } from 'react-dom';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
@@ -134,10 +135,10 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
 
   const canSubmit = !submitting && videoFile && trickName.trim() && duration >= 1 && duration <= MAX_SECONDS;
 
-  return (
+  return createPortal(
     <div
       data-testid="trick-upload-modal"
-      className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm sm:px-4"
+      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm sm:px-4"
       onClick={onClose}
     >
       <div
@@ -332,6 +333,7 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
         </div>
       </div>
     </div>
+    document.body
   );
 }
 

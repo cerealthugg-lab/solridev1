@@ -1128,7 +1128,7 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
             t['spot_removed'] = True
             t['spot_name'] = t.get('spot_name') or 'Unknown spot'
 
-    return tricks
+    return _attach_comment_counts(tricks)
 
 
 @api.get("/tricks/my-tips")
@@ -1352,8 +1352,138 @@ async def delete_trick(trick_id: str, current_user: dict = Depends(get_current_u
             supabase.storage.from_("tricks").remove([key])
     except Exception:
         pass
+    supabase.table('trick_comments').delete().eq('trick_id', trick_id).execute()
+    supabase.table('trick_saves').delete().eq('trick_id', trick_id).execute()
     supabase.table('tricks').delete().eq('id', trick_id).execute()
     return {"message": "Trick removed"}
+
+# ============ TRICK SOCIAL: comments, saves, top hype ============
+MAX_COMMENT_LENGTH = 300
+
+
+class TrickCommentIn(BaseModel):
+    content: str
+
+
+def _attach_spot_names(tricks):
+    spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
+    names = {}
+    if spot_ids:
+        srs = supabase.table('spots').select('id, name').in_('id', spot_ids).execute()
+        names = {s['id']: s['name'] for s in (srs.data or [])}
+    for t in tricks:
+        t['spot_removed'] = t.get('spot_id') not in names
+        t['spot_name'] = names.get(t.get('spot_id')) or t.get('spot_name') or 'Unknown spot'
+    return tricks
+
+
+def _attach_comment_counts(tricks, blocked=frozenset()):
+    ids = [t['id'] for t in tricks]
+    counts = {}
+    if ids:
+        r = supabase.table('trick_comments').select('trick_id, username').in_('trick_id', ids).execute()
+        for c in (r.data or []):
+            if c.get('username') in blocked:
+                continue
+            counts[c['trick_id']] = counts.get(c['trick_id'], 0) + 1
+    for t in tricks:
+        t['comments_count'] = counts.get(t['id'], 0)
+    return tricks
+
+
+@api.get("/tricks/top")
+async def top_tricks(period: str = "day", limit: int = 20, current_user: Optional[dict] = Depends(get_optional_user)):
+    """Most DFQ-hyped tricks in the last 24h ('day') or 7 days ('week')."""
+    if period not in ("day", "week"):
+        raise HTTPException(400, "period must be 'day' or 'week'")
+    hours = 24 * 7 if period == "week" else 24
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    tips = supabase.table('trick_tips').select('trick_id, amount').gte('created_at', cutoff).execute()
+    totals = {}
+    for tip in (tips.data or []):
+        totals[tip['trick_id']] = totals.get(tip['trick_id'], 0) + float(tip.get('amount') or 0)
+    if not totals:
+        return []
+    top_ids = sorted(totals, key=totals.get, reverse=True)[:max(1, min(limit, 50))]
+    blocked = _blocked_set(current_user['username'] if current_user else None)
+    tricks = _visible(supabase.table('tricks').select('*').in_('id', top_ids).execute().data or [], blocked)
+    for t in tricks:
+        t['period_tips'] = totals.get(t['id'], 0)
+    tricks.sort(key=lambda t: t['period_tips'], reverse=True)
+    return _attach_comment_counts(_attach_spot_names(tricks), blocked)
+
+
+@api.get("/tricks/my-saves")
+async def my_saved_tricks(current_user: dict = Depends(get_current_user)):
+    res = supabase.table('trick_saves').select('trick_id').eq('username', current_user['username']).execute()
+    return {"saved_trick_ids": [s['trick_id'] for s in (res.data or [])]}
+
+
+@api.post("/tricks/{trick_id}/save")
+async def toggle_save_trick(trick_id: str, current_user: dict = Depends(get_current_user)):
+    me = current_user['username']
+    if not supabase.table('tricks').select('id').eq('id', trick_id).execute().data:
+        raise HTTPException(404, "Trick not found")
+    existing = supabase.table('trick_saves').select('id').eq('trick_id', trick_id).eq('username', me).execute()
+    if existing.data:
+        supabase.table('trick_saves').delete().eq('id', existing.data[0]['id']).execute()
+        return {"saved": False}
+    supabase.table('trick_saves').insert({
+        'id': str(uuid.uuid4()),
+        'trick_id': trick_id,
+        'username': me,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }).execute()
+    return {"saved": True}
+
+
+@api.get("/tricks/{trick_id}/comments")
+async def get_trick_comments(trick_id: str, current_user: Optional[dict] = Depends(get_optional_user)):
+    res = supabase.table('trick_comments').select('*').eq('trick_id', trick_id).order('created_at').limit(200).execute()
+    blocked = _blocked_set(current_user['username'] if current_user else None)
+    return [c for c in (res.data or []) if c.get('username') not in blocked]
+
+
+@api.post("/tricks/{trick_id}/comments")
+async def add_trick_comment(trick_id: str, body: TrickCommentIn, current_user: dict = Depends(get_current_user)):
+    content = body.content.strip()
+    if not content:
+        raise HTTPException(400, "Comment is empty")
+    if len(content) > MAX_COMMENT_LENGTH:
+        raise HTTPException(400, f"Max {MAX_COMMENT_LENGTH} characters")
+    if profanity.contains_profanity(content.lower()):
+        raise HTTPException(400, "Keep it clean, that comment has blocked words")
+    trick = supabase.table('tricks').select('user_id').eq('id', trick_id).execute()
+    if not trick.data:
+        raise HTTPException(404, "Trick not found")
+    me = current_user['username']
+    if _is_blocked(me, trick.data[0]['user_id']):
+        raise HTTPException(403, "You can't comment on this trick")
+    row = {
+        'id': str(uuid.uuid4()),
+        'trick_id': trick_id,
+        'username': me,
+        'content': content,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    supabase.table('trick_comments').insert(row).execute()
+    return row
+
+
+@api.delete("/tricks/comments/{comment_id}")
+async def delete_trick_comment(comment_id: str, current_user: dict = Depends(get_current_user)):
+    res = supabase.table('trick_comments').select('id, username, trick_id').eq('id', comment_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Comment not found")
+    c = res.data[0]
+    me = current_user['username']
+    if c['username'] != me:
+        owner = supabase.table('tricks').select('user_id').eq('id', c['trick_id']).execute()
+        if not owner.data or owner.data[0]['user_id'] != me:
+            raise HTTPException(403, "Not your comment")
+    supabase.table('trick_comments').delete().eq('id', comment_id).execute()
+    return {"ok": True}
+
             
             
       # ============ PROFILES + DIRECT MESSAGES ============
@@ -1553,6 +1683,8 @@ def _delete_trick_fully(trick_id):
         if key:
             _safe(lambda: supabase.storage.from_("tricks").remove([key]))
     _safe(lambda: supabase.table('trick_tips').delete().eq('trick_id', trick_id).execute())
+    _safe(lambda: supabase.table('trick_comments').delete().eq('trick_id', trick_id).execute())
+    _safe(lambda: supabase.table('trick_saves').delete().eq('trick_id', trick_id).execute())
     supabase.table('tricks').delete().eq('id', trick_id).execute()
 
 def _delete_spot_fully(spot_id):
@@ -1574,6 +1706,8 @@ async def delete_my_account(data: DeleteAccount, current_user: dict = Depends(ge
     for x in ((t and t.data) or []):
         _safe(lambda tid=x['id']: _delete_trick_fully(tid))
     _safe(lambda: supabase.table('trick_tips').delete().eq('tipper_id', me).execute())
+    _safe(lambda: supabase.table('trick_comments').delete().eq('username', me).execute())
+    _safe(lambda: supabase.table('trick_saves').delete().eq('username', me).execute())
     s = _safe(lambda: supabase.table('spots').select('id').eq('user_id', me).execute())
     for x in ((s and s.data) or []):
         _safe(lambda sid=x['id']: _delete_spot_fully(sid))

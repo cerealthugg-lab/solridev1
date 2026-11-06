@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Flame, Loader2, Sparkles, Trophy, Flag } from 'lucide-react';
+import { Flame, Loader2, Sparkles, Trophy } from 'lucide-react';
 import TrickCard from './TrickCard';
-import ReportBlockSheet from './ReportBlockSheet';
+import { toast } from './ui/sonner';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 api.interceptors.request.use((config) => {
@@ -12,163 +13,149 @@ api.interceptors.request.use((config) => {
 });
 
 const PAGE_SIZE = 20;
+const PERIODS = [
+  { key: 'day', label: 'Today', badge: 'today' },
+  { key: 'week', label: 'This week', badge: 'this week' },
+];
+
+const Tab = ({ active, onClick, children, testId }) => (
+  <button onClick={onClick} data-testid={testId}
+    className={`px-4 h-9 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors ${active ? 'bg-[#D2FF00] text-black' : 'text-neutral-400 hover:text-white'}`}>
+    {children}
+  </button>
+);
 
 export default function TricksFeed({ currentUser }) {
+  const [mode, setMode] = useState('fresh');
+  const [period, setPeriod] = useState('day');
   const [tricks, setTricks] = useState([]);
   const [tippedIds, setTippedIds] = useState(new Set());
+  const [savedIds, setSavedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [reachedEnd, setReachedEnd] = useState(false);
 
-  const loadTipped = useCallback(async () => {
-    try {
-      const res = await api.get('/tricks/my-tips');
-      setTippedIds(new Set(res.data.tipped_trick_ids || []));
-    } catch (_e) {}
+  const loadMine = useCallback(async () => {
+    const [tips, saves] = await Promise.allSettled([api.get('/tricks/my-tips'), api.get('/tricks/my-saves')]);
+    if (tips.status === 'fulfilled') setTippedIds(new Set(tips.value.data.tipped_trick_ids || []));
+    if (saves.status === 'fulfilled') setSavedIds(new Set(saves.value.data.saved_trick_ids || []));
   }, []);
 
-  const loadPage = useCallback(async (nextOffset) => {
-    const res = await api.get('/tricks/feed', {
-      params: { limit: PAGE_SIZE, offset: nextOffset },
-    });
-    return res.data || [];
-  }, []);
+  useEffect(() => { loadMine(); }, [loadMine]);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const [firstPage] = await Promise.all([loadPage(0), loadTipped()]);
-        if (cancelled) return;
-        setTricks(firstPage);
-        setOffset(firstPage.length);
-        setReachedEnd(firstPage.length < PAGE_SIZE);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    setLoading(true);
+    setTricks([]);
+    const req = mode === 'top'
+      ? api.get('/tricks/top', { params: { period } })
+      : api.get('/tricks/feed', { params: { limit: PAGE_SIZE, offset: 0 } });
+    req.then((r) => {
+      if (cancelled) return;
+      const rows = r.data || [];
+      setTricks(rows);
+      setOffset(rows.length);
+      setReachedEnd(mode === 'top' || rows.length < PAGE_SIZE);
+    })
+      .catch(() => { if (!cancelled) toast.error("Couldn't load tricks"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [loadPage, loadTipped]);
+  }, [mode, period]);
 
   const loadMore = async () => {
     if (loadingMore || reachedEnd) return;
     setLoadingMore(true);
     try {
-      const more = await loadPage(offset);
+      const res = await api.get('/tricks/feed', { params: { limit: PAGE_SIZE, offset } });
+      const more = res.data || [];
       setTricks((prev) => [...prev, ...more]);
       setOffset(offset + more.length);
       if (more.length < PAGE_SIZE) setReachedEnd(true);
+    } catch (_e) {
+      toast.error("Couldn't load more");
     } finally {
       setLoadingMore(false);
     }
   };
 
-  const handleTipped = (trickId) => {
-    setTippedIds((prev) => new Set(prev).add(trickId));
-  };
-  const handleDeleted = (trickId) => {
-    setTricks((prev) => prev.filter((t) => t.id !== trickId));
-  };
+  const handleTipped = (id) => setTippedIds((prev) => new Set(prev).add(id));
+  const handleSaved = (id, saved) => setSavedIds((prev) => {
+    const next = new Set(prev);
+    if (saved) next.add(id); else next.delete(id);
+    return next;
+  });
+  const handleDeleted = (id) => setTricks((prev) => prev.filter((t) => t.id !== id));
+  const periodBadge = PERIODS.find((p) => p.key === period)?.badge;
 
   return (
-    /* IMMERSIVE VERTICAL TRACKER: Pins the viewport height to lock full-bleed video components inside screen bounds */
-    <div className="h-screen w-full bg-black text-white flex flex-col font-sans antialiased overflow-hidden selection:bg-[#D2FF00] selection:text-black">
-      
-      {/* 1. FIXED REELS-STYLE SOCIAL HEADER */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/90 backdrop-blur-md border-b border-neutral-900/60 shrink-0 h-14">
-        <div className="flex items-center gap-2">
-          <Flame size={16} className="text-[#FF3366] fill-[#FF3366] animate-pulse" />
-          <h1 className="text-base font-black uppercase tracking-tighter italic text-white">Trick Stream</h1>
-        </div>
-
-        {/* ALGORITHMIC DUAL SEGMENT FILTER TABS (Instagram Style View Options) */}
-        <div className="flex bg-neutral-900/80 p-0.5 rounded-xl border border-neutral-800/60 text-[10px] font-black uppercase tracking-wider">
-          <button className="px-3 py-1 bg-[#D2FF00] text-black rounded-lg transition-all shadow-md">
-            Nearby
-          </button>
-          <button className="px-3 py-1 text-neutral-400 hover:text-white transition-all">
-            Top Hype
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1 bg-[#D2FF00]/10 border border-[#D2FF00]/20 px-2.5 py-1 rounded-xl">
-          <Sparkles size={10} className="text-[#D2FF00]" />
-          <span className="text-[8px] font-black uppercase tracking-widest text-[#D2FF00] font-mono">M2E Live</span>
-        </div>
-      </header>
-
-      {/* 2. MAIN SNAP-MANDATORY STREAM VIEWPORT - This segment behaves exactly like Instagram Reels */}
-      <div className="flex-1 w-full max-w-md mx-auto relative bg-neutral-950">
-        
-        {loading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-neutral-500 text-xs font-bold uppercase tracking-widest gap-2 bg-black">
-            <Loader2 size={22} className="animate-spin text-[#D2FF00]" />
-            <span className="font-mono text-[10px]">Syncing Street Logs...</span>
+    <div className="-mx-4 lg:mx-0 max-w-md lg:max-w-xl mx-auto bg-black text-white min-h-screen" data-testid="tricks-feed">
+      {/* Header + Fresh / Top Hype switch */}
+      <div className="px-4 pt-4 pb-3 border-b border-neutral-900 space-y-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-2">
+            <Flame size={18} className="text-[#FF3366] fill-[#FF3366]" /> Tricks
+          </h1>
+          <div className="flex bg-neutral-900 p-1 rounded-full border border-neutral-800">
+            <Tab active={mode === 'fresh'} onClick={() => setMode('fresh')} testId="feed-tab-fresh"><Sparkles size={12} /> Fresh</Tab>
+            <Tab active={mode === 'top'} onClick={() => setMode('top')} testId="feed-tab-top"><Flame size={12} /> Top Hype</Tab>
           </div>
-        ) : tricks.length === 0 ? (
-          <div className="absolute inset-x-4 top-1/3 p-8 bg-black border border-neutral-900 rounded-2xl text-center space-y-4">
-            <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto border border-neutral-800">
-              <Trophy size={18} className="text-neutral-500" />
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-neutral-200">No clips dropped yet</p>
-              <p className="text-[11px] text-neutral-500 mt-1 max-w-[220px] mx-auto leading-relaxed">
-                Open a spot on your local radar map and drop the first session clip! 🛹
-              </p>
-            </div>
-          </div>
-        ) : (
-          /* VERTICAL SNAPPING VEHICLE CANVASES */
-          <div 
-            className="h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth custom-scrollbar pb-16" 
-            data-testid="tricks-feed-list"
-          >
-            {tricks.map((t) => (
-              <div 
-                key={t.id} 
-                className="w-full h-full snap-start shrink-0 relative flex flex-col justify-end bg-black border-b border-neutral-900/40"
-              >
-                {/* 
-                  REELS COMPONENT INJECTION:
-                  TrickCard handles your base absolute asset layers, vertical overlays,
-                  and interaction buttons perfectly while layout parameters constrain boundaries edge-to-edge.
-                */}
-                <TrickCard
-                  trick={t}
-                  currentUsername={currentUser?.username}
-                  tippedByMe={tippedIds.has(t.id)}
-                  onTipped={handleTipped}
-                  onDeleted={handleDeleted}
-                  autoplay
-                />
-              </div>
+        </div>
+        {mode === 'top' && (
+          <div className="flex gap-2">
+            {PERIODS.map((p) => (
+              <button key={p.key} onClick={() => setPeriod(p.key)} data-testid={`feed-period-${p.key}`}
+                className={`px-3 h-8 rounded-full border text-xs font-bold transition-colors ${period === p.key ? 'border-[#D2FF00]/60 bg-[#D2FF00]/10 text-[#D2FF00]' : 'border-neutral-800 text-neutral-400'}`}>
+                {p.label}
+              </button>
             ))}
-
-            {/* Pagination Controls Footer Container - Built right inside scrolling flow tracks */}
-            <div className="snap-start shrink-0 w-full h-full flex flex-col items-center justify-center bg-black p-6 border-t border-neutral-900">
-              {!reachedEnd ? (
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  data-testid="tricks-feed-load-more"
-                  className="w-full max-w-xs h-12 bg-neutral-900 border border-neutral-800 text-[#D2FF00] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 rounded-2xl active:scale-[0.96] transition-all hover:bg-neutral-800"
-                >
-                  {loadingMore ? (
-                    <><Loader2 size={14} className="animate-spin text-[#D2FF00]" /> Fetching Sessions...</>
-                  ) : (
-                    'Load More Clips'
-                  )}
-                </button>
-              ) : (
-                <div className="text-center text-neutral-600 text-[10px] uppercase tracking-widest font-black py-4 select-none font-mono">
-                  ⚡ Basecamp Cache Fully Caught Up ⚡
-                </div>
-              )}
-            </div>
+            <span className="ml-auto self-center text-[10px] uppercase tracking-widest text-neutral-600 font-bold">Most DFQ hyped</span>
           </div>
         )}
       </div>
+
+      {loading ? (
+        <div className="py-24 flex flex-col items-center gap-2 text-neutral-500 text-xs font-bold uppercase tracking-widest" data-testid="tricks-feed-loading">
+          <Loader2 size={22} className="animate-spin text-[#D2FF00]" /> Loading tricks...
+        </div>
+      ) : tricks.length === 0 ? (
+        <div className="mx-4 mt-10 p-8 border border-neutral-900 rounded-2xl text-center space-y-3" data-testid="tricks-feed-empty">
+          <Trophy size={20} className="text-neutral-500 mx-auto" />
+          <p className="text-sm font-black uppercase text-neutral-200">
+            {mode === 'top' ? `No hype ${periodBadge} yet` : 'No clips dropped yet'}
+          </p>
+          <p className="text-xs text-neutral-500">
+            {mode === 'top' ? 'Hype a trick with 1 DFQ to put it on the board.' : 'Open a spot on the map and drop the first clip 🛹'}
+          </p>
+        </div>
+      ) : (
+        <div data-testid="tricks-feed-list">
+          {tricks.map((t, i) => (
+            <TrickCard
+              key={t.id}
+              trick={t}
+              currentUsername={currentUser?.username}
+              tippedByMe={tippedIds.has(t.id)}
+              savedByMe={savedIds.has(t.id)}
+              onTipped={handleTipped}
+              onSaved={handleSaved}
+              onDeleted={handleDeleted}
+              rank={mode === 'top' ? i + 1 : undefined}
+              periodLabel={mode === 'top' ? periodBadge : undefined}
+            />
+          ))}
+          <div className="py-8 flex justify-center">
+            {!reachedEnd ? (
+              <button onClick={loadMore} disabled={loadingMore} data-testid="tricks-feed-load-more"
+                className="h-11 px-6 rounded-full bg-neutral-900 border border-neutral-800 text-[#D2FF00] text-xs font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform">
+                {loadingMore ? <><Loader2 size={14} className="animate-spin" /> Loading...</> : 'Load more'}
+              </button>
+            ) : (
+              <span className="text-[10px] uppercase tracking-widest font-black text-neutral-600">You're all caught up</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
