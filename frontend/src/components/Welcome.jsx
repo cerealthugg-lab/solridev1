@@ -29,7 +29,7 @@ const Section = ({ icon: Icon, eyebrow, title, accent = "#D2FF00", children }) =
   </div>
 );
 
-const Welcome = () => {
+  const Welcome = () => {
   const navigate = useNavigate();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -40,7 +40,7 @@ const Welcome = () => {
   }, [navigate]);
 
   return (
-    <div data-testid="welcome-screen" className="fixed inset-0 bg-[#09090b] text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black overflow-y-auto">
+    <div data-testid="welcome-screen" className="fixed inset-0 bg-[#09090b] text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black overflow-x-hidden overflow-y-auto">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50" />
       <div className="absolute -top-40 -left-32 w-[420px] h-[420px] rounded-full bg-[#D2FF00]/10 blur-3xl pointer-events-none" />
       <div className="absolute top-[420px] -right-40 w-[380px] h-[380px] rounded-full bg-[#FF3366]/10 blur-3xl pointer-events-none" />
@@ -67,9 +67,9 @@ const Welcome = () => {
           <p className="mt-3 text-sm sm:text-base lg:text-lg text-neutral-400 leading-relaxed max-w-sm lg:max-w-md">
             Track your rides, drop tricks, find spots and link up with skaters near you.
           </p>
-          <div className="mt-6 flex gap-2 overflow-x-auto -mx-5 px-5 lg:mx-0 lg:px-0 pb-1" style={{ scrollbarWidth: "none" }}>
+          <div className="mt-6 flex flex-wrap gap-2">
             {FEATURES.map(({ icon: Icon, label, color }) => (
-              <span key={label} className="shrink-0 inline-flex items-center gap-2 px-3 h-9 rounded-full bg-neutral-900/80 border border-neutral-800 text-xs font-semibold text-neutral-300">
+              <span key={label} className="inline-flex items-center gap-2 px-3 h-9 rounded-full bg-neutral-900/80 border border-neutral-800 text-xs font-semibold text-neutral-300">
                 <Icon size={14} style={{ color }} /> {label}
               </span>
             ))}
