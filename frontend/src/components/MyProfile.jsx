@@ -48,9 +48,9 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   return (
     <div className="min-h-screen bg[#09090b] text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
       {/* Immersive Social Top Navigation Bar (phone only) */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#09090b]/80 backdrop-blur-md border-b border-neutral-900">
-        <span className="font-black tracking-tight text-sm lowercase">@{user.username}</span>
-        <span className="font-extrabold text-[10px] uppercase tracking-widest text-neutral-500">My Basecamp</span>
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-5 pb-3.5 bg-[#09090b]/90 backdrop-blur-md border-b border-neutral-900" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 14px)' }}>
+        <span className="font-black tracking-tight text-lg text-white">@{user.username}</span>
+        <span className="font-extrabold text-[11px] uppercase tracking-widest text-neutral-400">My Basecamp</span>
       </header>
 
       <div className="px-4 pt-6 pb-4 space-y-6 max-w-md mx-auto lg:max-w-none lg:p-0 lg:space-y-0 lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-x-10 lg:gap-y-6 lg:items-start">

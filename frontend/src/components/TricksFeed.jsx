@@ -91,10 +91,10 @@ export default function TricksFeed({ currentUser }) {
   return (
     <div className="w-full max-w-md lg:max-w-xl mx-auto bg-[#09090b] text-white min-h-screen" data-testid="tricks-feed">
       {/* Header + Fresh / Top Hype switch */}
-      <div className="px-4 pt-4 pb-3 border-b border-neutral-900 space-y-3">
+      <div className="px-4 pt-4 pb-3 border-b border-neutral-900 space-y-3 sticky top-0 z-30 bg-[09090b]/90 backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-2">
-            <Flame size={18} className="text-[#FF3366] fill-[#FF3366]" /> Tricks
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            <Flame size={20} className="text-[#FF3366] fill-[#FF3366]" /> Tricks
           </h1>
           <div className="flex bg-neutral-900 p-1 rounded-full border border-neutral-800">
             <Tab active={mode === 'fresh'} onClick={() => setMode('fresh')} testId="feed-tab-fresh"><Sparkles size={12} /> Fresh</Tab>

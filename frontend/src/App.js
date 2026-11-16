@@ -476,12 +476,12 @@ const OnlineBadge = ({ className = '' }) => (
       <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 lg:pb-8 max-w-md lg:max-w-none mx-auto lg:ml-64 lg:mr-0 lg:flex-1 relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900 lg:border-x-0">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50 lg:hidden"></div>
 
-        {/* X RIDERS ONLINE badge - mobile only, desktop shows it in the sidebar */}
+        {/* X RIDERS ONLINE badge - mobile only, desktop shows it in the sidebar 
         <div data-testid="online-riders-badge" className="fixed top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none lg:hidden">
           <OnlineBadge />
-        </div>
+        </div>*/}
 
-     <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4 pt-8'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>{children}</main>
+     <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`} style={{ paddingTop: ['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 0 : 'calc(env(safe-area-inset-top) + 14px)' }}> {children} </main>
 
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
           {navItems.map(({ path, icon: Icon, label }) => (
@@ -710,7 +710,8 @@ const Dashboard = () => {
       {/* Greeting */}
       <div className="flex items-center justify-between pt-2">
         <div className="min-w-0">
-          <p className="text-xs text-neutral-500">Welcome back</p>
+         
+         {/* <p className="text-xs text-neutral-500">Welcome back</p>*/}
           <h1 className="text-2xl font-black tracking-tight text-white truncate">@{user.username}</h1>
         </div>
         <Link to="/profile" data-testid="dashboard-avatar-link" className="shrink-0">
