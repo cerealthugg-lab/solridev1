@@ -15,6 +15,8 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const fileRef = useRef(null);
   const [editing, setEditing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [active, setActive] = useState(null);
+  const [tricks, setTricks] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     full_name: "", deck_size: "", deck_company: "", fav_trick: "", fav_spot: "", self_comment: "", birth_date: "",
@@ -27,6 +29,13 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
       birth_date: user.birth_date || "",
     });
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.username) return;
+    api.get('/tricks/user/${user.username}')
+     .then(r => setTricks(r.data || []))
+     .catch(() => {}); }, [user?.username]);
+
 
   if (!user) return null;
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
@@ -207,7 +216,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           {/* INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
           <div className="px-5 lg:px-1 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] lg:text-xs font-black uppercase tracking-widest mt-6 lg:mt-0 shrink-0 select-none">
             <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
-              My Clips ({user.tricks?.length || 0})
+              My Clips ({tricks.length})
             </span>
             <span className="text-neutral-500 pb-2 cursor-pointer hover:text-white transition-colors">
               Saved Spots
@@ -216,27 +225,28 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
 
           {/* TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
           <div className="grid grid-cols-3 gap-0.5 lg:gap-1.5 bg-neutral-950 lg:bg-transparent flex-grow p-0.5 lg:p-0 lg:pt-4 min-h-[350px]">
-            {user.tricks && user.tricks.length > 0 ? (
-              user.tricks.map(function (trick) {
+            
+           {tricks.length > 0 ? (
+              tricks.map(function (trick, i) {
                 return (
-                  <Link 
-                    to={`/tricks?focus=${trick.id}`} 
-                    key={trick.id} 
-                    className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl"
-                  >
+                  <button
+                    key={trick.id}
+                    onClick={() => setActive(i)}
+                    className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl active:scale-95 transition-all">
+
                     <video 
                       src={trick.video_url} 
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
                       preload="metadata"
                       muted
-                      playsInline
-                    />
+                      playsInline/>
                     <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
-                      ▶ {trick.tips_received || 0}
+                    ▶ {trick.tips_received || 0}
                     </div>
-                  </Link>
-                );
-              })
+                  </button>
+              );
+            })
+              
             ) : (
               <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none lg:rounded-2xl lg:border lg:border-dashed lg:border-neutral-800">
                 <p className="text-[10px] font-black uppercase tracking-widest font-sans">No clips catalogued</p>
@@ -247,6 +257,8 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             )}
           </div>
         </section>
+
+        {active !== null && <TrickFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} />}
 
         {/* feedback + logout 
         <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
@@ -522,6 +534,61 @@ function DeleteAccountDialog({ open, onClose, api, logout }) {
             {busy ? "Deleting..." : "Delete"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TrickFeedViewer({ tricks, startIndex, onClose }) {
+  const containerRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (el) el.scrollTop = startIndex * el.clientHeight;
+  }, [startIndex]);
+  return (
+    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
+      <button onClick={onClose} className="fixed top-4 right-4 z-20 text-white text-3xl font-light bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform">×</button>
+      {tricks.map((t) => <TrickSlide key={t.id} trick={t} />)}
+    </div>
+  );
+}
+
+function TrickSlide({ trick }) {
+  const vref = React.useRef(null);
+  const holdTimer = React.useRef(null);
+  const held = React.useRef(false);
+  const [muted, setMuted] = React.useState(true);
+
+  React.useEffect(() => {
+    const v = vref.current;
+    if (!v) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) v.play?.().catch(() => {}); else v.pause?.();
+    }, { threshold: 0.6 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+
+  const down = () => {
+    held.current = false;
+    holdTimer.current = setTimeout(() => { held.current = true; vref.current?.pause(); }, 200);
+  };
+  const up = () => {
+    clearTimeout(holdTimer.current);
+    if (held.current) vref.current?.play?.().catch(() => {});
+    else setMuted((m) => !m);
+  };
+
+  return (
+    <div
+      onMouseDown={down} onMouseUp={up}
+      onTouchStart={down} onTouchEnd={up}
+      className="relative h-[100dvh] w-full snap-start snap-always bg-black flex items-center justify-center"
+    >
+      <video ref={vref} src={trick.video_url} loop muted={muted} playsInline className="w-full h-full object-cover" />
+      <div className="absolute bottom-6 left-4 right-16 z-10 pointer-events-none drop-shadow-md">
+        <p className="text-sm font-black uppercase tracking-wider text-[#D2FF00]">⚡ {trick.tips_received ?? 0} Tips</p>
+        <p className="text-xs text-white/80 mt-1">{trick.description || "Skate session upload"}</p>
       </div>
     </div>
   );

@@ -129,13 +129,13 @@ function TrickCard({ trick, currentUsername, tippedByMe, savedByMe, onTipped, on
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to={`/skater/${trick.user_id}`} className="shrink-0 p-[2px] rounded-full bg-gradient-to-tr from-[#D2FF00] to-[#FF3366]">
+          <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} className="shrink-0 p-[2px] rounded-full bg-gradient-to-tr from-[#D2FF00] to-[#FF3366]">
             <span className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-xs font-black uppercase text-white">
               {trick.user_id?.[0]}
             </span>
           </Link>
           <div className="min-w-0 leading-tight">
-            <Link to={`/skater/${trick.user_id}`} data-testid={`trick-user-${trick.id}`} className="block text-sm font-bold text-white truncate">
+            <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} data-testid={`trick-user-${trick.id}`} className="block text-sm font-bold text-white truncate">
               {trick.user_id}
             </Link>
             {trick.spot_id && !trick.spot_removed ? (
@@ -231,7 +231,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, savedByMe, onTipped, on
           )}
         </p>
         <p className="text-sm text-neutral-200 break-words">
-          <Link to={`/skater/${trick.user_id}`} className="font-bold text-white mr-1.5">{trick.user_id}</Link>
+          <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} className="font-bold text-white mr-1.5">{trick.user_id}</Link>
           <span className="font-black uppercase tracking-tight text-[#D2FF00] mr-1.5">{trick.trick_name}</span>
           {trick.caption}
         </p>
