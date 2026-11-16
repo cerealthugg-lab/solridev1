@@ -58,7 +58,7 @@ const Section = ({ icon: Icon, eyebrow, title, accent = "#D2FF00", children }) =
           <span className="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-[#D2FF00]/10 border border-[#D2FF00]/20 text-[11px] font-semibold text-[#D2FF00]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#D2FF00] animate-pulse" /> Skate social · Move to earn
           </span>
-          <h1 data-testid="welcome-headline" className="mt-5 text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-black italic tracking-tighter bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent leading-none pr-4 lg:[r-10">
+          <h1 data-testid="welcome-headline" className="mt-5 text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-black italic tracking-tighter bg-gradient-to-br from-[#D2FF00] to-[#ffffff] bg-clip-text text-transparent leading-none pr-4 lg:pr-10">
             SOLRIDE
           </h1>
           <p className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
