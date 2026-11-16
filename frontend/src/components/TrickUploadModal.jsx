@@ -13,10 +13,8 @@ api.interceptors.request.use((config) => {
 });
 
 const TRICK_PRESETS = [
-  'Ollie', 'Kickflip', 'Heelflip', 'Pop shove-it', 'Varial flip',
-  '360 flip', 'Hardflip', 'Nollie', 'Fakie flip', 'Manual',
-  'Nose manual', '50-50', 'Boardslide', 'Nosegrind', '5-0',
-  'Crooked grind', 'Feeble', 'Smith', 'Bluntslide', 'Impossible',
+  'Nollie', 'Switch', 'Fakie', 'B/S', 'F/S',
+
 ];
 const QUICK_PICKS = TRICK_PRESETS.slice(0, 8);
 
