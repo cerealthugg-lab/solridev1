@@ -32,7 +32,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
 
   useEffect(() => {
     if (!user?.username) return;
-    api.get('/tricks/user/${user.username}')
+    api.get(`/tricks/user/${user.username}`)
      .then(r => setTricks(r.data || []))
      .catch(() => {}); }, [user?.username]);
 
