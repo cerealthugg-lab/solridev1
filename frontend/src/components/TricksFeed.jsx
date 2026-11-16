@@ -91,7 +91,7 @@ export default function TricksFeed({ currentUser }) {
   return (
     <div className="w-full max-w-md lg:max-w-xl mx-auto bg-[#09090b] text-white min-h-screen" data-testid="tricks-feed">
       {/* Header + Fresh / Top Hype switch */}
-      <div className="px-4 pt-4 pb-3 border-b border-neutral-900 space-y-3 sticky top-0 z-30 bg-[09090b]/90 backdrop-blur-md">
+      <div className="px-4 pb-3 border-b border-neutral-900 space-y-3 sticky top-0 z-30 bg-[#09090b]/90 backdrop-blur-md" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
             <Flame size={20} className="text-[#FF3366] fill-[#FF3366]" /> Tricks

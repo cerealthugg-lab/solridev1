@@ -1111,6 +1111,15 @@ async def tricks_feed(limit: int = 20, offset: int = 0):
         'created_at', desc=True
     ).range(offset, offset + limit - 1).execute()
     tricks = res.data or []
+        # Attach uploader photo_url
+    unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+    user_map = {}
+    if unames:
+        urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+        user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+    for t in tricks:
+        t['user_photo_url'] = user_map.get(t.get('user_id'))
+    
 
     # Attach spot name for each trick (single roundtrip)
     spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
@@ -1154,8 +1163,15 @@ async def tricks_by_user(username: str):
     res = supabase.table('tricks').select('*').eq(
         'user_id', username
     ).order('created_at', desc=True).execute()
-
     tricks = res.data or []
+        # Attach uploader photo_url
+    unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+    user_map = {}
+    if unames:
+        urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+        user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+    for t in tricks:
+        t['user_photo_url'] = user_map.get(t.get('user_id'))
     # Attach spot name for the profile page
     spot_ids = list({t['spot_id'] for t in tricks if t.get('spot_id')})
     spot_map = {}
@@ -1402,8 +1418,18 @@ async def top_tricks(period: str = "day", limit: int = 20, current_user: Optiona
     totals = {}
     for tip in (tips.data or []):
         totals[tip['trick_id']] = totals.get(tip['trick_id'], 0) + float(tip.get('amount') or 0)
+    blocked = _blocked_set(current_user['username'] if current_user else None)
     if not totals:
-        return []
+        # No tips in period — fall back to most-tipped overall
+        res = supabase.table('tricks').select('*').order('tips_received', desc=True).limit(limit).execute()
+        tricks = _visible(res.data or [], blocked)
+        return _attach_comment_counts(_attach_spot_names(tricks), blocked)
+    top_ids = sorted(totals, key=totals.get, reverse=True)[:max(1, min(limit, 50))]
+    tricks = _visible(supabase.table('tricks').select('*').in_('id', top_ids).execute().data or [], blocked)
+    for t in tricks:
+        t['period_tips'] = totals.get(t['id'], 0)
+    tricks.sort(key=lambda t: t['period_tips'], reverse=True)
+    return _attach_comment_counts(_attach_spot_names(tricks), blocked)
     top_ids = sorted(totals, key=totals.get, reverse=True)[:max(1, min(limit, 50))]
     blocked = _blocked_set(current_user['username'] if current_user else None)
     tricks = _visible(supabase.table('tricks').select('*').in_('id', top_ids).execute().data or [], blocked)

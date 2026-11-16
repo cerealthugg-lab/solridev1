@@ -224,7 +224,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
 
           {/* TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
-          <div className="grid grid-cols-3 gap-0.5 lg:gap-1.5 bg-neutral-950 lg:bg-transparent flex-grow p-0.5 lg:p-0 lg:pt-4 min-h-[350px]">
+          <div className="grid grid-cols-3 gap-[2px] bg-neutral-950 w-full">
             
            {tricks.length > 0 ? (
               tricks.map(function (trick, i) {
@@ -235,8 +235,8 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
                     className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl active:scale-95 transition-all">
 
                     <video 
-                      src={trick.video_url} 
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                      src={trick.video_url + '#t=0.1'} 
+                      className="w-full h-full object-cover pointer-events-none"
                       preload="metadata"
                       muted
                       playsInline/>
@@ -540,20 +540,22 @@ function DeleteAccountDialog({ open, onClose, api, logout }) {
 }
 
 function TrickFeedViewer({ tricks, startIndex, onClose }) {
-  const containerRef = React.useRef(null);
+  const slideRefs = React.useRef([]);
   React.useEffect(() => {
-    const el = containerRef.current;
-    if (el) el.scrollTop = startIndex * el.clientHeight;
+    const el = slideRefs.current[startIndex];
+    if (el) el.scrollIntoView({ behavior: 'instant' });
   }, [startIndex]);
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
+    <div className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
       <button onClick={onClose} className="fixed top-4 right-4 z-20 text-white text-3xl font-light bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform">×</button>
-      {tricks.map((t) => <TrickSlide key={t.id} trick={t} />)}
+      {tricks.map((t, i) => (
+        <TrickSlide key={t.id} trick={t} ref={(el) => (slideRefs.current[i] = el)} />
+      ))}
     </div>
   );
 }
 
-function TrickSlide({ trick }) {
+const TrickSlide = React.forwardRef(function TrickSlide({ trick }, ref) {
   const vref = React.useRef(null);
   const holdTimer = React.useRef(null);
   const held = React.useRef(false);
@@ -569,18 +571,12 @@ function TrickSlide({ trick }) {
     return () => io.disconnect();
   }, []);
 
-  const down = () => {
-    held.current = false;
-    holdTimer.current = setTimeout(() => { held.current = true; vref.current?.pause(); }, 200);
-  };
-  const up = () => {
-    clearTimeout(holdTimer.current);
-    if (held.current) vref.current?.play?.().catch(() => {});
-    else setMuted((m) => !m);
-  };
+  const down = () => { held.current = false; holdTimer.current = setTimeout(() => { held.current = true; vref.current?.pause(); }, 200); };
+  const up = () => { clearTimeout(holdTimer.current); if (held.current) vref.current?.play?.().catch(() => {}); else setMuted((m) => !m); };
 
   return (
     <div
+      ref={ref}
       onMouseDown={down} onMouseUp={up}
       onTouchStart={down} onTouchEnd={up}
       className="relative h-[100dvh] w-full snap-start snap-always bg-black flex items-center justify-center"
@@ -592,4 +588,4 @@ function TrickSlide({ trick }) {
       </div>
     </div>
   );
-}
+});

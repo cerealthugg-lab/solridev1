@@ -129,10 +129,12 @@ function TrickCard({ trick, currentUsername, tippedByMe, savedByMe, onTipped, on
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} className="shrink-0 p-[2px] rounded-full bg-gradient-to-tr from-[#D2FF00] to-[#FF3366]">
-            <span className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-xs font-black uppercase text-white">
-              {trick.user_id?.[0]}
+          <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} className="shrink-0 p-[2px] rounded-full bg-gradient-to-tr from-[#D2FF00] to-[#FF3366]"> {trick.user_photo_url ? (
+            <img src={trick.user_photo_url} alt={trick.user_id} className="w-8 h-8 rounded-full object-cover bg-black" />
+          ) : (
+            <span className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-xs font-black uppercase text-white"> {trick.user_id?.[0]}
             </span>
+            )}
           </Link>
           <div className="min-w-0 leading-tight">
             <Link to={currentUsername === trick.user_id ? '/profile' : `/skater/${trick.user_id}`} data-testid={`trick-user-${trick.id}`} className="block text-sm font-bold text-white truncate">
