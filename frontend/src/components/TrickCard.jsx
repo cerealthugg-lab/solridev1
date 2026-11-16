@@ -125,7 +125,7 @@ function TrickCard({ trick, currentUsername, tippedByMe, savedByMe, onTipped, on
   };
 
   return (
-    <article data-testid={`trick-card-${trick.id}`} className="bg-black border-b border-neutral-900 pb-4">
+    <article data-testid={`trick-card-${trick.id}`} className="bg-[#09090b] border-b border-neutral-900 pb-4">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-3 min-w-0">
