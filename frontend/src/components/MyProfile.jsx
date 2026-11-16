@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { LogOut, Pencil, Camera, MessageCircle, AlertCircle, MapPin } from "lucide-react";
+import { LogOut, Pencil, Camera, MessageCircle, AlertCircle, MapPin, Settings, Shield, FileText, X, Trash2 } from "lucide-react";
 import FeedbackModal from "./FeedbackModal";
 
 const DECK_BRANDS = ["Baker","Element","Girl","Almost","Flip","Zero","Toy Machine","Anti Hero","Real","Santa Cruz","Powell Peralta","Enjoi"];
@@ -14,6 +14,7 @@ const calcAge = (b) => {
 export default function MyProfile({ user, api, fetchUser, logout }) {
   const fileRef = useRef(null);
   const [editing, setEditing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     full_name: "", deck_size: "", deck_company: "", fav_trick: "", fav_spot: "", self_comment: "", birth_date: "",
@@ -87,10 +88,10 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
               {editing ? "Close Editor" : "Edit Info"}
             </button>
             <button 
-              onClick={() => fileRef.current?.click()}
-              className="w-full h-9 rounded-xl border border-neutral-800 bg-black text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+              onClick={() => setSettingsOpen(true)}
+              className="w-full h-9 rounded-xl border border-neutral-800 bg-neutral-900/60 text-xs font-bold uppercase tracking-widest text-neutral-300 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
             >
-              <Camera size={12} /> Shift Image
+              <Settings size={12} className="text-neutral-400" /> Settings
             </button>
           </div>
         </div>
@@ -247,7 +248,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         </section>
 
-        {/* feedback + logout */}
+        {/* feedback + logout 
         <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
           <FeedbackButton />
           <button onClick={logout}
@@ -258,7 +259,16 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   <Link to="/privacy" className="py-2">Privacy</Link><Link to="/terms" className="py-2">Terms</Link>
 </div>
 <DeleteAccountButton api={api} logout={logout} />
-        </div>
+        </div>*/}
+      
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen (false)}
+        user={user}
+        logout={logout}
+        api={api}
+        onShiftImage={() => { setSettingsOpen(false); fileRef.current?.click();}}
+        />
       </div>
     </div>
   );
@@ -325,5 +335,194 @@ function FeedbackButton() {
       </div>
     )}
     </>
+  );
+}
+
+function SettingsModal({ open, onClose, user, logout, api, onShiftImage }) {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm sm:px-4 overflow-hidden">
+        <button aria-label="Close settings" className="absolute inset-0 bg-transparent" onClick={onClose} />
+        
+        <div 
+          className="w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl relative max-h-[90vh] overflow-y-auto shadow-2xl p-5 space-y-4"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-900">
+            <div className="flex items-center gap-2">
+              <Settings size={18} className="text-[#D2FF00]" />
+              <h2 className="text-base font-black uppercase tracking-wider text-white">Settings</h2>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-400 hover:text-white flex items-center justify-center">
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {/* Shift Image */}
+            <button
+              onClick={onShiftImage}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-neutral-800 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-[#D2FF00]">
+                  <Camera size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-white">Shift Profile Photo</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">Upload new avatar</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-white font-black text-sm">→</span>
+            </button>
+
+            {/* Send Tech Report */}
+            <button
+              onClick={() => setFeedbackOpen(true)}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-neutral-800 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-[#D2FF00]">
+                  <AlertCircle size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-white">Send Tech Report</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">Bug · Lag · Idea · Feedback</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-white font-black text-sm">→</span>
+            </button>
+
+            {/* Privacy Policy */}
+            <Link
+              to="/privacy"
+              onClick={onClose}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-neutral-800 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-neutral-400">
+                  <Shield size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-white">Privacy Policy</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">Data protection & permissions</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-white font-black text-sm">→</span>
+            </Link>
+
+            {/* Terms of Service */}
+            <Link
+              to="/terms"
+              onClick={onClose}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-neutral-800 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-neutral-400">
+                  <FileText size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-white">Terms of Service</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">Community guidelines & EULA</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-white font-black text-sm">→</span>
+            </Link>
+
+            {/* Log Out */}
+            <button
+              onClick={() => { onClose(); logout(); }}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-neutral-800 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center text-[#FF3366]">
+                  <LogOut size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-white">Log Out</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">@{user.username}</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-white font-black text-sm">→</span>
+            </button>
+
+            {/* Delete Account */}
+            <button
+              onClick={() => setDeleteOpen(true)}
+              className="w-full flex items-center justify-between p-3.5 bg-neutral-950 border border-neutral-900/80 rounded-xl hover:border-red-950/40 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#FF3366]/10 flex items-center justify-center text-[#FF3366]">
+                  <Trash2 size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-wider text-[#FF3366]">Delete Account</div>
+                  <div className="text-[10px] text-neutral-500 font-medium">Permanently wipe profile and data</div>
+                </div>
+              </div>
+              <span className="text-neutral-500 group-hover:text-[#FF3366] font-black text-sm">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} api={api} logout={logout} />
+    </>
+  );
+}
+
+function DeleteAccountDialog({ open, onClose, api, logout }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!open) return null;
+
+  const confirmDelete = async () => {
+    setBusy(true); setError("");
+    try { 
+      await api.delete("/users/me", { data: { password } }); 
+      logout(); 
+    } catch (e) { 
+      setError(e.response?.data?.detail || "Couldn't delete account"); 
+    } finally { 
+      setBusy(false); 
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm sm:px-4">
+      <button aria-label="Close" className="absolute inset-0 bg-transparent" onClick={onClose} />
+      <div 
+        className="relative w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl p-5 space-y-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-sm font-black uppercase tracking-widest text-[#FF3366]">Delete account forever?</h3>
+        <p className="text-xs text-neutral-400 leading-relaxed">This permanently deletes your clips, spots, messages, rides, and DFQ points. This cannot be undone.</p>
+        <input 
+          type="password" 
+          value={password} 
+          onChange={(e) => setPassword(e.target.value)} 
+          placeholder="Enter your password"
+          className="w-full h-11 px-4 bg-black border border-neutral-800 rounded-xl text-white text-sm focus:outline-none focus:border-[#FF3366]" 
+        />
+        {error && <p className="text-xs text-[#FF3366]">{error}</p>}
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 h-11 rounded-xl bg-neutral-900 text-white text-xs font-black uppercase tracking-wider">Cancel</button>
+          <button onClick={confirmDelete} disabled={busy || !password} className="flex-1 h-11 rounded-xl bg-[#FF3366] text-black text-xs font-black uppercase tracking-wider disabled:opacity-50">
+            {busy ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
