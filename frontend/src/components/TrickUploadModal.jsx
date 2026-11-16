@@ -142,11 +142,11 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl relative max-h-[94vh] overflow-y-auto shadow-2xl shadow-black"
+        className="w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl relative max-h-[94vh] overflow-x-hidden overflow-y-auto shadow-2xl shadow-black"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-[#D2FF00]/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-20 -right-0 w-56 h-56 rounded-full bg-[#D2FF00]/10 blur-3xl pointer-events-none" />
 
         <div className="sticky top-0 z-10 bg-[#09090b]/90 backdrop-blur-xl px-5 pt-3 pb-4 border-b border-neutral-900">
           <div className="mx-auto w-10 h-1 rounded-full bg-neutral-800 mb-3 sm:hidden" />
@@ -263,7 +263,7 @@ function TrickUploadModal({ open, onClose, spot, onUploaded }) {
             <datalist id="trick-presets">
               {TRICK_PRESETS.map((t) => <option key={t} value={t} />)}
             </datalist>
-            <div className="mt-2 flex gap-2 overflow-x-auto -mx-5 px-5 pb-1" style={{ scrollbarWidth: 'none' }}>
+            <div className="mt-2 flex-wrap gap-2">
               {QUICK_PICKS.map((t) => (
                 <button
                   key={t}
