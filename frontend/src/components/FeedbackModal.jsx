@@ -50,12 +50,12 @@ const FeedbackModal = ({ open, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl relative max-h-[94vh] overflow-y-auto shadow-2xl shadow-black"
+        className="w-full max-w-md bg-[#09090b] border border-neutral-800 rounded-t-3xl sm:rounded-3xl relative max-h-[94vh] overflow-x-hidden overflow-y-auto shadow-2xl shadow-black"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="absolute -top-20 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none transition-colors duration-300"
+          className="absolute -top-20 -right-0 w-56 h-56 rounded-full blur-3xl pointer-events-none transition-colors duration-300"
           style={{ backgroundColor: `${current.color}1A` }}
         />
 
