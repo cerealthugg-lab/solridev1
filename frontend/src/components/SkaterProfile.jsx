@@ -50,9 +50,9 @@ export default function SkaterProfile() {
   const a = calcAge(profile.birth_date);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="min-h-screen bg-[09090b] text-white pb-24">
       {/* Immersive Social Style Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
+      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[09090b]/80 backdrop-blur-md border-b border-neutral-900">
         <button onClick={() => navigate(-1)} className="p-1 text-neutral-400 active:scale-90 transition-transform">
           <ArrowLeft size={20} />
         </button>

@@ -45,9 +45,9 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const a = calcAge(user.birth_date);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
+    <div className="min-h-screen bg[#09090b] text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
       {/* Immersive Social Top Navigation Bar (phone only) */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900">
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#09090b]/80 backdrop-blur-md border-b border-neutral-900">
         <span className="font-black tracking-tight text-sm lowercase">@{user.username}</span>
         <span className="font-extrabold text-[10px] uppercase tracking-widest text-neutral-500">My Basecamp</span>
       </header>

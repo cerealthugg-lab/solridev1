@@ -481,7 +481,7 @@ const OnlineBadge = ({ className = '' }) => (
           <OnlineBadge />
         </div>
 
-     <main className={`${location.pathname === '/tricks' ? 'p-0 pt-2' : 'p-4 pt-8'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>{children}</main>
+     <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4 pt-8'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>{children}</main>
 
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
           {navItems.map(({ path, icon: Icon, label }) => (
