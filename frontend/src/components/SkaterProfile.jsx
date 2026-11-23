@@ -3,6 +3,8 @@ import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Play, MapPin, Trash2, Coins } from 'lucide-react';
 import { toast } from 'sonner';
+import TrickCard from './TrickCard';
+
 
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -201,45 +203,69 @@ export default function SkaterProfile() {
   );
 }
 
-function TrickFeedViewer({ tricks, startIndex, onClose }) {
-  const containerRef = useRef(null);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (el) el.scrollTop = startIndex * el.clientHeight;
+function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
+  const containerRef = React.useRef(null);
+  const [tippedIds, setTippedIds] = React.useState(new Set());
+  const [savedIds, setSavedIds] = React.useState(new Set());
+
+  // Jump to clicked clip
+  React.useEffect(() => {
+    setTimeout(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const slides = el.querySelectorAll('[data-slide]');
+      if (slides[startIndex]) slides[startIndex].scrollIntoView({ behavior: 'instant' });
+    }, 30);
   }, [startIndex]);
-  return (
-    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
-      <button onClick={onClose} className="fixed top-4 right-4 z-20 text-white text-3xl font-light bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform">×</button>
-      {tricks.map((t) => <TrickSlide key={t.id} trick={t} />)}
-    </div>
-  );
-}
 
-function TrickSlide({ trick }) {
-  const vref = useRef(null);
-  const holdTimer = useRef(null);
-  const held = useRef(false);
-  const [muted, setMuted] = useState(true);
+  // Swipe-down at bottom = close
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let startY = 0;
+    const onStart = (e) => { startY = (e.touches || e.changedTouches)[0].clientY; };
+    const onEnd = (e) => {
+      const endY = (e.changedTouches || e.touches)[0]?.clientY ?? startY;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+      if (atBottom && endY < startY - 40) onClose();
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => { el.removeEventListener('touchstart', onStart); el.removeEventListener('touchend', onEnd); };
+  }, [onClose]);
 
-  useEffect(() => {
-    const v = vref.current;
-    if (!v) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) v.play?.().catch(() => {}); else v.pause?.();
-    }, { threshold: 0.6 });
-    io.observe(v);
-    return () => io.disconnect();
-  }, []);
-
-  const down = () => { held.current = false; holdTimer.current = setTimeout(() => { held.current = true; vref.current?.pause(); }, 200); };
-  const up = () => { clearTimeout(holdTimer.current); if (held.current) vref.current?.play?.().catch(() => {}); else setMuted((m) => !m); };
+  const handleTipped = (id) => setTippedIds((p) => new Set(p).add(id));
+  const handleSaved = (id, saved) => setSavedIds((p) => { const n = new Set(p); if (saved) n.add(id); else n.delete(id); return n; });
 
   return (
-    <div onMouseDown={down} onMouseUp={up} onTouchStart={down} onTouchEnd={up} className="relative h-[100dvh] w-full snap-start snap-always bg-black flex items-center justify-center">
-      <video ref={vref} src={trick.video_url} loop muted={muted} playsInline className="w-full h-full object-cover" />
-      <div className="absolute bottom-6 left-4 right-16 z-10 pointer-events-none drop-shadow-md">
-        <p className="text-sm font-black uppercase tracking-wider text-[#D2FF00]">⚡ {trick.tips_received ?? 0} Tips</p>
-        <p className="text-xs text-white/80 mt-1">{trick.description || "Skate session upload"}</p>
+    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain">
+      {/* sticky mini header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 h-12 bg-[#09090b]/95 backdrop-blur-md border-b border-neutral-900"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform">
+          ✕
+        </button>
+        <span className="text-sm font-black uppercase tracking-widest text-white">Clips</span>
+      </div>
+
+      {tricks.map((trick) => (
+        <div key={trick.id} data-slide>
+          <TrickCard
+            trick={trick}
+            currentUsername={currentUsername}
+            tippedByMe={tippedIds.has(trick.id)}
+            savedByMe={savedIds.has(trick.id)}
+            onTipped={handleTipped}
+            onSaved={handleSaved}
+            onDeleted={onClose}
+          />
+        </div>
+      ))}
+
+      {/* bottom close hint — swipe down here closes */}
+      <div className="flex flex-col items-center gap-2 py-12 select-none">
+        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-700">swipe down to close</span>
+        <span className="text-neutral-800 text-lg">↓</span>
       </div>
     </div>
   );

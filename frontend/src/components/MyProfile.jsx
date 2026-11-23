@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, Pencil, Camera, MessageCircle, AlertCircle, MapPin, Settings, Shield, FileText, X, Trash2 } from "lucide-react";
 import FeedbackModal from "./FeedbackModal";
+import TrickCard from "./TrickCard";
 
 const DECK_BRANDS = ["Baker","Element","Girl","Almost","Flip","Zero","Toy Machine","Anti Hero","Real","Santa Cruz","Powell Peralta","Enjoi"];
 
