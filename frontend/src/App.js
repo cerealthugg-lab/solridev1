@@ -483,7 +483,7 @@ const OnlineBadge = ({ className = '' }) => (
 
      <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`} style={{ paddingTop: ['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 0 : 'calc(env(safe-area-inset-top) + 14px)' }}> {children} </main>
 
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto">
+        <nav className={`lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto ${location.pathname === '/chat' || location.pathname.startsWith('/messages') ? 'hidden' : ''}`}>
           {navItems.map(({ path, icon: Icon, label }) => (
             <Link key={path} to={path} className={`flex flex-col items-center gap-1 transition-all ${location.pathname === path ? 'text-[#D2FF00] scale-110' : 'text-zinc-500 hover:text-white'}`}>
               <Icon size={24} strokeWidth={location.pathname === path ? 2.5 : 2} />

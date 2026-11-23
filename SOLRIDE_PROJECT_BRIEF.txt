@@ -1,0 +1,288 @@
+================================================================================
+SOLRIDE — PROJECT BRIEF FOR AI ASSISTANT HANDOFF
+================================================================================
+Generated: 2026-11-23
+Purpose: Full context handoff so you don't need to explain the project from scratch.
+
+--------------------------------------------------------------------------------
+1. WHAT IS SOLRIDE
+--------------------------------------------------------------------------------
+SOLRIDE is a skateboarding social + move-to-earn (M2E) mobile web app.
+Target platform: iOS App Store (via Capacitor). Also runs in browser.
+Status: In active development, being polished for Apple App Store submission.
+
+Core features:
+- Spots Map: skaters pin real-world skate spots, upload photos
+- Trick Feed: upload video clips of tricks at spots; social feed (like/tip)
+- DFQ Points: in-app utility points earned by riding/uploading (NOT crypto/cash)
+- Wallet Page: DFQ balance, tip tricks with DFQ
+- Global Chat: live public chat room (10s cooldown, profanity filter, bans)
+- Direct Messages: 1-on-1 DMs between skaters
+- Profile: own profile (MyProfile), other skater profiles (SkaterProfile)
+- Ride Page: start/stop a skate session to earn DFQ
+
+--------------------------------------------------------------------------------
+2. TECH STACK
+--------------------------------------------------------------------------------
+Frontend:
+  - React (CRA + react-app-rewired)
+  - Capacitor for iOS wrapping
+  - Tailwind CSS (utility classes)
+  - React Router v6
+  - Axios for API calls
+  - Lucide React icons
+  - Sonner for toasts
+  Path: /Users/purplethang/Desktop/solride/frontend/
+
+Backend:
+  - FastAPI (Python)
+  - Supabase (PostgreSQL DB + file storage)
+  - Deployed on Railway
+  Path: /Users/purplethang/Desktop/solride/backend/server.py
+
+iOS:
+  - Capacitor at frontend/ios/App/
+  - App ID: com.cerealthugg.solride
+  - Tested in Xcode simulator
+
+Design language:
+  - Dark background: #09090b (NOT pure black #000000)
+  - Accent: #D2FF00 (lime yellow)
+  - Alert/delete: #FF3366 (pink-red)
+  - Font style: font-black, uppercase, tracking-widest throughout
+  - Safe areas: env(safe-area-inset-top) / env(safe-area-inset-bottom) for iOS
+
+--------------------------------------------------------------------------------
+3. USER'S WORKFLOW / RULES FOR AI ASSISTANT
+--------------------------------------------------------------------------------
+IMPORTANT — read before suggesting any changes:
+
+1. User pastes code snippets manually — do NOT edit files directly unless asked.
+   Always provide exact line numbers + before/after snippet.
+2. User tests in browser first, then Xcode simulator.
+3. Build/deploy commands:
+   - `yarn build` = build frontend (run from frontend/ dir)
+   - `npx cap copy ios` = sync to iOS (not `cap sync` — that needs network)
+   - `caprun` alias = cd ~/Desktop/solride/frontend && yarn build && npx cap sync ios
+   - `solship` alias = git add, commit, push + caprun
+4. User only does solship AFTER browser testing is confirmed good.
+5. Keep fixes minimal and targeted — exact line changes, not full file rewrites.
+6. Backend changes require Railway deploy (solship pushes to GitHub → Railway auto-deploys).
+7. Apple App Store compliance required:
+   - Account deletion must be in Settings ✓
+   - Terms/Privacy links must be in Settings ✓
+   - DFQ described as in-app utility points only, never crypto/cash
+
+--------------------------------------------------------------------------------
+4. FILE STRUCTURE — KEY COMPONENTS
+--------------------------------------------------------------------------------
+frontend/src/
+  App.js                        — main app, routing, auth, bottom nav
+  components/
+    MyProfile.jsx               — logged-in user's own profile page (607 lines)
+    SkaterProfile.jsx           — other skaters' profile page (246 lines)
+    TrickCard.jsx               — single trick post card (261 lines) — has own api instance
+    TricksFeed.jsx              — global trick feed with Fresh/Top Hype tabs (161 lines)
+    TrickUploadModal.jsx        — upload video clip modal
+    ChatPage.jsx                — global live chat room (321 lines)
+    Conversation.jsx            — 1-on-1 DM thread (129 lines)
+    DirectMessages.jsx          — DM inbox + user search
+    FeedbackModal.jsx           — in-app feedback form
+    SkateMap.jsx / SpotsMap.jsx — spots map page
+    WalletPage.jsx              — DFQ wallet
+    Dashboard.jsx               — home page
+    Welcome.jsx                 — landing/marketing page at /welcome
+
+backend/server.py               — FastAPI, 1949 lines
+  Key endpoints:
+    GET  /api/tricks/feed           — newest tricks (global)
+    GET  /api/tricks/top            — most-tipped tricks (day/week)
+    GET  /api/tricks/user/{username}— tricks by user (used by profiles)
+    POST /api/tricks                — upload trick
+    POST /api/tricks/{id}/tip       — tip a trick with DFQ
+    GET  /api/users/me              — current user data
+    PUT  /api/users/me              — update profile
+    POST /api/users/me/photo        — upload avatar
+    GET  /api/users/{username}/public — public profile for SkaterProfile
+    GET  /api/conversations         — DM inbox
+    POST /api/conversations         — start DM with user
+    GET  /api/conversations/{id}/messages — DM messages
+    POST /api/conversations/{id}/messages — send DM
+    GET  /api/chat/messages         — global chat messages
+    POST /api/chat/send             — send global chat message
+
+--------------------------------------------------------------------------------
+5. ROUTES (App.js)
+--------------------------------------------------------------------------------
+/           → Dashboard (home)
+/welcome    → Welcome landing page
+/auth       → Login/Register
+/spots      → Spots Map
+/tricks     → TricksFeed (Fresh + Top Hype tabs)
+/chat       → Global Chat (ChatPage)
+/wallet     → Wallet (DFQ balance)
+/profile    → MyProfile (own profile)
+/skater/:username → SkaterProfile (other users)
+/ride       → RidePage (session tracking)
+/messages   → DirectMessages (DM inbox)
+/messages/:cid → Conversation (DM thread)
+/admin      → Admin panel
+/privacy    → Privacy policy
+/terms      → Terms of service
+
+Bottom nav tabs (mobile): Home, Map, Tricks feed, Chat, Profile
+
+--------------------------------------------------------------------------------
+6. COMPLETED FIXES (already applied, don't redo)
+--------------------------------------------------------------------------------
+✓ TrickUploadModal.jsx — overflow-x scroll wobble fix
+✓ FeedbackModal.jsx — overflow-x scroll wobble fix
+✓ Welcome.jsx — logo "E" cropping fix (xl:text-8xl, pr-4)
+✓ jsconfig.json — removed deprecated baseUrl
+✓ MyProfile.jsx — full Settings modal rebuild:
+    - Gear icon in header replaces old "Shift Image" button
+    - Settings modal contains: shift photo, logout, delete account, privacy, terms, feedback
+    - DeleteAccountDialog component with password confirmation
+    - Apple App Store compliant
+✓ TrickCard.jsx — bg-black → bg-[#09090b]
+✓ TricksFeed.jsx — bg-black → bg-[#09090b], width fix
+✓ App.js — /tricks and /profile routes get p-0 padding
+✓ SkaterProfile.jsx — bg-black → bg-[#09090b]
+✓ MyProfile.jsx — own tricks now fetched via GET /tricks/user/{username}
+    (backend returns them; user.tricks from auth context was empty)
+✓ TrickCard.jsx — avatar/username links: when trick.user_id === currentUsername,
+    links go to /profile instead of /skater/{user_id}
+✓ MyProfile.jsx — 3-col grid now uses buttons + ProfileFeedViewer instead of <Link> to /tricks?focus=
+✓ MyProfile.jsx — ProfileFeedViewer + TrickSlide added at bottom of file
+    (Instagram-style vertical snap scroll through user's clips)
+✓ TricksFeed.jsx header — safe-area-inset-top padding, fixed bg color (#09090b)
+✓ server.py — tricks/feed endpoint: attaches user_photo_url from users table
+✓ server.py — tricks/user/{username}: attaches user_photo_url
+✓ TrickCard.jsx — avatar shows photo_url image if available, falls back to initial letter
+✓ server.py — tricks/top fallback: when no tips in period, returns most-tipped overall
+✓ server.py — tricks/top: fixed blocked variable placement + duplicate dead code removed
+
+--------------------------------------------------------------------------------
+7. PENDING / IN PROGRESS (needs testing or deploy)
+--------------------------------------------------------------------------------
+⏳ server.py — tricks/top: add user_photo_url attachment (same as feed/user endpoints)
+   Location: after line ~1428 in top_tricks function
+   Code to add after `tricks = _visible(...)`:
+     unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+     user_map = {}
+     if unames:
+         urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+         user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+     for t in tricks:
+         t['user_photo_url'] = user_map.get(t.get('user_id'))
+   (Also add same block inside the fallback `if not totals:` path)
+
+⏳ ChatPage.jsx — mobile layout fix (input box not visible on mobile):
+   - Change outer div: fixed inset-0 lg:left-64 z-[9998] (remove navH bottom)
+   - Change type box paddingBottom: use env(safe-area-inset-bottom) always
+   - Remove navH state (line 43) and the useLayoutEffect that measures nav height
+
+⏳ MyProfile.jsx — grid side-to-side:
+   - Section tag: add -mx-4 lg:mx-0
+   - Grid div: className="grid grid-cols-3 gap-[2px] bg-neutral-950 w-full"
+
+⏳ MyProfile.jsx / SkaterProfile.jsx — ProfileFeedViewer update:
+   Replace raw TrickFeedViewer (bare video) with ProfileFeedViewer (TrickCard-based feed)
+   that shows full social cards with comments/tips when tapping a clip in grid.
+   SkaterProfile still uses old TrickFeedViewer — needs ProfileFeedViewer too.
+
+⏳ Pull-to-refresh on TricksFeed (like Safari pull down) — not yet implemented
+
+--------------------------------------------------------------------------------
+8. KNOWN BUGS / NOT YET FIXED
+--------------------------------------------------------------------------------
+- SkaterProfile.jsx line 53: bg-[09090b] missing # → bg-[#09090b]
+- SkaterProfile.jsx line 55: same missing #
+- Video first-frame poster: add #t=0.001 to src in grid thumbnails
+  (forces iOS to show first frame instead of black square)
+
+--------------------------------------------------------------------------------
+9. PROFILE PAGE STRUCTURE (MyProfile.jsx)
+--------------------------------------------------------------------------------
+State:
+  editing, settingsOpen, saving, form (profile fields)
+  tricks[] — fetched from /tricks/user/{username} via useEffect
+  active (null | index) — controls ProfileFeedViewer open/close
+
+Layout (mobile):
+  - Sticky header: @username | "My Basecamp" | gear icon → settingsOpen
+  - Avatar (tap = upload photo), stats row, Edit Profile / Settings buttons
+  - Profile info: username, bio, skate setup tags
+  - DM inbox link button
+  - 3-col grid of clips → tap opens ProfileFeedViewer
+  - ProfileFeedViewer: full-screen overlay, sticky "Clips" header,
+    TrickCard per trick, swipe-down at bottom to close
+
+Components at bottom of MyProfile.jsx:
+  - SettingsModal — gear sheet with: shift photo, feedback, logout, delete, privacy, terms
+  - DeleteAccountDialog — password confirm before deletion
+  - ProfileFeedViewer — Instagram-style feed overlay
+  - TrickSlide (or TrickCard-based) — individual slide in viewer
+
+--------------------------------------------------------------------------------
+10. TRICKCARD.JSX — HOW IT WORKS
+--------------------------------------------------------------------------------
+- Has its OWN internal axios `api` instance (no need to pass api prop)
+- Props: trick, currentUsername, tippedByMe, savedByMe, onTipped, onSaved, onDeleted, rank, periodLabel
+- Shows: avatar (photo_url if available, else initial), username link, spot link,
+  video (muted autoplay on scroll via IntersectionObserver, hold to pause, tap to unmute),
+  tip button, comments button, save button, delete/report menu
+- trick.user_photo_url → avatar image
+- trick.user_id === currentUsername → link to /profile, else /skater/{user_id}
+
+--------------------------------------------------------------------------------
+11. BACKEND — TRICKS ENDPOINTS PATTERN
+--------------------------------------------------------------------------------
+All trick list endpoints should:
+1. Fetch tricks from supabase
+2. Attach spot names (_attach_spot_names)
+3. Attach comment counts (_attach_comment_counts)
+4. Attach user_photo_url (by joining users table on username)
+5. Filter blocked users (_visible + _blocked_set)
+
+user_photo_url attach pattern (Python):
+  unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+  user_map = {}
+  if unames:
+      urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+      user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+  for t in tricks:
+      t['user_photo_url'] = user_map.get(t.get('user_id'))
+
+--------------------------------------------------------------------------------
+12. CHAT PAGES — OVERVIEW
+--------------------------------------------------------------------------------
+ChatPage.jsx (/chat):
+  - Global live chat, polled every 4s
+  - 10s send cooldown, profanity filter with strike system (5 strikes = ban)
+  - Replies to specific messages
+  - Report message button
+  - Layout: fixed full-screen, header + scrollable message list + sticky input
+  - Messages styled: own = #D2FF00 bubble right, others = neutral-900 bubble left
+  - Issue: on mobile the input may be hidden behind nav bar (fix pending)
+
+Conversation.jsx (/messages/:cid):
+  - 1-on-1 DM thread, polled every 3s
+  - Uses visualViewport API to handle keyboard appearance on iOS
+  - Messages styled same as ChatPage
+
+DirectMessages.jsx (/messages):
+  - DM inbox list + user search to start new conversation
+
+--------------------------------------------------------------------------------
+13. APPLE APP STORE REQUIREMENTS (must keep)
+--------------------------------------------------------------------------------
+✓ Account deletion available in-app (in Settings modal)
+✓ Privacy Policy linked in-app (in Settings modal + /privacy route)
+✓ Terms of Service linked in-app (in Settings modal + /terms route)
+✓ DFQ points = in-app utility only, no cash/crypto value claims
+- Safe area insets used throughout for iPhone notch/Dynamic Island
+
+================================================================================
+END OF BRIEF
+================================================================================
