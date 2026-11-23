@@ -40,7 +40,8 @@ const Section = ({ icon: Icon, eyebrow, title, accent = "#D2FF00", children }) =
   }, [navigate]);
 
   return (
-    <div data-testid="welcome-screen" className="fixed inset-0 bg-[#09090b] text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black overflow-x-hidden overflow-y-auto">
+    <div data-testid="welcome-screen"
+    className="min-h-screen bg-[#09090b] text-[#EDEDED] font-sans selection:bg-[#D2FF00] selection:text-black overflow-x-hidden overflow-y-contain">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50" />
       <div className="absolute -top-40 -left-32 w-[420px] h-[420px] rounded-full bg-[#D2FF00]/10 blur-3xl pointer-events-none" />
       <div className="absolute top-[420px] -right-40 w-[380px] h-[380px] rounded-full bg-[#FF3366]/10 blur-3xl pointer-events-none" />
