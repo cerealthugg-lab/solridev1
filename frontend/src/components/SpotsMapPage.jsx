@@ -104,6 +104,164 @@ var formatDist = function(d) {
   return d.toFixed(1) + 'km';
 };
 
+var SpotPhotoLightbox = function(props) {
+  var photos = props.photos;
+  var spotName = props.spotName;
+  var onClose = props.onClose;
+  var indexState = useState(props.index);
+  var currentIndex = indexState[0];
+  var setCurrentIndex = indexState[1];
+
+  var scaleState = useState(1);
+  var scale = scaleState[0];
+  var setScale = scaleState[1];
+
+  var posState = useState({ x: 0, y: 0 });
+  var pos = posState[0];
+  var setPos = posState[1];
+
+  var touchRef = useRef({ startX: 0, startY: 0, initialDist: 0, initialScale: 1, isPinching: false });
+
+  var resetZoom = function() {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+  };
+
+  // Double-tap photo to zoom 2x / reset
+  var lastTapRef = useRef(0);
+  var handleDoubleTap = function(e) {
+    e.stopPropagation();
+    var now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      if (scale > 1) {
+        resetZoom();
+      } else {
+        setScale(2.5);
+      }
+    }
+    lastTapRef.current = now;
+  };
+
+  var handleTouchStart = function(e) {
+    if (e.touches.length === 2) {
+      // Pinch Zoom Start
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchRef.current.initialDist = Math.hypot(dx, dy);
+      touchRef.current.initialScale = scale;
+      touchRef.current.isPinching = true;
+    } else if (e.touches.length === 1) {
+      // 1-finger swipe / pan start
+      touchRef.current.isPinching = false;
+      touchRef.current.startX = e.touches[0].clientX - pos.x;
+      touchRef.current.startY = e.touches[0].clientY - pos.y;
+      touchRef.current.swipeStartX = e.touches[0].clientX;
+      touchRef.current.swipeStartY = e.touches[0].clientY;
+    }
+  };
+
+  var handleTouchMove = function(e) {
+    if (e.touches.length === 2 && touchRef.current.isPinching) {
+      // Pinch Zooming
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      var dist = Math.hypot(dx, dy);
+      var factor = dist / touchRef.current.initialDist;
+      var newScale = Math.min(Math.max(touchRef.current.initialScale * factor, 1), 4);
+      setScale(newScale);
+    } else if (e.touches.length === 1 && scale > 1) {
+      // Pan zoomed photo around
+      setPos({
+        x: e.touches[0].clientX - touchRef.current.startX,
+        y: e.touches[0].clientY - touchRef.current.startY
+      });
+    }
+  };
+
+  var handleTouchEnd = function(e) {
+    if (scale <= 1) {
+      resetZoom();
+      var endX = (e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
+      var endY = (e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
+      var diffX = endX - touchRef.current.swipeStartX;
+      var diffY = endY - touchRef.current.swipeStartY;
+
+      // Swipe Down to Dismiss
+      if (diffY > 80 && Math.abs(diffX) < 50) {
+        onClose();
+        return;
+      }
+      // Swipe Left -> Next Photo
+      if (diffX < -50 && currentIndex < photos.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } 
+      // Swipe Right -> Prev Photo
+      else if (diffX > 50 && currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      }
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-[10000] bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md select-none touch-none"
+      onClick={onClose}
+    >
+      {/* Top Bar with Counter and Close */}
+      <div 
+        className="flex items-center justify-between z-20 px-2"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
+        onClick={function(e) { e.stopPropagation(); }}
+      >
+        <span className="text-xs font-black uppercase tracking-widest text-neutral-400">
+          {currentIndex + 1} / {photos.length}
+        </span>
+        <button 
+          onClick={onClose} 
+          className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center text-base active:scale-90 transition-transform"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Main Image Container */}
+      <div 
+        className="flex-1 flex items-center justify-center relative w-full overflow-hidden"
+        onClick={handleDoubleTap}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <img 
+          src={photos[currentIndex]} 
+          alt={spotName} 
+          style={{
+            transform: 'translate3d(' + pos.x + 'px, ' + pos.y + 'px, 0) scale(' + scale + ')',
+            transition: scale === 1 ? 'transform 0.2s ease-out' : 'none'
+          }}
+          className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none" 
+        />
+      </div>
+
+      {/* Bottom dot indicators */}
+      <div 
+        className="flex justify-center gap-1.5 py-4 z-20"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
+        onClick={function(e) { e.stopPropagation(); }}
+      >
+        {photos.map(function(_, idx) {
+          return (
+            <span 
+              key={idx} 
+              className={'h-2 rounded-full transition-all ' + (idx === currentIndex ? 'bg-[#D2FF00] w-6' : 'bg-neutral-700 w-2')} 
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 var SpotDetailCard = function(props) {
   var [photoIndex, setPhotoIndex] = useState(null);
   var spot = props.spot;
@@ -219,78 +377,14 @@ var SpotDetailCard = function(props) {
           )}
         </div>
       </div>
-              {/* Swipeable Fullscreen Photo Gallery Modal */}
+        {/* Interactive Zoomable & Swipeable Photo Lightbox */}
         {photoIndex !== null && spot.photos && spot.photos.length > 0 && (
-          <div 
-            className="fixed inset-0 z-[10000] bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md select-none touch-pan-y"
-            onClick={function() { setPhotoIndex(null); }}
-          >
-            {/* Top Bar with Counter and Close */}
-            <div 
-              className="flex items-center justify-between z-20 px-2"
-              style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
-              onClick={function(e) { e.stopPropagation(); }}
-            >
-              <span className="text-xs font-black uppercase tracking-widest text-neutral-400">
-                {photoIndex + 1} / {spot.photos.length}
-              </span>
-              <button 
-                onClick={function() { setPhotoIndex(null); }} 
-                className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center text-base active:scale-90 transition-transform"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Main Image with Touch Swipe Gestures */}
-            <div 
-              className="flex-1 flex items-center justify-center relative w-full overflow-hidden"
-              onClick={function(e) { e.stopPropagation(); }}
-              onTouchStart={function(e) {
-                this.touchStartX = e.touches[0].clientX;
-                this.touchStartY = e.touches[0].clientY;
-              }}
-              onTouchEnd={function(e) {
-                var diffX = (e.changedTouches[0].clientX) - (this.touchStartX || 0);
-                var diffY = (e.changedTouches[0].clientY) - (this.touchStartY || 0);
-                
-                // Swipe down to close
-                if (diffY > 80 && Math.abs(diffX) < 60) {
-                  setPhotoIndex(null);
-                  return;
-                }
-                // Swipe Left -> Next
-                if (diffX < -50 && photoIndex < spot.photos.length - 1) {
-                  setPhotoIndex(photoIndex + 1);
-                }
-                // Swipe Right -> Prev
-                else if (diffX > 50 && photoIndex > 0) {
-                  setPhotoIndex(photoIndex - 1);
-                }
-              }}
-            >
-              <img 
-                src={spot.photos[photoIndex]} 
-                alt={spot.name} 
-                className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-all" 
-              />
-            </div>
-
-            {/* Bottom dot indicators if multiple photos */}
-            <div 
-              className="flex justify-center gap-1.5 py-4 z-20"
-              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
-            >
-              {spot.photos.map(function(_, idx) {
-                return (
-                  <span 
-                    key={idx} 
-                    className={'w-2 h-2 rounded-full transition-all ' + (idx === photoIndex ? 'bg-[#D2FF00] w-5' : 'bg-neutral-700')} 
-                  />
-                );
-              })}
-            </div>
-          </div>
+          <SpotPhotoLightbox 
+            photos={spot.photos} 
+            index={photoIndex} 
+            spotName={spot.name}
+            onClose={function() { setPhotoIndex(null); }} 
+          />
         )}
           <ReportBlockSheet open={reportOpen} onClose={function() { setReportOpen(false); }} contentType="spot"
         contentId={spot.id} ownerUsername={spot.user_id} onHidden={onClose} />
