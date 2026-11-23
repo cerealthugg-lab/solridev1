@@ -108,6 +108,7 @@ var SpotPhotoLightbox = function(props) {
   var photos = props.photos;
   var spotName = props.spotName;
   var onClose = props.onClose;
+
   var indexState = useState(props.index);
   var currentIndex = indexState[0];
   var setCurrentIndex = indexState[1];
@@ -120,19 +121,85 @@ var SpotPhotoLightbox = function(props) {
   var pos = posState[0];
   var setPos = posState[1];
 
-  var touchRef = useRef({ startX: 0, startY: 0, initialDist: 0, initialScale: 1, isPinching: false });
+  var containerRef = useRef(null);
+  var imgRef = useRef(null);
+
+  var stateRef = useRef({
+    scale: 1,
+    pos: { x: 0, y: 0 },
+    startX: 0,
+    startY: 0,
+    swipeStartX: 0,
+    swipeStartY: 0,
+    initialDist: 0,
+    initialScale: 1,
+    isPinching: false,
+    justPinchedTime: 0,
+    isMouseDown: false
+  });
+
+  // Keep stateRef in sync with scale and pos for event handlers
+  stateRef.current.scale = scale;
+  stateRef.current.pos = pos;
+
+  // Clamp pan coordinates so corners and edges lock to screen boundaries
+  var clampPos = function(newX, newY, currentScale) {
+    if (!containerRef.current || !imgRef.current || currentScale <= 1) {
+      return { x: 0, y: 0 };
+    }
+    var rect = imgRef.current.getBoundingClientRect();
+    var baseW = rect.width / (currentScale || 1);
+    var baseH = rect.height / (currentScale || 1);
+    var maxX = Math.max(0, (baseW * currentScale - containerRef.current.clientWidth) / 2);
+    var maxY = Math.max(0, (baseH * currentScale - containerRef.current.clientHeight) / 2);
+
+    return {
+      x: Math.min(Math.max(newX, -maxX), maxX),
+      y: Math.min(Math.max(newY, -maxY), maxY)
+    };
+  };
 
   var resetZoom = function() {
     setScale(1);
     setPos({ x: 0, y: 0 });
   };
 
-  // Double-tap photo to zoom 2x / reset
+  // Keyboard controls for laptop (Esc, ArrowLeft, ArrowRight)
+  useEffect(function() {
+    var handleKeyDown = function(e) {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight' && currentIndex < photos.length - 1) {
+        resetZoom();
+        setCurrentIndex(function(i) { return i + 1; });
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        resetZoom();
+        setCurrentIndex(function(i) { return i - 1; });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return function() { window.removeEventListener('keydown', handleKeyDown); };
+  }, [currentIndex, photos.length, onClose]);
+
+  // Trackpad / Mouse Wheel Zoom on Laptop
+  var handleWheel = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var delta = -e.deltaY * 0.003;
+    var newScale = Math.min(Math.max(scale + delta, 1), 4);
+    setScale(newScale);
+    if (newScale <= 1) {
+      setPos({ x: 0, y: 0 });
+    } else {
+      setPos(function(p) { return clampPos(p.x, p.y, newScale); });
+    }
+  };
+
+  // Double-tap or double-click to toggle 2.5x zoom
   var lastTapRef = useRef(0);
   var handleDoubleTap = function(e) {
     e.stopPropagation();
     var now = Date.now();
-    if (now - lastTapRef.current < 300) {
+    if (now - lastTapRef.current < 320) {
       if (scale > 1) {
         resetZoom();
       } else {
@@ -142,63 +209,104 @@ var SpotPhotoLightbox = function(props) {
     lastTapRef.current = now;
   };
 
+  // Touch Handlers (Mobile)
   var handleTouchStart = function(e) {
     if (e.touches.length === 2) {
-      // Pinch Zoom Start
       var dx = e.touches[0].clientX - e.touches[1].clientX;
       var dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchRef.current.initialDist = Math.hypot(dx, dy);
-      touchRef.current.initialScale = scale;
-      touchRef.current.isPinching = true;
+      stateRef.current.initialDist = Math.hypot(dx, dy);
+      stateRef.current.initialScale = scale;
+      stateRef.current.isPinching = true;
     } else if (e.touches.length === 1) {
-      // 1-finger swipe / pan start
-      touchRef.current.isPinching = false;
-      touchRef.current.startX = e.touches[0].clientX - pos.x;
-      touchRef.current.startY = e.touches[0].clientY - pos.y;
-      touchRef.current.swipeStartX = e.touches[0].clientX;
-      touchRef.current.swipeStartY = e.touches[0].clientY;
+      stateRef.current.startX = e.touches[0].clientX - pos.x;
+      stateRef.current.startY = e.touches[0].clientY - pos.y;
+      stateRef.current.swipeStartX = e.touches[0].clientX;
+      stateRef.current.swipeStartY = e.touches[0].clientY;
     }
   };
 
   var handleTouchMove = function(e) {
-    if (e.touches.length === 2 && touchRef.current.isPinching) {
-      // Pinch Zooming
+    if (e.touches.length === 2 && stateRef.current.isPinching) {
       var dx = e.touches[0].clientX - e.touches[1].clientX;
       var dy = e.touches[0].clientY - e.touches[1].clientY;
       var dist = Math.hypot(dx, dy);
-      var factor = dist / touchRef.current.initialDist;
-      var newScale = Math.min(Math.max(touchRef.current.initialScale * factor, 1), 4);
+      var factor = dist / (stateRef.current.initialDist || 1);
+      var newScale = Math.min(Math.max(stateRef.current.initialScale * factor, 1), 4);
       setScale(newScale);
+      setPos(function(p) { return clampPos(p.x, p.y, newScale); });
     } else if (e.touches.length === 1 && scale > 1) {
-      // Pan zoomed photo around
-      setPos({
-        x: e.touches[0].clientX - touchRef.current.startX,
-        y: e.touches[0].clientY - touchRef.current.startY
-      });
+      var rawX = e.touches[0].clientX - stateRef.current.startX;
+      var rawY = e.touches[0].clientY - stateRef.current.startY;
+      setPos(clampPos(rawX, rawY, scale));
     }
   };
 
   var handleTouchEnd = function(e) {
+    if (stateRef.current.isPinching) {
+      stateRef.current.isPinching = false;
+      stateRef.current.justPinchedTime = Date.now();
+      if (scale < 1.05) resetZoom();
+      return;
+    }
+
+    // Block accidental photo flip right after pinch-zooming out
+    if (Date.now() - stateRef.current.justPinchedTime < 350) return;
+
     if (scale <= 1) {
       resetZoom();
-      var endX = (e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
-      var endY = (e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
-      var diffX = endX - touchRef.current.swipeStartX;
-      var diffY = endY - touchRef.current.swipeStartY;
+      var endX = e.changedTouches[0] ? e.changedTouches[0].clientX : 0;
+      var endY = e.changedTouches[0] ? e.changedTouches[0].clientY : 0;
+      var diffX = endX - stateRef.current.swipeStartX;
+      var diffY = endY - stateRef.current.swipeStartY;
 
-      // Swipe Down to Dismiss
-      if (diffY > 80 && Math.abs(diffX) < 50) {
+      // Vertical swipe down to close
+      if (diffY > 80 && Math.abs(diffX) < 55) {
         onClose();
         return;
       }
-      // Swipe Left -> Next Photo
+      // Horizontal swipe to next/prev
       if (diffX < -50 && currentIndex < photos.length - 1) {
+        resetZoom();
         setCurrentIndex(currentIndex + 1);
-      } 
-      // Swipe Right -> Prev Photo
-      else if (diffX > 50 && currentIndex > 0) {
+      } else if (diffX > 50 && currentIndex > 0) {
+        resetZoom();
         setCurrentIndex(currentIndex - 1);
       }
+    }
+  };
+
+  // Mouse drag handlers for Laptop
+  var handleMouseDown = function(e) {
+    if (scale > 1) {
+      stateRef.current.isMouseDown = true;
+      stateRef.current.startX = e.clientX - pos.x;
+      stateRef.current.startY = e.clientY - pos.y;
+    }
+  };
+  var handleMouseMove = function(e) {
+    if (stateRef.current.isMouseDown && scale > 1) {
+      var rawX = e.clientX - stateRef.current.startX;
+      var rawY = e.clientY - stateRef.current.startY;
+      setPos(clampPos(rawX, rawY, scale));
+    }
+  };
+  var handleMouseUp = function() {
+    stateRef.current.isMouseDown = false;
+  };
+
+  var prevPhoto = function(e) {
+    e.stopPropagation();
+    if (currentIndex > 0) {
+      resetZoom();
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  var nextPhoto = function(e) {
+    e.stopPropagation();
+    if (currentIndex < photos.length - 1) {
+      resetZoom();
+      setCurrentIndex(currentIndex + 1);
     }
   };
 
@@ -206,54 +314,90 @@ var SpotPhotoLightbox = function(props) {
     <div 
       className="fixed inset-0 z-[10000] bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md select-none touch-none"
       onClick={onClose}
+      onWheel={handleWheel}
+      onMouseUp={handleMouseUp}
     >
-      {/* Top Bar with Counter and Close */}
+      {/* Top Header Bar */}
       <div 
-        className="flex items-center justify-between z-20 px-2"
+        className="flex items-center justify-between z-30 px-2"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
         onClick={function(e) { e.stopPropagation(); }}
       >
-        <span className="text-xs font-black uppercase tracking-widest text-neutral-400">
-          {currentIndex + 1} / {photos.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-black uppercase tracking-widest text-[#D2FF00]">
+            {currentIndex + 1} / {photos.length}
+          </span>
+          <span className="text-[11px] text-neutral-500 font-bold hidden sm:inline">
+            · Double-tap / Scroll to zoom · Drag to pan
+          </span>
+        </div>
         <button 
           onClick={onClose} 
-          className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center text-base active:scale-90 transition-transform"
+          className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center text-base hover:bg-neutral-800 active:scale-90 transition-transform"
         >
           ✕
         </button>
       </div>
 
-      {/* Main Image Container */}
+      {/* Main Interactive Stage */}
       <div 
-        className="flex-1 flex items-center justify-center relative w-full overflow-hidden"
+        ref={containerRef}
+        className="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden"
         onClick={handleDoubleTap}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        style={{ cursor: scale > 1 ? 'grab' : 'zoom-in' }}
       >
+        {/* Laptop Prev Button */}
+        {currentIndex > 0 && (
+          <button
+            onClick={prevPhoto}
+            className="hidden sm:flex absolute left-4 z-30 w-11 h-11 rounded-full bg-black/60 border border-neutral-800 text-white items-center justify-center hover:bg-[#D2FF00] hover:text-black hover:border-transparent transition-all active:scale-90 shadow-xl"
+            title="Previous (Left Arrow)"
+          >
+            ←
+          </button>
+        )}
+
+        {/* The Photo with Clamped Matrix */}
         <img 
+          ref={imgRef}
           src={photos[currentIndex]} 
           alt={spotName} 
           style={{
             transform: 'translate3d(' + pos.x + 'px, ' + pos.y + 'px, 0) scale(' + scale + ')',
-            transition: scale === 1 ? 'transform 0.2s ease-out' : 'none'
+            transition: stateRef.current.isPinching || stateRef.current.isMouseDown ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)'
           }}
           className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl pointer-events-none" 
         />
+
+        {/* Laptop Next Button */}
+        {currentIndex < photos.length - 1 && (
+          <button
+            onClick={nextPhoto}
+            className="hidden sm:flex absolute right-4 z-30 w-11 h-11 rounded-full bg-black/60 border border-neutral-800 text-white items-center justify-center hover:bg-[#D2FF00] hover:text-black hover:border-transparent transition-all active:scale-90 shadow-xl"
+            title="Next (Right Arrow)"
+          >
+            →
+          </button>
+        )}
       </div>
 
-      {/* Bottom dot indicators */}
+      {/* Bottom Dot Navigation */}
       <div 
-        className="flex justify-center gap-1.5 py-4 z-20"
+        className="flex justify-center gap-1.5 py-4 z-30"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
         onClick={function(e) { e.stopPropagation(); }}
       >
         {photos.map(function(_, idx) {
           return (
-            <span 
+            <button
               key={idx} 
-              className={'h-2 rounded-full transition-all ' + (idx === currentIndex ? 'bg-[#D2FF00] w-6' : 'bg-neutral-700 w-2')} 
+              onClick={function() { resetZoom(); setCurrentIndex(idx); }}
+              className={'h-2 rounded-full transition-all ' + (idx === currentIndex ? 'bg-[#D2FF00] w-6' : 'bg-neutral-700 w-2 hover:bg-neutral-500')} 
             />
           );
         })}
