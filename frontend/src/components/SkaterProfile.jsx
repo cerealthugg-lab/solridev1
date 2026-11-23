@@ -52,9 +52,11 @@ export default function SkaterProfile() {
   const a = calcAge(profile.birth_date);
 
   return (
-    <div className="min-h-screen bg-[09090b] text-white pb-24">
+    <div className="min-h-screen bg-[#09090b] text-white pb-24">
       {/* Immersive Social Style Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[09090b]/80 backdrop-blur-md border-b border-neutral-900">
+      <header 
+        className="sticky top-0 z-40 flex items-center justify-between px-5 pb-3.5 bg-[#09090b]/95 backdrop-blur-md border-b border-neutral-900"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 14px)' }}>
         <button onClick={() => navigate(-1)} className="p-1 text-neutral-400 active:scale-90 transition-transform">
           <ArrowLeft size={20} />
         </button>
@@ -239,10 +241,12 @@ function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain">
-      {/* sticky mini header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 h-12 bg-[#09090b]/95 backdrop-blur-md border-b border-neutral-900"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform">
+            {/* sticky mini header with proper safe area clearance */}
+      <div 
+        className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3 bg-[#09090b] border-b border-neutral-900 shadow-lg"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
+      >
+        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform bg-neutral-900/60 border border-neutral-800">
           ✕
         </button>
         <span className="text-sm font-black uppercase tracking-widest text-white">Clips</span>
