@@ -574,9 +574,9 @@ var SpotsMapPage = function(props) {
   var loadState = useState(true);
   var loading = loadState[0];
   var setLoading = loadState[1];
-  var selectedState = useState(null);
-  var selectedSpot = selectedState[0];
-  var setSelectedSpot = selectedState[1];
+  var fullCardState = useState(false);
+  var isFullCardOpen = fullCardState[0];
+  var setIsFullCardOpen = fullCardState[1];
   var fileInputRef = useRef(null);
   var listRef = useRef(null);
     var centerTriggerState = useState(0);
@@ -629,15 +629,14 @@ var SpotsMapPage = function(props) {
     }
   };
 
-  useEffect(function() {
-    fetchSpots();
+   useEffect(function() {
+    fetchSpots(); // Fetches fresh spots as soon as user opens the map
     fetchRiders();
     shareLocation();
-    var si = setInterval(fetchSpots, 5000);
-    var ri = setInterval(function() { fetchRiders(); shareLocation(); }, 10000);
+    // Only poll active live riders (every 20s), zero spot re-fetching
+    var ri = setInterval(function() { if (!document.hidden) { fetchRiders(); shareLocation(); } }, 20000);
     setLoading(false);
     return function() {
-      clearInterval(si);
       clearInterval(ri);
       api.delete('/riders/location').catch(function() {});
     };
@@ -766,7 +765,17 @@ var SpotsMapPage = function(props) {
               var isSel = selectedSpot && selectedSpot.id === spot.id;
               return (
                 <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={createSpotIcon(isSel ? '#FFFFFF' : typeInfo.color)}
-                  eventHandlers={{ click: function() { setSelectedSpot(isSel ? null : spot); } }} />
+                  eventHandlers={{ 
+                  click: function() { 
+                    if (isSel) {
+                      setSelectedSpot(null);
+                      setIsFullCardOpen(false);
+                    } else {
+                      setSelectedSpot(spot);
+                      setIsFullCardOpen(false); // Just show the preview banner under map!
+                    }
+                  } 
+                }} />
               );
             })}
             {showRiders && riders.map(function(rider) {
@@ -906,16 +915,58 @@ var SpotsMapPage = function(props) {
         </button>
       )}
 
-      {selectedSpot && (
-        <SpotDetailCard
-          spot={selectedSpot}
-          onClose={function() { setSelectedSpot(null); }}
-          onDelete={handleDeleteSpot}
-          canDelete={currentUser && selectedSpot.user_id === currentUser.username}
-          userLocation={userLocation}
-          spotTricks={spotTricks}
-          onOpenTrickModal={function() { setTrickModalOpen(true); }}
-        />
+            {/* 1. Compact Spot Preview Banner directly under the map */}
+      {selectedSpot && !isFullCardOpen && (
+        <div 
+          onClick={function() { setIsFullCardOpen(true); }}
+          className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-all shadow-lg hover:border-[#D2FF00]/40"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-950 flex-shrink-0 flex items-center justify-center border border-neutral-800">
+              {selectedSpot.photos && selectedSpot.photos.length > 0 ? (
+                <img src={selectedSpot.photos[0]} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <MapPin size={18} className="text-[#D2FF00]" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold text-white truncate">{selectedSpot.name}</h4>
+              <p className="text-[11px] text-neutral-400 flex items-center gap-2 mt-0.5">
+                <span className="text-[#D2FF00] font-semibold uppercase">{selectedSpot.spot_type}</span>
+                <span>· Tap to open full details →</span>
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={function(e) { e.stopPropagation(); setSelectedSpot(null); }}
+            className="w-8 h-8 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center shrink-0 active:scale-90"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* 2. Full Big Spot Card - Slides up from bottom (doesn't push list or scroll jump) */}
+      {selectedSpot && isFullCardOpen && (
+        <div 
+          className="fixed inset-x-0 bottom-0 z-[1050] max-w-md mx-auto p-3 transition-transform duration-300 ease-out animate-in slide-in-from-bottom"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        >
+          {/* Backdrop click to dismiss back to normal */}
+          <div 
+            className="fixed inset-0 bg-black/50 -z-10 backdrop-blur-[2px]" 
+            onClick={function() { setIsFullCardOpen(false); }}
+          />
+          <SpotDetailCard
+            spot={selectedSpot}
+            onClose={function() { setIsFullCardOpen(false); }}
+            onDelete={function(id) { handleDeleteSpot(id); setIsFullCardOpen(false); setSelectedSpot(null); }}
+            canDelete={currentUser && selectedSpot.user_id === currentUser.username}
+            userLocation={userLocation}
+            spotTricks={spotTricks}
+            onOpenTrickModal={function() { setTrickModalOpen(true); }}
+          />
+        </div>
       )}
 
       {selectedSpot && (
@@ -949,7 +1000,10 @@ var SpotsMapPage = function(props) {
                 <div
                   key={spot.id}
                   data-testid={'nearest-spot-' + spot.id}
-                  onClick={function() { setSelectedSpot(isSel ? null : spot); }}
+                  onClick={function() {
+                setSelectedSpot(spot);
+                setIsFullCardOpen(true); // Clicking from list slides up the big card immediately without page jumping!
+              }}
                   className={"flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-colors " + (isSel ? 'bg-neutral-900 ring-1 ring-neutral-700' : 'bg-neutral-950 hover:bg-neutral-900')}
                 >
                   <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ backgroundColor: typeInfo.color + '1f' }}>

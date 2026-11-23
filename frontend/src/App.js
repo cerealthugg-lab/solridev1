@@ -1,6 +1,6 @@
 import Welcome from './components/Welcome';
 import FeedbackModal from './components/FeedbackModal';
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster, toast } from "./components/ui/sonner";
@@ -12,19 +12,19 @@ import { Label } from "./components/ui/label";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import SpotsMapPage from './components/SpotsMapPage';
-import TricksFeed from './components/TricksFeed';
-import confetti from 'canvas-confetti';
-import ChatPage from './components/ChatPage';
 import { MessageCircle } from 'lucide-react'; 
-import SkaterProfile from './components/SkaterProfile';
-import DirectMessages from "./components/DirectMessages";
-import Conversation from "./components/Conversation";
+import confetti from 'canvas-confetti';
+import TricksFeed from './components/TricksFeed';
 import MyProfile from "./components/MyProfile";
-import AdminPage from './components/AdminPage';
-import LegalPage from './components/LegalPage';
+import SkaterProfile from './components/SkaterProfile';
 
-// add to lucide imports
+// Lazy-loaded pages: only downloaded when the user actually navigates to them!
+const SpotsMapPage = lazy(() => import('./components/SpotsMapPage'));
+const ChatPage = lazy(() => import('./components/ChatPage'));
+const DirectMessages = lazy(() => import("./components/DirectMessages"));
+const Conversation = lazy(() => import("./components/Conversation"));
+const AdminPage = lazy(() => import('./components/AdminPage'));
+const LegalPage = lazy(() => import('./components/LegalPage'));
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -1403,6 +1403,11 @@ function App() {
       <AuthProvider>
         <RideProvider>
           <Layout>
+            <Suspense fallback={
+              <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-neutral-800 border-t-[#D2FF00] rounded-full animate-spin" />
+              </div>
+            }>
               <Routes>
                     <Route path="/spots" element={<PrivateRoute><SpotsMapWrapper /></PrivateRoute>} />
                     <Route path="/chat" element={<PrivateRoute><ChatWrapper /></PrivateRoute>} />
@@ -1413,20 +1418,14 @@ function App() {
                     <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
                     <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
                     <Route path="/skater/:username" element={<PrivateRoute><SkaterProfile /></PrivateRoute>} />
-                 <Route path="/tricks" element={<PrivateRoute><TricksFeedWrapper /></PrivateRoute>}/>
-
-
-<Route path="/messages" element={<PrivateRoute><DirectMessages /></PrivateRoute>}/>
-
-<Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
-
-<Route path="/admin" element={<PrivateRoute><AdminWrapper /></PrivateRoute>} />
-
-<Route path="/privacy" element={<LegalPage kind="privacy" />} />
-
-<Route path="/terms" element={<LegalPage kind="terms" />} />
-
+                    <Route path="/tricks" element={<PrivateRoute><TricksFeedWrapper /></PrivateRoute>}/>
+                    <Route path="/messages" element={<PrivateRoute><DirectMessages /></PrivateRoute>}/>
+                    <Route path="/messages/:cid" element={<PrivateRoute><ConversationWrapper /></PrivateRoute>}/>
+                    <Route path="/admin" element={<PrivateRoute><AdminWrapper /></PrivateRoute>} />
+                    <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+                    <Route path="/terms" element={<LegalPage kind="terms" />} />
               </Routes>
+            </Suspense>
           </Layout>
         </RideProvider>
       </AuthProvider>
