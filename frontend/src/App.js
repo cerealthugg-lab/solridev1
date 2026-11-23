@@ -475,7 +475,10 @@ const OnlineBadge = ({ className = '' }) => (
 
       <div className="bg-[#09090b] min-h-screen text-[#EDEDED] font-sans pb-20 lg:pb-8 max-w-md lg:max-w-none mx-auto lg:ml-64 lg:mr-0 lg:flex-1 relative shadow-2xl shadow-black overflow-hidden border-x border-zinc-900 lg:border-x-0">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D2FF00] to-[#FF3366] z-50 lg:hidden"></div>
-
+                  {/* iOS Top Status Bar Protective Shade */}
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 bg-[#09090b] pointer-events-none lg:hidden"
+          style={{ height: 'env(safe-area-inset-top)' }}/>
         {/* X RIDERS ONLINE badge - mobile only, desktop shows it in the sidebar 
         <div data-testid="online-riders-badge" className="fixed top-2 left-1/2 -translate-x-1/2 z-50 pointer-events-none lg:hidden">
           <OnlineBadge />

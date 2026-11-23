@@ -574,14 +574,14 @@ function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
   const handleTipped = (id) => setTippedIds((p) => new Set(p).add(id));
   const handleSaved = (id, saved) => setSavedIds((p) => { const n = new Set(p); if (saved) n.add(id); else n.delete(id); return n; });
 
-    return (
-    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain">
-      {/* sticky mini header with proper safe area clearance */}
+      return (
+    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain w-screen h-screen">
+      {/* sticky mini header with solid dark background under status bar */}
       <div 
-        className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3 bg-[#09090b] border-b border-neutral-900 shadow-lg"
+        className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3 bg-[#09090b] border-b border-neutral-900 shadow-md"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
       >
-        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform bg-neutral-900/60 border border-neutral-800">
+        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform bg-neutral-900 border border-neutral-800">
           ✕
         </button>
         <span className="text-sm font-black uppercase tracking-widest text-white">Clips</span>

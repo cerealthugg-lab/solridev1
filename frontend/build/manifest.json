@@ -1,0 +1,11 @@
+{
+  "name": "SOLRIDE",
+  "short_name": "SOLRIDE",
+  "description": "Skate. Earn. Repeat.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": []
+}
