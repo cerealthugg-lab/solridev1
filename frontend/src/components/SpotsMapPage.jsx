@@ -105,6 +105,7 @@ var formatDist = function(d) {
 };
 
 var SpotDetailCard = function(props) {
+  var [photoIndex, setPhotoIndex] = useState(null);
   var spot = props.spot;
   var onClose = props.onClose;
   var onDelete = props.onDelete;
@@ -122,8 +123,15 @@ var SpotDetailCard = function(props) {
       {spot.photos && spot.photos.length > 0 && (
         <div className="flex overflow-x-auto gap-2 snap-x p-3 pb-0">
           {spot.photos.map(function(photo, i) {
-            return <img key={i} src={photo} alt={spot.name} className="w-56 h-56 object-cover flex-shrink-0 snap-center rounded-xl" />;
-          })}
+            return (
+            <img 
+            key={i}
+            src={photo}
+            alt={spot.name}
+            onClick={function() { setPhotoIndex(i); }}
+            className="w-56 h-56 object-cover flex-shrink-0 snap-center rounded-xl cursor-pointer active:scale-95 transition-transform" />
+          );
+        })}
         </div>
       )}
       <div className="p-4 space-y-4">
@@ -211,6 +219,79 @@ var SpotDetailCard = function(props) {
           )}
         </div>
       </div>
+              {/* Swipeable Fullscreen Photo Gallery Modal */}
+        {photoIndex !== null && spot.photos && spot.photos.length > 0 && (
+          <div 
+            className="fixed inset-0 z-[10000] bg-black/95 flex flex-col justify-between p-4 backdrop-blur-md select-none touch-pan-y"
+            onClick={function() { setPhotoIndex(null); }}
+          >
+            {/* Top Bar with Counter and Close */}
+            <div 
+              className="flex items-center justify-between z-20 px-2"
+              style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
+              onClick={function(e) { e.stopPropagation(); }}
+            >
+              <span className="text-xs font-black uppercase tracking-widest text-neutral-400">
+                {photoIndex + 1} / {spot.photos.length}
+              </span>
+              <button 
+                onClick={function() { setPhotoIndex(null); }} 
+                className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-700 text-white flex items-center justify-center text-base active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Main Image with Touch Swipe Gestures */}
+            <div 
+              className="flex-1 flex items-center justify-center relative w-full overflow-hidden"
+              onClick={function(e) { e.stopPropagation(); }}
+              onTouchStart={function(e) {
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+              }}
+              onTouchEnd={function(e) {
+                var diffX = (e.changedTouches[0].clientX) - (this.touchStartX || 0);
+                var diffY = (e.changedTouches[0].clientY) - (this.touchStartY || 0);
+                
+                // Swipe down to close
+                if (diffY > 80 && Math.abs(diffX) < 60) {
+                  setPhotoIndex(null);
+                  return;
+                }
+                // Swipe Left -> Next
+                if (diffX < -50 && photoIndex < spot.photos.length - 1) {
+                  setPhotoIndex(photoIndex + 1);
+                }
+                // Swipe Right -> Prev
+                else if (diffX > 50 && photoIndex > 0) {
+                  setPhotoIndex(photoIndex - 1);
+                }
+              }}
+            >
+              <img 
+                src={spot.photos[photoIndex]} 
+                alt={spot.name} 
+                className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-all" 
+              />
+            </div>
+
+            {/* Bottom dot indicators if multiple photos */}
+            <div 
+              className="flex justify-center gap-1.5 py-4 z-20"
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}
+            >
+              {spot.photos.map(function(_, idx) {
+                return (
+                  <span 
+                    key={idx} 
+                    className={'w-2 h-2 rounded-full transition-all ' + (idx === photoIndex ? 'bg-[#D2FF00] w-5' : 'bg-neutral-700')} 
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
           <ReportBlockSheet open={reportOpen} onClose={function() { setReportOpen(false); }} contentType="spot"
         contentId={spot.id} ownerUsername={spot.user_id} onHidden={onClose} />
     </div>
@@ -425,9 +506,21 @@ var SpotsMapPage = function(props) {
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" className="dark-tiles" />
             <MapClickHandler onMapClick={handleMapClick} isAdding={isAdding} />
             {userLocation && <FlyToLocation position={[userLocation.lat, userLocation.lng]} trigger={centerTrigger} />}
-            {userLocation && (
-              <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-                <Popup><div className="text-black text-xs"><strong>You</strong><div className="text-zinc-500">You are here</div></div></Popup>
+                        {userLocation && (
+              <Marker 
+                position={[userLocation.lat, userLocation.lng]} 
+                icon={userIcon}
+                eventHandlers={{
+                  click: function(e) {
+                    if (isAdding) {
+                      handleMapClick(e.latlng);
+                    }
+                  }
+                }}
+              >
+                {!isAdding && (
+                  <Popup><div className="text-black text-xs"><strong>You</strong><div className="text-zinc-500">You are here</div></div></Popup>
+                )}
               </Marker>
             )}
             {filteredSpots.map(function(spot) {
