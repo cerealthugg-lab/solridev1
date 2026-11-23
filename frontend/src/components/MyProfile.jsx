@@ -212,7 +212,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
         </aside>
 
         {/* Right column on laptop: clips */}
-        <section className="lg:col-start-2 lg:row-start-1 lg:row-span-2" data-testid="profile-clips-section">
+        <section className="lg:col-start-2 lg:row-start-1 lg:row-span-2 -mx-4 lg:mx-0" data-testid="profile-clips-section">
           {/* INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
           <div className="px-5 lg:px-1 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] lg:text-xs font-black uppercase tracking-widest mt-6 lg:mt-0 shrink-0 select-none">
             <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
@@ -258,7 +258,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         </section>
 
-        {active !== null && <TrickFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} />}
+        {active !== null && <ProfileFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} currentUsername={user?.username} />}
 
         {/* feedback + logout 
         <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
@@ -539,53 +539,70 @@ function DeleteAccountDialog({ open, onClose, api, logout }) {
   );
 }
 
-function TrickFeedViewer({ tricks, startIndex, onClose }) {
-  const slideRefs = React.useRef([]);
+function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
+  const containerRef = React.useRef(null);
+  const [tippedIds, setTippedIds] = React.useState(new Set());
+  const [savedIds, setSavedIds] = React.useState(new Set());
+
+  // Jump to clicked clip
   React.useEffect(() => {
-    const el = slideRefs.current[startIndex];
-    if (el) el.scrollIntoView({ behavior: 'instant' });
+    setTimeout(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const slides = el.querySelectorAll('[data-slide]');
+      if (slides[startIndex]) slides[startIndex].scrollIntoView({ behavior: 'instant' });
+    }, 30);
   }, [startIndex]);
-  return (
-    <div className="fixed inset-0 z-[9999] bg-black overflow-y-auto snap-y snap-mandatory">
-      <button onClick={onClose} className="fixed top-4 right-4 z-20 text-white text-3xl font-light bg-black/40 backdrop-blur-md w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform">×</button>
-      {tricks.map((t, i) => (
-        <TrickSlide key={t.id} trick={t} ref={(el) => (slideRefs.current[i] = el)} />
-      ))}
-    </div>
-  );
-}
 
-const TrickSlide = React.forwardRef(function TrickSlide({ trick }, ref) {
-  const vref = React.useRef(null);
-  const holdTimer = React.useRef(null);
-  const held = React.useRef(false);
-  const [muted, setMuted] = React.useState(true);
-
+  // Swipe-down at bottom = close
   React.useEffect(() => {
-    const v = vref.current;
-    if (!v) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) v.play?.().catch(() => {}); else v.pause?.();
-    }, { threshold: 0.6 });
-    io.observe(v);
-    return () => io.disconnect();
-  }, []);
+    const el = containerRef.current;
+    if (!el) return;
+    let startY = 0;
+    const onStart = (e) => { startY = (e.touches || e.changedTouches)[0].clientY; };
+    const onEnd = (e) => {
+      const endY = (e.changedTouches || e.touches)[0]?.clientY ?? startY;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+      if (atBottom && endY < startY - 40) onClose();
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => { el.removeEventListener('touchstart', onStart); el.removeEventListener('touchend', onEnd); };
+  }, [onClose]);
 
-  const down = () => { held.current = false; holdTimer.current = setTimeout(() => { held.current = true; vref.current?.pause(); }, 200); };
-  const up = () => { clearTimeout(holdTimer.current); if (held.current) vref.current?.play?.().catch(() => {}); else setMuted((m) => !m); };
+  const handleTipped = (id) => setTippedIds((p) => new Set(p).add(id));
+  const handleSaved = (id, saved) => setSavedIds((p) => { const n = new Set(p); if (saved) n.add(id); else n.delete(id); return n; });
 
   return (
-    <div
-      ref={ref}
-      onMouseDown={down} onMouseUp={up}
-      onTouchStart={down} onTouchEnd={up}
-      className="relative h-[100dvh] w-full snap-start snap-always bg-black flex items-center justify-center"
-    >
-      <video ref={vref} src={trick.video_url} loop muted={muted} playsInline className="w-full h-full object-cover" />
-      <div className="absolute bottom-6 left-4 right-16 z-10 pointer-events-none drop-shadow-md">
-        <p className="text-sm font-black uppercase tracking-wider text-[#D2FF00]">⚡ {trick.tips_received ?? 0} Tips</p>
-        <p className="text-xs text-white/80 mt-1">{trick.description || "Skate session upload"}</p>
+    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain">
+      {/* sticky mini header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 h-12 bg-[#09090b]/95 backdrop-blur-md border-b border-neutral-900"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <button onClick={onClose} className="p-1.5 rounded-full text-neutral-400 active:scale-90 transition-transform">
+          ✕
+        </button>
+        <span className="text-sm font-black uppercase tracking-widest text-white">Clips</span>
+      </div>
+
+      {tricks.map((trick, i) => (
+        <div key={trick.id} data-slide>
+          <TrickCard
+            trick={trick}
+            currentUsername={currentUsername}
+            tippedByMe={tippedIds.has(trick.id)}
+            savedByMe={savedIds.has(trick.id)}
+            onTipped={handleTipped}
+            onSaved={handleSaved}
+            onDeleted={onClose}
+          />
+        </div>
+      ))}
+
+      {/* bottom close hint — swipe down here closes */}
+      <div className="flex flex-col items-center gap-2 py-12 select-none">
+        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-700">swipe down to close</span>
+        <span className="text-neutral-800 text-lg">↓</span>
       </div>
     </div>
   );
-});
+}

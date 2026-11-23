@@ -1423,19 +1423,27 @@ async def top_tricks(period: str = "day", limit: int = 20, current_user: Optiona
         # No tips in period — fall back to most-tipped overall
         res = supabase.table('tricks').select('*').order('tips_received', desc=True).limit(limit).execute()
         tricks = _visible(res.data or [], blocked)
+        unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+        user_map = {}
+        if unames:
+            urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+            user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+        for t in tricks:
+            t['user_photo_url'] = user_map.get(t.get('user_id'))
         return _attach_comment_counts(_attach_spot_names(tricks), blocked)
     top_ids = sorted(totals, key=totals.get, reverse=True)[:max(1, min(limit, 50))]
     tricks = _visible(supabase.table('tricks').select('*').in_('id', top_ids).execute().data or [], blocked)
     for t in tricks:
         t['period_tips'] = totals.get(t['id'], 0)
     tricks.sort(key=lambda t: t['period_tips'], reverse=True)
-    return _attach_comment_counts(_attach_spot_names(tricks), blocked)
-    top_ids = sorted(totals, key=totals.get, reverse=True)[:max(1, min(limit, 50))]
-    blocked = _blocked_set(current_user['username'] if current_user else None)
-    tricks = _visible(supabase.table('tricks').select('*').in_('id', top_ids).execute().data or [], blocked)
+    # Attach uploader avatars
+    unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+    user_map = {}
+    if unames:
+        urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+        user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
     for t in tricks:
-        t['period_tips'] = totals.get(t['id'], 0)
-    tricks.sort(key=lambda t: t['period_tips'], reverse=True)
+        t['user_photo_url'] = user_map.get(t.get('user_id'))
     return _attach_comment_counts(_attach_spot_names(tricks), blocked)
 
 

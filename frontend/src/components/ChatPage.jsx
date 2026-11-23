@@ -40,25 +40,11 @@ function ChatPage({ currentUser }) {
   const [replyTo, setReplyTo] = useState(null);
   const [sending, setSending] = useState(false);
   const [unseen, setUnseen] = useState(0);
-  const [navH, setNavH] = useState(0);
-
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const atBottomRef = useRef(true);   // is the user reading the newest messages?
   const firstLoadRef = useRef(true);
   const prevLenRef = useRef(0);
-
-  // Keep the chat exactly between the top of the screen and the bottom nav bar,
-  // so the type box is always visible without scrolling the page.
-  useLayoutEffect(function () {
-    function measure() {
-      var nav = document.querySelector('nav.fixed');
-      setNavH(nav && nav.offsetParent !== null ? nav.offsetHeight : 0);
-    }
-    measure();
-    window.addEventListener('resize', measure);
-    return function () { window.removeEventListener('resize', measure); };
-  }, []);
 
   const fetchMessages = async function () {
     try {
@@ -174,11 +160,9 @@ function ChatPage({ currentUser }) {
   const locked = !!ban || cooldown > 0;
 
   return (
-    <div
+          <div
       data-testid="chat-page"
-      className="fixed top-0 left-0 right-0 lg:left-64 z-40 mx-auto max-w-md lg:max-w-none flex flex-col bg-[#09090b] text-neutral-100 font-sans antialiased selection:bg-[#D2FF00] selection:text-black"
-      style={{ bottom: navH }}
-    >
+      className="fixed inset-0 lg:left-64 z-[9998] mx-auto max-w-md lg:max-w-none flex flex-col bg-[#09090b] text-neutral-100 font-sans antialiased selection:bg-[#D2FF00] selection:text-black">  
       {/* Header */}
       <div
         className="shrink-0 border-b border-neutral-900 bg-[#09090b]/90 backdrop-blur-xl px-3 pb-3"
@@ -287,10 +271,9 @@ function ChatPage({ currentUser }) {
       </div>
 
       {/* Type box - always visible */}
-      <div
+            <div
         className="shrink-0 border-t border-neutral-900 bg-[#09090b] px-3 pt-3"
-        style={{ paddingBottom: navH ? 12 : 'calc(env(safe-area-inset-bottom) + 12px)' }}
-      >
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
         {replyTo && (
           <div data-testid="chat-reply-bar" className="mb-2 rounded-xl bg-neutral-900 border border-neutral-800 pl-3 pr-1 py-1.5 flex items-center gap-2">
             <div className="flex-1 min-w-0">

@@ -196,7 +196,7 @@ export default function SkaterProfile() {
 
       </div>
 
-      {active !== null && <TrickFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} />}
+      {active !== null && <ProfileFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} currentUsername={null} />}
     </div>
   );
 }
