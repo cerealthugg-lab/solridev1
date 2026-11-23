@@ -20,7 +20,8 @@ export default function SkaterProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
+    window.scrollTo(0, 0);
     setLoading(true);
     axios.get(`${BACKEND_URL}/api/users/${username}/public`, authHdr())
       .then(r => setProfile(r.data)).catch(() => setError("Skater not found")).finally(() => setLoading(false));

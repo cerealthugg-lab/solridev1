@@ -259,8 +259,6 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         </section>
 
-        {active !== null && <ProfileFeedViewer tricks={tricks} startIndex={active} onClose={() => setActive(null)} currentUsername={user?.username} />}
-
         {/* feedback + logout 
         <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
           <FeedbackButton />
@@ -274,15 +272,24 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
 <DeleteAccountButton api={api} logout={logout} />
         </div>*/}
       
-      <SettingsModal
+                <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen (false)}
         user={user}
         logout={logout}
         api={api}
         onShiftImage={() => { setSettingsOpen(false); fileRef.current?.click();}}
-        />
+      />
       </div>
+
+      {active !== null && (
+        <ProfileFeedViewer 
+          tricks={tricks} 
+          startIndex={active} 
+          onClose={() => setActive(null)} 
+          currentUsername={user?.username} 
+        />
+      )}
     </div>
   );
 }
@@ -575,7 +582,7 @@ function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
   const handleSaved = (id, saved) => setSavedIds((p) => { const n = new Set(p); if (saved) n.add(id); else n.delete(id); return n; });
 
       return (
-    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain w-screen h-screen">
+        <div ref={containerRef} className="fixed inset-0 z-[10000] bg-[#09090b] overflow-y-auto overscroll-contain w-full h-[100dvh]">
       {/* sticky mini header with solid dark background under status bar */}
       <div 
         className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3 bg-[#09090b] border-b border-neutral-900 shadow-md"

@@ -1384,8 +1384,20 @@ const ConversationWrapper = () => {
 };
 
 function App() {
+
+  function ScrollToTop (){
+    const { pathname } =  useLocation();
+
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, [pathname]);
+
+    return null;
+  }
+
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Toaster theme="dark" position="top-center" />
 
       <AuthProvider>
