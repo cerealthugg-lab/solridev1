@@ -917,61 +917,64 @@ var SpotsMapPage = function(props) {
           <X size={16} /> Cancel
         </button>
       )}
-
-            {/* 1. Compact Spot Preview Banner directly under the map */}
-      {selectedSpot && !isFullCardOpen && (
+      {/* 🛹 Dynamic Expandable Spot Card (Slides open directly from the mini card!) */}
+      {selectedSpot && (
         <div 
-          onClick={function() { setIsFullCardOpen(true); }}
-          className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition-all shadow-lg hover:border-[#D2FF00]/40"
+          className={"bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden transition-all duration-300 ease-out shadow-2xl " + (isFullCardOpen ? "ring-1 ring-[#D2FF00]/40" : "hover:border-neutral-700")}
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-950 flex-shrink-0 flex items-center justify-center border border-neutral-800">
-              {selectedSpot.photos && selectedSpot.photos.length > 0 ? (
-                <img src={selectedSpot.photos[0]} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <MapPin size={18} className="text-[#D2FF00]" />
-              )}
+          {/* Header Banner - Always visible, tap to toggle expand / collapse */}
+          <div 
+            onClick={function() { setIsFullCardOpen(!isFullCardOpen); }}
+            className="p-3 bg-neutral-900/80 flex items-center justify-between gap-3 cursor-pointer select-none border-b border-neutral-900"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-black flex-shrink-0 flex items-center justify-center border border-neutral-800">
+                {selectedSpot.photos && selectedSpot.photos.length > 0 ? (
+                  <img src={selectedSpot.photos[0]} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <MapPin size={18} className="text-[#D2FF00]" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight truncate">{selectedSpot.name}</h4>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#D2FF00]/10 text-[#D2FF00] border border-[#D2FF00]/20">
+                    {selectedSpot.spot_type}
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-1.5">
+                  <span>{isFullCardOpen ? "▲ Tap to collapse" : "▼ Tap to expand full spot"}</span>
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h4 className="text-sm font-bold text-white truncate">{selectedSpot.name}</h4>
-              <p className="text-[11px] text-neutral-400 flex items-center gap-2 mt-0.5">
-                <span className="text-[#D2FF00] font-semibold uppercase">{selectedSpot.spot_type}</span>
-                <span>· Tap to open full details →</span>
-              </p>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button 
+                onClick={function(e) { e.stopPropagation(); setSelectedSpot(null); setIsFullCardOpen(false); }}
+                className="w-8 h-8 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center text-sm active:scale-90 transition-transform"
+                title="Close spot"
+              >
+                ✕
+              </button>
             </div>
           </div>
-          <button 
-            onClick={function(e) { e.stopPropagation(); setSelectedSpot(null); }}
-            className="w-8 h-8 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center shrink-0 active:scale-90"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
-      {/* 2. Full Big Spot Card - Slides up from bottom (doesn't push list or scroll jump) */}
-      {selectedSpot && isFullCardOpen && (
-        <div 
-          className="fixed inset-x-0 bottom-0 z-[1050] max-w-md mx-auto p-3 transition-transform duration-300 ease-out animate-in slide-in-from-bottom"
-          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
-        >
-          {/* Backdrop click to dismiss back to normal */}
+          {/* Smooth Slide-out Content Body */}
           <div 
-            className="fixed inset-0 bg-black/50 -z-10 backdrop-blur-[2px]" 
-            onClick={function() { setIsFullCardOpen(false); }}
-          />
-          <SpotDetailCard
-            spot={selectedSpot}
-            onClose={function() { setIsFullCardOpen(false); }}
-            onDelete={function(id) { handleDeleteSpot(id); setIsFullCardOpen(false); setSelectedSpot(null); }}
-            canDelete={currentUser && selectedSpot.user_id === currentUser.username}
-            userLocation={userLocation}
-            spotTricks={spotTricks}
-            onOpenTrickModal={function() { setTrickModalOpen(true); }}
-          />
+            className={"transition-all duration-300 ease-in-out overflow-hidden " + (isFullCardOpen ? "max-h-[650px] opacity-100 overflow-y-auto" : "max-h-0 opacity-0 pointer-events-none")}
+          >
+            <SpotDetailCard
+              spot={selectedSpot}
+              onClose={function() { setIsFullCardOpen(false); }}
+              onDelete={function(id) { handleDeleteSpot(id); setIsFullCardOpen(false); setSelectedSpot(null); }}
+              canDelete={currentUser && selectedSpot.user_id === currentUser.username}
+              userLocation={userLocation}
+              spotTricks={spotTricks}
+              onOpenTrickModal={function() { setTrickModalOpen(true); }}
+            />
+          </div>
         </div>
       )}
-
       {selectedSpot && (
         <TrickUploadModal
           open={trickModalOpen}
