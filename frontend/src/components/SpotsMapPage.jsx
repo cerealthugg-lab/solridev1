@@ -65,9 +65,19 @@ var MapClickHandler = function(props) {
   return null;
 };
 
-var FlyToLocation = function(props) {
+var FlyToLocation = function(props) {var FlyToLocation = function(props) {
   var map = useMap();
   var hasFlownRef = useRef(false);
+
+  // Fix half-rendered map glitch on first load / mobile
+  useEffect(function() {
+    if (!map) return;
+    map.invalidateSize();
+    var timer = setTimeout(function() {
+      map.invalidateSize();
+    }, 250);
+    return function() { clearTimeout(timer); };
+  }, [map]);
 
   // Fly ONCE on first load (city zoom)
   useEffect(function() {
@@ -77,6 +87,16 @@ var FlyToLocation = function(props) {
       hasFlownRef.current = true;
     }
   }, [props.position, map]);
+
+  // Fly on manual trigger (closer zoom on button click)
+  useEffect(function() {
+    if (props.position && props.trigger > 0) {
+      map.flyTo(props.position, 15, { duration: 1.2 });
+    }
+  }, [props.trigger]);
+
+  return null;
+};
 
   // Fly on manual trigger (closer zoom on button click)
   useEffect(function() {
@@ -744,7 +764,7 @@ var SpotsMapPage = function(props) {
       </div>
 
       <div className="relative rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-950">
-        <div className="h-80 lg:h-[460px] relative">
+        <div className="h-80 lg:h-[460px] relative w-full overflow-hidden">
           <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%', background: '#0a0a0a' }} zoomControl={false}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" className="dark-tiles" />
             <MapClickHandler onMapClick={handleMapClick} isAdding={isAdding} />
