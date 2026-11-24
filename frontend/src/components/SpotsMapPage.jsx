@@ -578,6 +578,9 @@ var SpotsMapPage = function(props) {
   var selectedSpot = selectedState[0];
   var setSelectedSpot = selectedState[1];
   var fullCardState = useState(false);
+  var openSourceState = useState(null); // 'map' or 'list'
+  var openSource = openSourceState[0];
+  var setOpenSource = openSourceState[1];
   var isFullCardOpen = fullCardState[0];
   var setIsFullCardOpen = fullCardState[1];
   var fileInputRef = useRef(null);
@@ -773,11 +776,14 @@ var SpotsMapPage = function(props) {
                     if (isSel) {
                       setSelectedSpot(null);
                       setIsFullCardOpen(false);
+                      setOpenSource(null);
                     } else {
                       setSelectedSpot(spot);
                       setIsFullCardOpen(false); // Just show the preview banner under map!
+                      setOpenSource('map'); // Originated from map!
                     }
                   } 
+
                 }} />
               );
             })}
@@ -917,12 +923,12 @@ var SpotsMapPage = function(props) {
           <X size={16} /> Cancel
         </button>
       )}
-      {/* 🛹 Dynamic Expandable Spot Card (Slides open directly from the mini card!) */}
-      {selectedSpot && (
+           {/* 🛹 Only shows under map if user tapped a pin on the MAP */}
+      {selectedSpot && openSource === 'map' && (
         <div 
           className={"bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden transition-all duration-300 ease-out shadow-2xl " + (isFullCardOpen ? "ring-1 ring-[#D2FF00]/40" : "hover:border-neutral-700")}
         >
-          {/* Header Banner - Always visible, tap to toggle expand / collapse */}
+          {/* Header Banner */}
           <div 
             onClick={function() { setIsFullCardOpen(!isFullCardOpen); }}
             className="p-3 bg-neutral-900/80 flex items-center justify-between gap-3 cursor-pointer select-none border-b border-neutral-900"
@@ -948,15 +954,12 @@ var SpotsMapPage = function(props) {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button 
-                onClick={function(e) { e.stopPropagation(); setSelectedSpot(null); setIsFullCardOpen(false); }}
-                className="w-8 h-8 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center text-sm active:scale-90 transition-transform"
-                title="Close spot"
-              >
-                ✕
-              </button>
-            </div>
+            <button 
+              onClick={function(e) { e.stopPropagation(); setSelectedSpot(null); setIsFullCardOpen(false); setOpenSource(null); }}
+              className="w-8 h-8 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center text-sm active:scale-90 transition-transform"
+            >
+              ✕
+            </button>
           </div>
 
           {/* Smooth Slide-out Content Body */}
@@ -966,7 +969,7 @@ var SpotsMapPage = function(props) {
             <SpotDetailCard
               spot={selectedSpot}
               onClose={function() { setIsFullCardOpen(false); }}
-              onDelete={function(id) { handleDeleteSpot(id); setIsFullCardOpen(false); setSelectedSpot(null); }}
+              onDelete={function(id) { handleDeleteSpot(id); setIsFullCardOpen(false); setSelectedSpot(null); setOpenSource(null); }}
               canDelete={currentUser && selectedSpot.user_id === currentUser.username}
               userLocation={userLocation}
               spotTricks={spotTricks}
@@ -975,6 +978,8 @@ var SpotsMapPage = function(props) {
           </div>
         </div>
       )}
+
+
       {selectedSpot && (
         <TrickUploadModal
           open={trickModalOpen}
@@ -998,36 +1003,65 @@ var SpotsMapPage = function(props) {
           <div className="text-center py-10 rounded-2xl border border-dashed border-neutral-800 text-neutral-500 text-sm">No spots yet. Be the first to add one!</div>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto" data-testid="nearest-spots-list">
-            {nearbySpots.map(function(spot) {
+                        {nearbySpots.map(function(spot) {
               var typeInfo = SPOT_TYPES.find(function(t) { return t.value === spot.spot_type; }) || SPOT_TYPES[0];
-              var isSel = selectedSpot && selectedSpot.id === spot.id;
+              var isSelectedInList = selectedSpot && selectedSpot.id === spot.id && openSource === 'list';
               var thumb = spot.photos && spot.photos.length > 0 ? spot.photos[0] : null;
+
               return (
-                <div
-                  key={spot.id}
+                <div 
+                  key={spot.id} 
                   data-testid={'nearest-spot-' + spot.id}
-                  onClick={function() {
-                setSelectedSpot(spot);
-                setIsFullCardOpen(true); // Clicking from list slides up the big card immediately without page jumping!
-              }}
-                  className={"flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-colors " + (isSel ? 'bg-neutral-900 ring-1 ring-neutral-700' : 'bg-neutral-950 hover:bg-neutral-900')}
+                  className={"rounded-2xl overflow-hidden transition-all duration-300 " + (isSelectedInList ? "border border-[#D2FF00]/40 bg-neutral-950 shadow-2xl my-3" : "bg-neutral-950 border border-transparent hover:bg-neutral-900")}
                 >
-                  <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ backgroundColor: typeInfo.color + '1f' }}>
-                    {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <MapPin size={18} style={{ color: typeInfo.color }} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm text-white truncate">{spot.name}</span>
-                      <span className="text-xs text-neutral-500 flex-shrink-0">{formatDist(spot.distance)}</span>
+                  {/* Spot Row Header */}
+                  <div
+                    onClick={function() {
+                      if (isSelectedInList) {
+                        setSelectedSpot(null);
+                        setOpenSource(null);
+                      } else {
+                        setSelectedSpot(spot);
+                        setOpenSource('list'); // Open inline right here in the list!
+                      }
+                    }}
+                    className="flex items-center gap-3 p-2.5 cursor-pointer select-none"
+                  >
+                    <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center" style={{ backgroundColor: typeInfo.color + '1f' }}>
+                      {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <MapPin size={18} style={{ color: typeInfo.color }} />}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs">
-                      <span className="font-medium" style={{ color: typeInfo.color }}>{typeInfo.label}</span>
-                      <span className="text-neutral-600">by @{spot.user_id}</span>
-                      {spot.photos && spot.photos.length > 0 && (
-                        <span className="text-neutral-600 flex items-center gap-0.5"><Camera size={11} /> {spot.photos.length}</span>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-sm text-white truncate">{spot.name}</span>
+                        <span className="text-xs text-neutral-500 flex-shrink-0">{formatDist(spot.distance)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs">
+                        <span className="font-medium" style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                        <span className="text-neutral-600">by @{spot.user_id}</span>
+                        {spot.photos && spot.photos.length > 0 && (
+                          <span className="text-neutral-600 flex items-center gap-0.5"><Camera size={11} /> {spot.photos.length}</span>
+                        )}
+                      </div>
                     </div>
+                    <span className="text-neutral-500 text-xs px-2">
+                      {isSelectedInList ? "▲" : "▼"}
+                    </span>
                   </div>
+
+                  {/* Inline Expanded Spot Details (Slides out directly under this row in the list!) */}
+                  {isSelectedInList && (
+                    <div className="border-t border-neutral-900 animate-in slide-in-from-top-2 duration-300">
+                      <SpotDetailCard
+                        spot={selectedSpot}
+                        onClose={function() { setSelectedSpot(null); setOpenSource(null); }}
+                        onDelete={function(id) { handleDeleteSpot(id); setSelectedSpot(null); setOpenSource(null); }}
+                        canDelete={currentUser && selectedSpot.user_id === currentUser.username}
+                        userLocation={userLocation}
+                        spotTricks={spotTricks}
+                        onOpenTrickModal={function() { setTrickModalOpen(true); }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
