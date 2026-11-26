@@ -165,14 +165,23 @@ export default function SkaterProfile() {
                 className="relative aspect-square bg-neutral-900 overflow-hidden active:scale-95 transition-all duration-200 group border border-neutral-950/20"
                 title={t.description || t.trick_name || "Skate clip"}
               >
+                {/* Fallback poster while video loads */}
+                <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center p-2 text-center pointer-events-none">
+                  <span className="text-lg opacity-25 mb-0.5">🛹</span>
+                  <span className="text-[8px] font-black uppercase text-neutral-500 truncate max-w-full tracking-tight">{t.trick_name || 'Clip'}</span>
+                </div>
+
                 {/* 🎬 Immersive Video Asset Thumbnail with Defensive Fallback Paths */}
                 <video 
-                  src={t.video_url || t.clip_url || t.url} 
+                  src={(t.video_url || t.clip_url || t.url) + '#t=0.001'} 
                   muted 
                   playsInline 
-                  preload="metadata" 
-                  className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                  preload="auto" 
+                  className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none relative z-10"
                   poster={t.thumbnail_url || t.cover_photo || ""}
+                  onLoadedMetadata={(e) => {
+                    try { e.target.currentTime = 0.001; } catch (_) {}
+                  }}
                 />
                 
                 {/* Ambient dark bottom protection vignette */}
@@ -241,7 +250,7 @@ function ProfileFeedViewer({ tricks, startIndex, onClose, currentUsername }) {
   const handleSaved = (id, saved) => setSavedIds((p) => { const n = new Set(p); if (saved) n.add(id); else n.delete(id); return n; });
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain">
+    <div ref={containerRef} className="fixed inset-0 z-[9999] bg-[#09090b] overflow-y-auto overscroll-contain w-full h-[100dvh]">
             {/* sticky mini header with proper safe area clearance */}
       <div 
         className="sticky top-0 z-20 flex items-center gap-3 px-4 pb-3 bg-[#09090b] border-b border-neutral-900 shadow-lg"

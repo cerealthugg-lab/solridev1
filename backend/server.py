@@ -1453,6 +1453,27 @@ async def my_saved_tricks(current_user: dict = Depends(get_current_user)):
     return {"saved_trick_ids": [s['trick_id'] for s in (res.data or [])]}
 
 
+@api.get("/tricks/saved/list")
+async def list_saved_tricks(current_user: dict = Depends(get_current_user)):
+    res = supabase.table('trick_saves').select('trick_id, created_at').eq('username', current_user['username']).order('created_at', desc=True).execute()
+    trick_ids = [s['trick_id'] for s in (res.data or []) if s.get('trick_id')]
+    if not trick_ids:
+        return []
+    tres = supabase.table('tricks').select('*').in_('id', trick_ids).execute()
+    tricks = tres.data or []
+    id_order = {tid: i for i, tid in enumerate(trick_ids)}
+    tricks.sort(key=lambda t: id_order.get(t.get('id'), 9999))
+    unames = list({t['user_id'] for t in tricks if t.get('user_id')})
+    user_map = {}
+    if unames:
+        urs = supabase.table('users').select('username, photo_url').in_('username', unames).execute()
+        user_map = {u['username']: u.get('photo_url') for u in (urs.data or [])}
+    for t in tricks:
+        t['user_photo_url'] = user_map.get(t.get('user_id'))
+    blocked = _blocked_set(current_user['username'])
+    return _attach_comment_counts(_attach_spot_names(tricks), blocked)
+
+
 @api.post("/tricks/{trick_id}/save")
 async def toggle_save_trick(trick_id: str, current_user: dict = Depends(get_current_user)):
     me = current_user['username']

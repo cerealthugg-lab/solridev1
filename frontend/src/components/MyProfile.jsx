@@ -17,7 +17,9 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const [editing, setEditing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [active, setActive] = useState(null);
+  const [activeTab, setActiveTab] = useState('clips'); // 'clips' or 'saved'
   const [tricks, setTricks] = useState([]);
+  const [savedTricks, setSavedTricks] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     full_name: "", deck_size: "", deck_company: "", fav_trick: "", fav_spot: "", self_comment: "", birth_date: "",
@@ -31,11 +33,19 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
     });
   }, [user]);
 
+  const fetchSavedTricks = () => {
+    api.get('/tricks/saved/list')
+      .then(r => setSavedTricks(r.data || []))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (!user?.username) return;
     api.get(`/tricks/user/${user.username}`)
      .then(r => setTricks(r.data || []))
-     .catch(() => {}); }, [user?.username]);
+     .catch(() => {});
+    fetchSavedTricks();
+  }, [user?.username]);
 
 
   if (!user) return null;
@@ -56,7 +66,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const a = calcAge(user.birth_date);
 
   return (
-    <div className="min-h-screen bg[#09090b] text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
+    <div className="min-h-screen bg-[#09090b] text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
       {/* Immersive Social Top Navigation Bar (phone only) */}
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-5 pb-3.5 bg-[#09090b]/90 backdrop-blur-md border-b border-neutral-900" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 14px)' }}>
         <span className="font-black tracking-tight text-lg text-white">@{user.username}</span>
@@ -216,43 +226,61 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
         <section className="lg:col-start-2 lg:row-start-1 lg:row-span-2 -mx-4 lg:mx-0" data-testid="profile-clips-section">
           {/* INSTAGRAM-STYLE TRICK FEED MENU SEGMENTS */}
           <div className="px-5 lg:px-1 pb-2 border-b border-neutral-900/60 flex gap-6 text-[10px] lg:text-xs font-black uppercase tracking-widest mt-6 lg:mt-0 shrink-0 select-none">
-            <span className="text-[#D2FF00] border-b-2 border-[#D2FF00] pb-2 cursor-pointer font-sans">
+            <button 
+              onClick={() => setActiveTab('clips')} 
+              className={`pb-2 transition-colors font-sans ${activeTab === 'clips' ? 'text-[#D2FF00] border-b-2 border-[#D2FF00]' : 'text-neutral-500 hover:text-white'}`}
+            >
               My Clips ({tricks.length})
-            </span>
-            <span className="text-neutral-500 pb-2 cursor-pointer hover:text-white transition-colors">
-              Saved Spots
-            </span>
+            </button>
+            <button 
+              onClick={() => { setActiveTab('saved'); fetchSavedTricks(); }} 
+              className={`pb-2 transition-colors font-sans ${activeTab === 'saved' ? 'text-[#D2FF00] border-b-2 border-[#D2FF00]' : 'text-neutral-500 hover:text-white'}`}
+            >
+              Saved ({savedTricks.length})
+            </button>
           </div>
 
           {/* TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
           <div className="grid grid-cols-3 gap-[2px] bg-neutral-950 w-full">
-            
-           {tricks.length > 0 ? (
-              tricks.map(function (trick, i) {
+            {(activeTab === 'clips' ? tricks : savedTricks).length > 0 ? (
+              (activeTab === 'clips' ? tricks : savedTricks).map(function (trick, i) {
                 return (
                   <button
                     key={trick.id}
                     onClick={() => setActive(i)}
                     className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl active:scale-95 transition-all">
+                    
+                    {/* Fallback poster while video loads */}
+                    <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center p-2 text-center pointer-events-none">
+                      <span className="text-lg opacity-25 mb-0.5">🛹</span>
+                      <span className="text-[8px] font-black uppercase text-neutral-500 truncate max-w-full tracking-tight">{trick.trick_name || 'Trick'}</span>
+                    </div>
 
                     <video 
-                      src={trick.video_url + '#t=0.1'} 
-                      className="w-full h-full object-cover pointer-events-none"
-                      preload="metadata"
+                      src={trick.video_url + '#t=0.001'} 
+                      className="w-full h-full object-cover pointer-events-none relative z-10"
+                      preload="auto"
                       muted
-                      playsInline/>
-                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
-                    ▶ {trick.tips_received || 0}
+                      playsInline
+                      onLoadedMetadata={(e) => {
+                        try { e.target.currentTime = 0.001; } catch (_) {}
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 z-20 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-[#D2FF00] font-black border border-[#D2FF00]/10 flex items-center gap-1 shadow-lg">
+                      ▶ {trick.tips_received || 0}
                     </div>
                   </button>
-              );
-            })
-              
+                );
+              })
             ) : (
               <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none lg:rounded-2xl lg:border lg:border-dashed lg:border-neutral-800">
-                <p className="text-[10px] font-black uppercase tracking-widest font-sans">No clips catalogued</p>
-                <p className="text-[11px] text-neutral-500 max-w-[180px] leading-relaxed normal-case">
-                  Hit the stream or local spots map to log your first session.
+                <p className="text-[10px] font-black uppercase tracking-widest font-sans">
+                  {activeTab === 'clips' ? 'No clips catalogued' : 'No saved clips'}
+                </p>
+                <p className="text-[11px] text-neutral-500 max-w-[200px] leading-relaxed normal-case">
+                  {activeTab === 'clips' 
+                    ? 'Hit the stream or local spots map to log your first session.'
+                    : 'Tap the bookmark icon on any clip in the tricks feed to save it here.'}
                 </p>
               </div>
             )}
@@ -284,7 +312,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
 
       {active !== null && (
         <ProfileFeedViewer 
-          tricks={tricks} 
+          tricks={activeTab === 'clips' ? tricks : savedTricks} 
           startIndex={active} 
           onClose={() => setActive(null)} 
           currentUsername={user?.username} 

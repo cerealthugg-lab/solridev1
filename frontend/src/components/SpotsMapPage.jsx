@@ -8,7 +8,6 @@ import { Link } from 'react-router-dom';
 import TrickUploadModal from './TrickUploadModal';
 import ReportBlockSheet from './ReportBlockSheet';
 // Play is already imported if you kept the original
-
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 api.interceptors.request.use(config => {
@@ -65,7 +64,7 @@ var MapClickHandler = function(props) {
   return null;
 };
 
-var FlyToLocation = function(props) {var FlyToLocation = function(props) {
+var FlyToLocation = function(props) {
   var map = useMap();
   var hasFlownRef = useRef(false);
 
@@ -93,17 +92,7 @@ var FlyToLocation = function(props) {var FlyToLocation = function(props) {
     if (props.position && props.trigger > 0) {
       map.flyTo(props.position, 15, { duration: 1.2 });
     }
-  }, [props.trigger]);
-
-  return null;
-};
-
-  // Fly on manual trigger (closer zoom on button click)
-  useEffect(function() {
-    if (props.position && props.trigger > 0) {
-      map.flyTo(props.position, 15, { duration: 1.2 });
-    }
-  }, [props.trigger]);
+  }, [props.trigger, props.position]);
 
   return null;
 };
@@ -605,10 +594,11 @@ var SpotsMapPage = function(props) {
   var setIsFullCardOpen = fullCardState[1];
   var fileInputRef = useRef(null);
   var listRef = useRef(null);
-    var centerTriggerState = useState(0);
-    var centerTrigger = centerTriggerState[0];
-    var setCenterTrigger = centerTriggerState[1];
-    // Tricks integration
+  var mapCardRef = useRef(null);
+  var centerTriggerState = useState(0);
+  var centerTrigger = centerTriggerState[0];
+  var setCenterTrigger = centerTriggerState[1];
+  // Tricks integration
   var trickModalState = useState(false);
   var trickModalOpen = trickModalState[0];
   var setTrickModalOpen = trickModalState[1];
@@ -639,18 +629,21 @@ var SpotsMapPage = function(props) {
     } catch (e) {}
   };
 
-  var shareLocation = function() {
+  var shareLocation = function(onSuccess) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async function(pos) {
           var loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setUserLocation(loc);
+          if (onSuccess) onSuccess(loc);
           try { await api.post('/riders/location', loc); } catch (e) {}
         },
         function(err) {
-            toast.error("Location access denied - can't show your location.")
+          if (err && err.code === 1) {
+            toast.error("Location access denied in device settings.");
+          }
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
       );
     }
   };
@@ -799,8 +792,13 @@ var SpotsMapPage = function(props) {
                       setOpenSource(null);
                     } else {
                       setSelectedSpot(spot);
-                      setIsFullCardOpen(false); // Just show the preview banner under map!
+                      setIsFullCardOpen(true); // Open card directly!
                       setOpenSource('map'); // Originated from map!
+                      setTimeout(function() {
+                        if (mapCardRef.current) {
+                          mapCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 120);
                     }
                   } 
 

@@ -39,7 +39,7 @@ export default function DirectMessages() {
       {/* Premium Social Inbox Titlebar Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-md border-b border-neutral-900/60">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1 text-neutral-400 active:scale-90 transition-transform">
+          <button onClick={() => navigate("/profile")} className="p-1 text-neutral-400 active:scale-90 transition-transform">
             <ArrowLeft size={20} />
           </button>
           <span className="font-black tracking-tight text-base uppercase italic">Messages</span>
