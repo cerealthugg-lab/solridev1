@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { LogOut, Pencil, Camera, MessageCircle, AlertCircle, MapPin, Settings, Shield, FileText, X, Trash2 } from "lucide-react";
+import { LogOut, Pencil, Camera, MessageCircle, AlertCircle, MapPin, Settings, Shield, FileText, X, Trash2, Sparkles, Award, Flame } from "lucide-react";
 import FeedbackModal from "./FeedbackModal";
 import TrickCard from "./TrickCard";
+import SLSProCardModal, { calculateSkaterLevel } from "./SLSProCardModal";
 
 const DECK_BRANDS = ["Baker","Element","Girl","Almost","Flip","Zero","Toy Machine","Anti Hero","Real","Santa Cruz","Powell Peralta","Enjoi"];
 
@@ -16,6 +17,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   const fileRef = useRef(null);
   const [editing, setEditing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [slsOpen, setSlsOpen] = useState(false);
   const [active, setActive] = useState(null);
   const [activeTab, setActiveTab] = useState('clips'); // 'clips' or 'saved'
   const [tricks, setTricks] = useState([]);
@@ -64,6 +66,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
   };
 
   const a = calcAge(user.birth_date);
+  const { level, progress, remainingForNext, isMax, rankTitle } = calculateSkaterLevel(tricks.length);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pb-24 lg:min-h-0 lg:bg-transparent lg:pb-0 selection:bg-[#D2FF00] selection:text-black" data-testid="my-profile">
@@ -73,9 +76,9 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
         <span className="font-extrabold text-[11px] uppercase tracking-widest text-neutral-400">My Basecamp</span>
       </header>
 
-      <div className="px-4 pt-6 pb-4 space-y-6 max-w-md mx-auto lg:max-w-none lg:p-0 lg:space-y-0 lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-x-10 lg:gap-y-6 lg:items-start">
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-8 space-y-6 lg:space-y-0 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-x-10 lg:items-start">
         {/* Left column on laptop: profile info */}
-        <aside className="space-y-6 lg:col-start-1 lg:row-start-1 lg:bg-neutral-950 lg:border lg:border-neutral-900 lg:rounded-2xl lg:p-6" data-testid="profile-info-panel">
+        <aside className="space-y-5 lg:col-start-1 lg:row-start-1 lg:bg-neutral-950/80 lg:border lg:border-neutral-900 lg:rounded-3xl lg:p-6 lg:backdrop-blur-sm shadow-xl" data-testid="profile-info-panel">
         {/* Profile Avatar Card Grid */}
         <div className="flex items-center justify-between gap-6">
           {/* Brand Core Animated Pulsing Profile Border */}
@@ -113,6 +116,41 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
             >
               <Settings size={12} className="text-neutral-400" /> Settings
             </button>
+          </div>
+        </div>
+
+        {/* 🏆 SLS Level & Card Progress Engine */}
+        <div 
+          onClick={() => setSlsOpen(true)}
+          className="p-3.5 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black border border-neutral-800 hover:border-[#D2FF00]/50 rounded-2xl cursor-pointer transition-all duration-300 group select-none shadow-lg relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#D2FF00]/5 rounded-full blur-2xl group-hover:bg-[#D2FF00]/10 transition-colors pointer-events-none" />
+          
+          <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#D2FF00] text-black shadow-sm">
+                LVL {level}
+              </span>
+              <span className="text-xs font-black uppercase tracking-tight text-white group-hover:text-[#D2FF00] transition-colors truncate">
+                {rankTitle}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#D2FF00] flex items-center gap-1 shrink-0 group-hover:translate-x-0.5 transition-transform">
+              <Sparkles size={11} /> SLS Card {isMax ? 'Unlocked' : ''} →
+            </span>
+          </div>
+
+          {/* Progress track */}
+          <div className="w-full h-2 bg-neutral-900 rounded-full overflow-hidden p-[1px] border border-neutral-800/80 relative z-10">
+            <div 
+              className="h-full bg-gradient-to-r from-[#D2FF00] to-yellow-300 rounded-full transition-all duration-500 shadow-[0_0_10px_#D2FF00]" 
+              style={{ width: `${progress}%` }} 
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-[9px] font-mono text-neutral-400 mt-2 relative z-10">
+            <span>{tricks.length} / 100 clips to Lvl 10 Pro</span>
+            <span className="text-[#D2FF00] font-bold">{isMax ? 'MAX LEVEL' : `${remainingForNext} to next LVL`}</span>
           </div>
         </div>
 
@@ -241,14 +279,14 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
 
           {/* TRUE 3-COLUMN SQUARE MEDIA POST GRID */}
-          <div className="grid grid-cols-3 gap-[2px] bg-neutral-950 w-full">
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 gap-[2px] sm:gap-3 bg-neutral-950 w-full">
             {(activeTab === 'clips' ? tricks : savedTricks).length > 0 ? (
               (activeTab === 'clips' ? tricks : savedTricks).map(function (trick, i) {
                 return (
                   <button
                     key={trick.id}
                     onClick={() => setActive(i)}
-                    className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-950/20 lg:rounded-xl active:scale-95 transition-all">
+                    className="aspect-square bg-neutral-900 relative group overflow-hidden border border-neutral-900/60 sm:rounded-2xl active:scale-95 hover:border-[#D2FF00]/40 transition-all shadow-md">
                     
                     {/* Fallback poster while video loads */}
                     <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center p-2 text-center pointer-events-none">
@@ -273,7 +311,7 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
                 );
               })
             ) : (
-              <div className="col-span-3 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none lg:rounded-2xl lg:border lg:border-dashed lg:border-neutral-800">
+              <div className="col-span-3 sm:col-span-4 lg:col-span-4 flex flex-col items-center justify-center text-center p-12 text-neutral-600 space-y-2 select-none lg:rounded-2xl lg:border lg:border-dashed lg:border-neutral-800">
                 <p className="text-[10px] font-black uppercase tracking-widest font-sans">
                   {activeTab === 'clips' ? 'No clips catalogued' : 'No saved clips'}
                 </p>
@@ -287,27 +325,22 @@ export default function MyProfile({ user, api, fetchUser, logout }) {
           </div>
         </section>
 
-        {/* feedback + logout 
-        <div className="pt-4 border-t border-neutral-900 space-y-3 lg:col-start-1 lg:row-start-2 lg:pt-0 lg:border-t-0">
-          <FeedbackButton />
-          <button onClick={logout}
-            className="w-full h-11 rounded-xl border border-neutral-950 bg-neutral-950/40 text-[#FF3366] text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-            <LogOut size={12} /> LOG OUT
-          </button>
-            <div className="flex justify-center gap-6 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-  <Link to="/privacy" className="py-2">Privacy</Link><Link to="/terms" className="py-2">Terms</Link>
-</div>
-<DeleteAccountButton api={api} logout={logout} />
-        </div>*/}
-      
-                <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen (false)}
-        user={user}
-        logout={logout}
-        api={api}
-        onShiftImage={() => { setSettingsOpen(false); fileRef.current?.click();}}
-      />
+        <SettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          user={user}
+          logout={logout}
+          api={api}
+          onShiftImage={() => { setSettingsOpen(false); fileRef.current?.click(); }}
+        />
+
+        <SLSProCardModal
+          open={slsOpen}
+          onClose={() => setSlsOpen(false)}
+          user={user}
+          tricksCount={tricks.length}
+          isOwn={true}
+        />
       </div>
 
       {active !== null && (

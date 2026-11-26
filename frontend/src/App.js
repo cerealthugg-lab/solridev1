@@ -498,7 +498,7 @@ const OnlineBadge = ({ className = '' }) => (
           <OnlineBadge />
         </div>*/}
 
-     <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4'} lg:p-10 lg:mx-auto ${location.pathname === '/profile' ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`} style={{ paddingTop: ['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 0 : 'calc(env(safe-area-inset-top) + 14px)' }}> {children} </main>
+     <main className={`${['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 'p-0' : 'p-4'} lg:p-8 lg:mx-auto ${location.pathname === '/profile' || location.pathname.startsWith('/skater') ? 'lg:max-w-6xl' : 'lg:max-w-2xl'}`} style={{ paddingTop: ['/tricks', '/profile'].includes(location.pathname) || location.pathname.startsWith('/skater') ? 0 : 'calc(env(safe-area-inset-top) + 14px)' }}> {children} </main>
 
         <nav className={`lg:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-zinc-800 flex justify-around p-4 z-50 max-w-md mx-auto ${location.pathname === '/chat' || location.pathname.startsWith('/messages') ? 'hidden' : ''}`}>
           {navItems.map(({ path, icon: Icon, label }) => (
