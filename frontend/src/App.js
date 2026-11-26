@@ -251,10 +251,24 @@ const RideProvider = ({ children }) => {
     };
   }, [isActive]);
 
- const startRide = async () => {
+  const startRide = async () => {
     if (startLock.current || isStarting || isActive) return;
     startLock.current = true;
     setIsStarting(true);
+    
+    // Warm up and verify location permission first so iOS doesn't suspend the API call
+    if (navigator.geolocation) {
+      try {
+        await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(true),
+            () => resolve(false),
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+          );
+        });
+      } catch (_) {}
+    }
+
     try {
       const { data } = await api.post('/rides/start');
       setRideId(data.id);

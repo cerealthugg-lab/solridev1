@@ -844,7 +844,15 @@ var SpotsMapPage = function(props) {
 
           <button
             data-testid="center-on-me-btn"
-            onClick={function() { shareLocation(); setCenterTrigger(function(prev) { return prev + 1; }); toast.success("Centering..."); }}
+            onClick={function() {
+              toast.success("Centering...");
+              shareLocation(function() {
+                setCenterTrigger(function(prev) { return prev + 1; });
+              });
+              if (userLocation) {
+                setCenterTrigger(function(prev) { return prev + 1; });
+              }
+            }}
             className="absolute bottom-3 right-3 z-[1000] w-11 h-11 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[#D2FF00] flex items-center justify-center active:scale-90 transition-transform"
             title="Center on me"
           >
@@ -944,11 +952,20 @@ var SpotsMapPage = function(props) {
            {/* 🛹 Only shows under map if user tapped a pin on the MAP */}
       {selectedSpot && openSource === 'map' && (
         <div 
+          ref={mapCardRef}
           className={"bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden transition-all duration-300 ease-out shadow-2xl " + (isFullCardOpen ? "ring-1 ring-[#D2FF00]/40" : "hover:border-neutral-700")}
         >
           {/* Header Banner */}
           <div 
-            onClick={function() { setIsFullCardOpen(!isFullCardOpen); }}
+            onClick={function() {
+              var next = !isFullCardOpen;
+              setIsFullCardOpen(next);
+              if (next) {
+                setTimeout(function() {
+                  if (mapCardRef.current) mapCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+              }
+            }}
             className="p-3 bg-neutral-900/80 flex items-center justify-between gap-3 cursor-pointer select-none border-b border-neutral-900"
           >
             <div className="flex items-center gap-3 min-w-0">
