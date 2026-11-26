@@ -480,6 +480,13 @@ const OnlineBadge = ({ className = '' }) => (
               </Link>
             );
           })}
+          {user.is_admin && (
+            <Link to="/admin" data-testid="sidebar-admin"
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${location.pathname === '/admin' ? 'bg-[#FF3366]/15 text-[#FF3366]' : 'text-neutral-400 hover:bg-neutral-900 hover:text-[#FF3366]'}`}>
+              <Shield size={22} strokeWidth={location.pathname === '/admin' ? 2.5 : 2} />
+              <span className="text-sm font-semibold tracking-wide">Admin</span>
+            </Link>
+          )}
         </nav>
         <div className="mt-auto space-y-4">
           <OnlineBadge />

@@ -87,10 +87,14 @@ var FlyToLocation = function(props) {
     }
   }, [props.position, map]);
 
-  // Fly on manual trigger (closer zoom on button click)
+  // Fly on manual trigger (closer zoom on button click ONLY when trigger increments)
+  var lastTriggerRef = useRef(0);
   useEffect(function() {
-    if (props.position && props.trigger > 0) {
-      map.flyTo(props.position, 15, { duration: 1.2 });
+    if (props.trigger > 0 && props.trigger !== lastTriggerRef.current) {
+      lastTriggerRef.current = props.trigger;
+      if (props.position) {
+        map.flyTo(props.position, 15, { duration: 1.2 });
+      }
     }
   }, [props.trigger, props.position]);
 
@@ -652,8 +656,8 @@ var SpotsMapPage = function(props) {
     fetchSpots(); // Fetches fresh spots as soon as user opens the map
     fetchRiders();
     shareLocation();
-    // Only poll active live riders (every 20s), zero spot re-fetching
-    var ri = setInterval(function() { if (!document.hidden) { fetchRiders(); shareLocation(); } }, 20000);
+    // Only poll active live riders (every 20s), no repeated GPS prompts/jumping
+    var ri = setInterval(function() { if (!document.hidden) { fetchRiders(); } }, 20000);
     setLoading(false);
     return function() {
       clearInterval(ri);
@@ -1051,13 +1055,19 @@ var SpotsMapPage = function(props) {
                 >
                   {/* Spot Row Header */}
                   <div
-                    onClick={function() {
+                    onClick={function(e) {
                       if (isSelectedInList) {
                         setSelectedSpot(null);
                         setOpenSource(null);
                       } else {
                         setSelectedSpot(spot);
                         setOpenSource('list'); // Open inline right here in the list!
+                        var cardEl = e.currentTarget.parentElement;
+                        setTimeout(function() {
+                          if (cardEl) {
+                            cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }, 120);
                       }
                     }}
                     className="flex items-center gap-3 p-2.5 cursor-pointer select-none"
